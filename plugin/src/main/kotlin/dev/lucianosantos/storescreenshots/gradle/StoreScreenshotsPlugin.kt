@@ -1,0 +1,84 @@
+package dev.lucianosantos.storescreenshots.gradle
+
+import com.android.build.api.dsl.CommonExtension
+import com.android.build.gradle.BaseExtension
+import org.gradle.api.Plugin
+import org.gradle.api.Project
+import org.gradle.api.tasks.testing.Test
+
+/**
+ * Apply with:
+ *
+ * ```kotlin
+ * plugins { id("dev.lucianosantos.storescreenshots") }
+ * ```
+ *
+ * What this does to the host module:
+ * 1. Applies the Roborazzi Gradle plugin (so `captureRoboImage` works at test time).
+ * 2. Adds `src/screenshots/{kotlin,res}` to the Android `test` source set so screenshot code
+ *    lives separately from regular unit tests without needing a custom build variant.
+ * 3. Wires the store-screenshots library in as a `testImplementation` dependency.
+ * 4. Enables Android resource & return-default-values in unit tests (Robolectric needs both).
+ * 5. Sets `storeScreenshots.outputRoot` to the root project dir on all `Test` tasks,
+ *    so screenshots land at `<repoRoot>/fastlane/metadata/...` regardless of which module
+ *    produced them.
+ * 6. Registers a `storeScreenshots` task in the host module that runs `testDebugUnitTest`
+ *    and is the recommended entry point.
+ */
+class StoreScreenshotsPlugin : Plugin<Project> {
+    override fun apply(target: Project) {
+        target.pluginManager.apply("io.github.takahirom.roborazzi")
+
+        target.pluginManager.withPlugin("com.android.application") { configureAndroid(target) }
+        target.pluginManager.withPlugin("com.android.library") { configureAndroid(target) }
+
+        target.dependencies.add("testImplementation", libraryNotation())
+
+        target.tasks.withType(Test::class.java).configureEach { task ->
+            task.systemProperty(
+                "storeScreenshots.outputRoot",
+                target.rootProject.projectDir.absolutePath
+            )
+        }
+
+        target.tasks.register("storeScreenshots") { task ->
+            task.group = "store-screenshots"
+            task.description = "Generates framed Play Store / App Store screenshots."
+            task.dependsOn("testDebugUnitTest")
+        }
+    }
+
+    private fun configureAndroid(target: Project) {
+        val androidExt = target.extensions.findByType(BaseExtension::class.java)
+            ?: error("Could not find Android extension on project ${target.path}")
+
+        @Suppress("UNCHECKED_CAST")
+        val common = androidExt as CommonExtension<*, *, *, *, *, *>
+
+        val testSourceSet = androidExt.sourceSets.getByName("test")
+        testSourceSet.java.srcDir("src/screenshots/kotlin")
+        testSourceSet.java.srcDir("src/screenshots/java")
+        testSourceSet.resources.srcDir("src/screenshots/resources")
+        testSourceSet.res.srcDir("src/screenshots/res")
+
+        common.testOptions.unitTests.apply {
+            isIncludeAndroidResources = true
+            isReturnDefaultValues = true
+        }
+    }
+
+    private fun libraryNotation(): Any {
+        // When the plugin is consumed via composite build (includeBuild), Gradle substitutes the
+        // group:name pair with the included build's project. Once we publish, this becomes a
+        // normal Maven coordinate.
+        return mapOf(
+            "group" to "dev.lucianosantos.storescreenshots",
+            "name" to "library",
+            "version" to PLUGIN_VERSION,
+        )
+    }
+
+    companion object {
+        const val PLUGIN_VERSION = "0.1.0"
+    }
+}
