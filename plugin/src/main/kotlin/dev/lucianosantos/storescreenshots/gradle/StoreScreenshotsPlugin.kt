@@ -27,7 +27,12 @@ import org.gradle.api.tasks.testing.Test
  */
 class StoreScreenshotsPlugin : Plugin<Project> {
     override fun apply(target: Project) {
-        target.pluginManager.apply("io.github.takahirom.roborazzi")
+        val extension = target.extensions.create("storeScreenshots", StoreScreenshotsExtension::class.java)
+        extension.destDir.convention(target.rootProject.layout.projectDirectory)
+
+        // Apply Roborazzi by class to avoid id-based plugin lookup, which doesn't resolve
+        // when this plugin is consumed via composite build.
+        target.pluginManager.apply(io.github.takahirom.roborazzi.RoborazziPlugin::class.java)
 
         target.pluginManager.withPlugin("com.android.application") { configureAndroid(target) }
         target.pluginManager.withPlugin("com.android.library") { configureAndroid(target) }
@@ -37,8 +42,10 @@ class StoreScreenshotsPlugin : Plugin<Project> {
         target.tasks.withType(Test::class.java).configureEach { task ->
             task.systemProperty(
                 "storeScreenshots.outputRoot",
-                target.rootProject.projectDir.absolutePath
+                extension.destDir.map { it.asFile.absolutePath }.get()
             )
+            // Roborazzi defaults to compare mode; we always want to write images.
+            task.systemProperty("roborazzi.test.record", "true")
         }
 
         target.tasks.register("storeScreenshots") { task ->

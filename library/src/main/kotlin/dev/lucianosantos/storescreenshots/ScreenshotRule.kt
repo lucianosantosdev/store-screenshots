@@ -76,9 +76,8 @@ class ScreenshotRule(
                     currentBackground = annotation.backgroundColor.toComposeColor()
                     currentContentColor = annotation.contentColor.toComposeColor()
 
-                    RuntimeEnvironment.setQualifiers(
-                        "${formFactor.qualifiers}+${locale.toAndroidResourceQualifier()}"
-                    )
+                    RuntimeEnvironment.setQualifiers(formFactor.qualifiers)
+                    RuntimeEnvironment.setQualifiers("+${locale.toAndroidResourceQualifier()}")
 
                     val freshComposeRule = createComposeRule()
                     composeRule = freshComposeRule

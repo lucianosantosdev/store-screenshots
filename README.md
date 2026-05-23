@@ -55,6 +55,18 @@ Run with:
 
 Output lands at `fastlane/metadata/android/{locale}/images/{phone|wear|sevenInch|tenInch}Screenshots/`.
 
+## Custom output directory
+
+By default, screenshots are written under the **root project** directory so they land alongside `fastlane/`. Override with the `storeScreenshots {}` extension:
+
+```kotlin
+storeScreenshots {
+    destDir = layout.projectDirectory.dir("custom/output")
+}
+```
+
+The Fastlane subdirectory layout (`{locale}/images/phoneScreenshots/`, etc.) is always preserved beneath whatever you set.
+
 ## Supported form factors
 
 | FormFactor | Output size | Fastlane dir |
