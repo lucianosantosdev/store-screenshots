@@ -11,12 +11,58 @@ Gradle plugin + Compose library for generating framed Play Store / App Store scr
 
 ## Quick start
 
-`settings.gradle.kts`:
+### Option A — GitHub Packages (released versions)
+
+GitHub Packages always requires authentication, even for public packages. Add a personal-access token with `read:packages` scope to `~/.gradle/gradle.properties`:
+
+```properties
+gpr.user=your-github-username
+gpr.token=ghp_xxx
+```
+
+Then in your `settings.gradle.kts`:
+
+```kotlin
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+        maven {
+            url = uri("https://maven.pkg.github.com/lucianosantosdev/store-screenshots")
+            credentials {
+                username = providers.gradleProperty("gpr.user").get()
+                password = providers.gradleProperty("gpr.token").get()
+            }
+        }
+    }
+    plugins {
+        id("dev.lucianosantos.storescreenshots") version "0.1.0"
+    }
+}
+
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven {
+            url = uri("https://maven.pkg.github.com/lucianosantosdev/store-screenshots")
+            credentials {
+                username = providers.gradleProperty("gpr.user").get()
+                password = providers.gradleProperty("gpr.token").get()
+            }
+        }
+    }
+}
+```
+
+### Option B — Composite build (local development)
 
 ```kotlin
 pluginManagement {
     includeBuild("path/to/store-screenshots")
 }
+includeBuild("path/to/store-screenshots")
 ```
 
 `mobile/build.gradle.kts`:
@@ -76,6 +122,14 @@ The Fastlane subdirectory layout (`{locale}/images/phoneScreenshots/`, etc.) is 
 | `Tablet7` | 1200 x 1920 | `sevenInchScreenshots` |
 | `Tablet10` | 1600 x 2560 | `tenInchScreenshots` |
 | `AppleIPhone67` | 1290 x 2796 | `fastlane/screenshots/{locale}/iphone67` |
+
+## Releasing
+
+Push a tag matching `v[0-9]+.[0-9]+.[0-9]+` (e.g. `v0.2.0`). The release workflow builds and publishes the library, plugin, and plugin marker artifact to GitHub Packages.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
 
 ## Status
 

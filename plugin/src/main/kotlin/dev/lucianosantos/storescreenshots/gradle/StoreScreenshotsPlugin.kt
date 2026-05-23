@@ -5,6 +5,7 @@ import com.android.build.gradle.BaseExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.testing.Test
+import java.util.Properties
 
 /**
  * Apply with:
@@ -76,16 +77,22 @@ class StoreScreenshotsPlugin : Plugin<Project> {
 
     private fun libraryNotation(): Any {
         // When the plugin is consumed via composite build (includeBuild), Gradle substitutes the
-        // group:name pair with the included build's project. Once we publish, this becomes a
-        // normal Maven coordinate.
+        // group:name pair with the included build's project. When consumed from GitHub Packages,
+        // this resolves to the matching library version published alongside the plugin.
         return mapOf(
             "group" to "dev.lucianosantos.storescreenshots",
             "name" to "library",
-            "version" to PLUGIN_VERSION,
+            "version" to pluginVersion,
         )
     }
 
     companion object {
-        const val PLUGIN_VERSION = "0.1.0"
+        // Embedded at build time by `generateVersionResource` in plugin/build.gradle.kts.
+        internal val pluginVersion: String by lazy {
+            StoreScreenshotsPlugin::class.java.getResourceAsStream("/store-screenshots-version.properties")
+                ?.bufferedReader()
+                ?.use { reader -> Properties().apply { load(reader) }.getProperty("version") }
+                ?: error("store-screenshots-version.properties is missing from the plugin jar")
+        }
     }
 }

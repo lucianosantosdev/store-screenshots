@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.composeCompiler)
+    `maven-publish`
 }
 
 android {
@@ -21,6 +22,12 @@ android {
 
     buildFeatures {
         compose = true
+    }
+
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+        }
     }
 }
 
@@ -44,4 +51,26 @@ dependencies {
     api(libs.roborazzi)
     api(libs.roborazzi.compose)
     api(libs.roborazzi.junit.rule)
+}
+
+publishing {
+    publications {
+        register<MavenPublication>("release") {
+            // android.publishing.singleVariant("release") is created after evaluation, so
+            // wiring `from(components["release"])` must wait.
+            afterEvaluate { from(components["release"]) }
+            artifactId = "library"
+            pom {
+                name.set("store-screenshots library")
+                description.set("Runtime API (annotation, rule, frames) for store-screenshots.")
+                url.set("https://github.com/lucianosantosdev/store-screenshots")
+                licenses {
+                    license {
+                        name.set("MIT")
+                        url.set("https://opensource.org/licenses/MIT")
+                    }
+                }
+            }
+        }
+    }
 }
