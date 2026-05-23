@@ -40,6 +40,27 @@ class StoreScreenshotsPlugin : Plugin<Project> {
 
         target.dependencies.add("testImplementation", libraryNotation())
 
+        // If the consuming project lives in the same build as a `:library` project that
+        // matches our group/name (i.e. the example module inside this very repo), wire it
+        // up by project reference instead of a maven coord. Composite-build consumers don't
+        // need this because Gradle substitutes group:name across included builds automatically.
+        target.afterEvaluate {
+            val siblingLibrary = target.rootProject.allprojects.firstOrNull { sibling ->
+                sibling.path != target.path &&
+                    sibling.name == "library" &&
+                    sibling.group.toString() == "dev.lucianosantos.storescreenshots"
+            }
+            if (siblingLibrary != null) {
+                target.configurations.configureEach { config ->
+                    config.resolutionStrategy.dependencySubstitution { rules ->
+                        rules.substitute(rules.module("dev.lucianosantos.storescreenshots:library"))
+                            .using(rules.project(siblingLibrary.path))
+                            .because("same-build sibling project takes precedence over Maven lookup")
+                    }
+                }
+            }
+        }
+
         target.tasks.withType(Test::class.java).configureEach { task ->
             task.systemProperty(
                 "storeScreenshots.outputRoot",
