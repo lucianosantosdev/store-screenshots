@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -40,33 +41,36 @@ fun AppleFrame(
         modifier = Modifier
             .fillMaxSize()
             .background(backgroundColor)
-            .padding(horizontal = 28.dp, vertical = 48.dp),
+            .padding(horizontal = 24.dp, vertical = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         if (title.isNotEmpty()) {
             Text(
                 text = title,
                 color = contentColor,
-                fontSize = 32.sp,
+                fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
         }
         if (description.isNotEmpty()) {
             Text(
                 text = description,
                 color = contentColor.copy(alpha = 0.85f),
-                fontSize = 16.sp,
+                fontSize = 14.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(16.dp))
         }
+        // weight(1f) + aspectRatio lets the device shrink to whatever vertical space is left
+        // after the title/description, avoiding overflow on the tall 1290x2796 canvas.
         Box(
             modifier = Modifier
-                .fillMaxWidth()
+                .weight(1f, fill = false)
+                .fillMaxHeight()
                 .aspectRatio(1290f / 2796f)
         ) {
             Box(

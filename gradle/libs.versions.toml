@@ -30,6 +30,7 @@ compose-material3 = { module = "androidx.compose.material3:material3" }
 compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "material-icons-extended" }
 compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
 compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 
 [plugins]
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
