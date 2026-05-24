@@ -76,9 +76,8 @@ plugins {
 `mobile/src/screenshots/kotlin/.../MyScreenshots.kt`:
 
 ```kotlin
-@RunWith(RobolectricTestRunner::class)
-class MyScreenshots {
-    @get:Rule val screenshot = ScreenshotRule(FormFactor.Phone)
+@Config(application = MyStubApplication::class)
+class MyScreenshots : StoreScreenshotsTest(FormFactor.Phone) {
 
     @Test
     @Screenshot(
@@ -87,11 +86,13 @@ class MyScreenshots {
         description = "Pick sections, train and rest times",
         backgroundColor = 0xFF1F2937,
     )
-    fun settings() = screenshot.capture {
-        MySettingsScreen()
-    }
+    fun settings() = capture { MySettingsScreen() }
 }
 ```
+
+`StoreScreenshotsTest` bundles `@RunWith(RobolectricTestRunner)`, `@GraphicsMode(NATIVE)`, `@Config(sdk = [35])`, and a `@get:Rule ScreenshotRule` so the test class only declares what's project-specific (the stub `Application`).
+
+Prefer the unbundled style? Apply `@get:Rule ScreenshotRule(FormFactor.Phone)` and `@RunWith(RobolectricTestRunner)` yourself, then call `screenshot.capture { … }` directly.
 
 Run with:
 
@@ -138,19 +139,15 @@ Run all of them with:
 <img src="example/screenshots/fastlane/metadata/android/en-US/images/phoneScreenshots/counter.png" width="280" />
 
 ```kotlin
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = StubApplication::class)
-class PhoneExampleTest {
-    @get:Rule val screenshot = ScreenshotRule(FormFactor.Phone)
+@Config(application = StubApplication::class)
+class PhoneExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
 
     @Test
     @Screenshot(
         title = "Count anything, anywhere",
         description = "A focused tap counter that gets out of your way",
     )
-    fun counter() = screenshot.capture {
-        CounterScreen(count = 42)
-    }
+    fun counter() = capture { CounterScreen(count = 42) }
 }
 ```
 
@@ -159,16 +156,12 @@ class PhoneExampleTest {
 <img src="example/screenshots/fastlane/metadata/android/en-US/images/wearScreenshots/counter.png" width="240" />
 
 ```kotlin
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = StubApplication::class)
-class WearExampleTest {
-    @get:Rule val screenshot = ScreenshotRule(FormFactor.Wear)
+@Config(application = StubApplication::class)
+class WearExampleTest : StoreScreenshotsTest(FormFactor.Wear) {
 
     @Test
     @Screenshot(backgroundColor = 0xFF000000)
-    fun counter() = screenshot.capture {
-        WearCounterScreen(count = 42)
-    }
+    fun counter() = capture { WearCounterScreen(count = 42) }
 }
 ```
 
@@ -177,19 +170,15 @@ class WearExampleTest {
 <img src="example/screenshots/fastlane/metadata/android/en-US/images/sevenInchScreenshots/counter.png" width="320" />
 
 ```kotlin
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = StubApplication::class)
-class Tablet7ExampleTest {
-    @get:Rule val screenshot = ScreenshotRule(FormFactor.Tablet7)
+@Config(application = StubApplication::class)
+class Tablet7ExampleTest : StoreScreenshotsTest(FormFactor.Tablet7) {
 
     @Test
     @Screenshot(
         title = "Built for every screen",
         description = "The same Compose UI, framed for 7-inch tablets",
     )
-    fun counter() = screenshot.capture {
-        CounterScreen(count = 42)
-    }
+    fun counter() = capture { CounterScreen(count = 42) }
 }
 ```
 
@@ -198,19 +187,15 @@ class Tablet7ExampleTest {
 <img src="example/screenshots/fastlane/metadata/android/en-US/images/tenInchScreenshots/counter.png" width="360" />
 
 ```kotlin
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = StubApplication::class)
-class Tablet10ExampleTest {
-    @get:Rule val screenshot = ScreenshotRule(FormFactor.Tablet10)
+@Config(application = StubApplication::class)
+class Tablet10ExampleTest : StoreScreenshotsTest(FormFactor.Tablet10) {
 
     @Test
     @Screenshot(
         title = "Big screen, same code",
         description = "10-inch layout uses identical Compose UI",
     )
-    fun counter() = screenshot.capture {
-        CounterScreen(count = 42)
-    }
+    fun counter() = capture { CounterScreen(count = 42) }
 }
 ```
 
@@ -219,19 +204,15 @@ class Tablet10ExampleTest {
 <img src="example/screenshots/fastlane/screenshots/en-US/iphone67/counter.png" width="260" />
 
 ```kotlin
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = StubApplication::class)
-class AppleExampleTest {
-    @get:Rule val screenshot = ScreenshotRule(FormFactor.AppleIPhone67)
+@Config(application = StubApplication::class)
+class AppleExampleTest : StoreScreenshotsTest(FormFactor.AppleIPhone67) {
 
     @Test
     @Screenshot(
         title = "Ship cross-store",
         description = "App Store Connect 6.7\" size, ready to upload",
     )
-    fun counter() = screenshot.capture {
-        CounterScreen(count = 42)
-    }
+    fun counter() = capture { CounterScreen(count = 42) }
 }
 ```
 
