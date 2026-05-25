@@ -55,14 +55,17 @@ fun PhoneFrame(
         style = style,
         horizontalPadding = 28.dp,
         verticalPadding = 48.dp,
-        mockup = { PhoneMockup(content) }
+        mockup = { externalModifier -> PhoneMockup(externalModifier, content) }
     )
 }
 
 @Composable
-private fun ColumnScope.PhoneMockup(content: @Composable () -> Unit) {
+private fun ColumnScope.PhoneMockup(
+    externalModifier: Modifier,
+    content: @Composable () -> Unit,
+) {
     Box(
-        modifier = Modifier
+        modifier = externalModifier
             .weight(1f, fill = false)
             .fillMaxWidth()
             .aspectRatio(9f / 18f)

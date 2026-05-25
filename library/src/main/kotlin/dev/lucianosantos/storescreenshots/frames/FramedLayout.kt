@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -39,8 +40,12 @@ internal fun FramedLayout(
     verticalPadding: Dp,
     titleFontSize: TextUnit = 30.sp,
     descriptionFontSize: TextUnit = 16.sp,
-    mockup: @Composable ColumnScope.() -> Unit,
+    mockup: @Composable ColumnScope.(externalModifier: Modifier) -> Unit,
 ) {
+    val offsetModifier = Modifier.offset(
+        x = style.mockupOffset.x,
+        y = style.mockupOffset.y,
+    )
     Box(modifier = Modifier.fillMaxSize().background(backgroundColor)) {
         style.background?.invoke()
 
@@ -88,7 +93,7 @@ internal fun FramedLayout(
         ) {
             when (style.mockupPosition) {
                 MockupPosition.Top -> {
-                    mockup()
+                    mockup(offsetModifier)
                     Spacer(Modifier.height(24.dp))
                     titleSlot()
                     if (title.isNotEmpty() && description.isNotEmpty()) Spacer(Modifier.height(12.dp))
@@ -97,7 +102,7 @@ internal fun FramedLayout(
                 MockupPosition.Middle -> {
                     titleSlot()
                     Spacer(Modifier.weight(1f))
-                    mockup()
+                    mockup(offsetModifier)
                     Spacer(Modifier.weight(1f))
                     descriptionSlot()
                 }
@@ -106,7 +111,7 @@ internal fun FramedLayout(
                     if (title.isNotEmpty() && description.isNotEmpty()) Spacer(Modifier.height(12.dp))
                     descriptionSlot()
                     Spacer(Modifier.height(24.dp))
-                    mockup()
+                    mockup(offsetModifier)
                 }
             }
         }

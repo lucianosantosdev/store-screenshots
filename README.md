@@ -143,6 +143,7 @@ class StyledScreenshots : StoreScreenshotsTest(
 | Option | Purpose |
 | --- | --- |
 | `mockupPosition` | Device frame at `Top`, `Middle`, or `Bottom` (default) of the canvas. |
+| `mockupOffset` | `DpOffset(x, y)` nudge applied after positioning. Useful for cropping the device into a canvas edge or peeking it off-screen. Visual only — doesn't change layout. |
 | `fontFamily` | Font for the default title/description Text composables. |
 | `background` | Composable rendered behind everything. Overrides `Screenshot.backgroundColor`. |
 | `title` / `description` | Full composable control over banner typography per-locale. |
@@ -186,6 +187,7 @@ class PhoneStyledExampleTest : StoreScreenshotsTest(
     formFactor = FormFactor.Phone,
     style = ScreenshotStyle(
         mockupPosition = MockupPosition.Middle,
+        mockupOffset = DpOffset(x = 24.dp, y = 32.dp),        // nudge down-right
         fontFamily = FontFamily.Serif,
         background = { MarketingBackground() },              // gradient + blobs
         title = { text -> StyledTitle(text) },               // black sans-serif with shadow

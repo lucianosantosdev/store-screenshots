@@ -40,17 +40,18 @@ fun TabletFrame(
         verticalPadding = 56.dp,
         titleFontSize = 36.sp,
         descriptionFontSize = 18.sp,
-        mockup = { TabletMockup(aspectRatio, content) }
+        mockup = { externalModifier -> TabletMockup(externalModifier, aspectRatio, content) }
     )
 }
 
 @Composable
 private fun ColumnScope.TabletMockup(
+    externalModifier: Modifier,
     aspectRatio: Float,
     content: @Composable () -> Unit,
 ) {
     Box(
-        modifier = Modifier
+        modifier = externalModifier
             .weight(1f, fill = false)
             .fillMaxWidth()
             .aspectRatio(aspectRatio)

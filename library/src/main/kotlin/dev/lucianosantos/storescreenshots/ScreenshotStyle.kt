@@ -3,12 +3,17 @@ package dev.lucianosantos.storescreenshots
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.dp
 
 /**
  * Visual styling for the frame banner around a screenshot. Pass to [ScreenshotRule] or
  * [StoreScreenshotsTest] to customize:
  *
  * - [mockupPosition] — where the device sits vertically.
+ * - [mockupOffset] — visual nudge applied to the device after positioning. Use to crop the
+ *   device into a canvas edge, peek it off-screen, or compensate for non-default padding.
+ *   This is a [Modifier.offset]-style visual shift; layout sizes don't change.
  * - [fontFamily] — applied to the default title/description Text composables. Has no effect
  *   when [title] / [description] composables override the default rendering.
  * - [background] — full-canvas composable rendered underneath everything. When set, the
@@ -21,6 +26,7 @@ import androidx.compose.ui.text.font.FontFamily
 @Immutable
 data class ScreenshotStyle(
     val mockupPosition: MockupPosition = MockupPosition.Bottom,
+    val mockupOffset: DpOffset = DpOffset(0.dp, 0.dp),
     val fontFamily: FontFamily = FontFamily.Default,
     val background: (@Composable () -> Unit)? = null,
     val title: (@Composable (text: String) -> Unit)? = null,
