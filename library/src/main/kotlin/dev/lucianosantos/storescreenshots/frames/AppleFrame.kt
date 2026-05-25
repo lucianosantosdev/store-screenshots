@@ -43,16 +43,19 @@ fun AppleFrame(
         verticalPadding = 28.dp,
         titleFontSize = 26.sp,
         descriptionFontSize = 14.sp,
-        mockup = { IPhoneMockup(content) }
+        mockup = { externalModifier -> IPhoneMockup(externalModifier, content) }
     )
 }
 
 @Composable
-private fun ColumnScope.IPhoneMockup(content: @Composable () -> Unit) {
+private fun ColumnScope.IPhoneMockup(
+    externalModifier: Modifier,
+    content: @Composable () -> Unit,
+) {
     // weight(1f) + aspectRatio lets the device shrink to whatever vertical space is left
     // after the title/description, avoiding overflow on the tall 1290x2796 canvas.
     Box(
-        modifier = Modifier
+        modifier = externalModifier
             .weight(1f, fill = false)
             .fillMaxHeight()
             .aspectRatio(1290f / 2796f)
