@@ -123,6 +123,32 @@ The Fastlane subdirectory layout (`{locale}/images/phoneScreenshots/`, etc.) is 
 | `Tablet10` | 1600 x 2560 | `tenInchScreenshots` |
 | `AppleIPhone67` | 1290 x 2796 | `fastlane/screenshots/{locale}/iphone67` |
 
+## Styling
+
+Pass a `ScreenshotStyle` to `StoreScreenshotsTest` (or `ScreenshotRule`) to customize the frame:
+
+```kotlin
+class StyledScreenshots : StoreScreenshotsTest(
+    formFactor = FormFactor.Phone,
+    style = ScreenshotStyle(
+        mockupPosition = MockupPosition.Middle,        // Top / Middle / Bottom
+        fontFamily = FontFamily.Serif,                  // applied to default title/description
+        background = { MyMarketingBackground() },       // composable, replaces backgroundColor
+        title = { text -> StyledTitle(text) },          // composable, replaces default Text
+        description = { text -> StyledDescription(text) },
+    ),
+)
+```
+
+| Option | Purpose |
+| --- | --- |
+| `mockupPosition` | Device frame at `Top`, `Middle`, or `Bottom` (default) of the canvas. |
+| `fontFamily` | Font for the default title/description Text composables. |
+| `background` | Composable rendered behind everything. Overrides `Screenshot.backgroundColor`. |
+| `title` / `description` | Full composable control over banner typography per-locale. |
+
+The `@Screenshot` annotation's `backgroundColor` / `contentColor` stay as the simple path — set just those when a flat color and white text are all you need.
+
 ## Examples
 
 The [`example/`](example) module generates one screenshot per form factor from the same `CounterScreen` composable. Source code is under `example/src/screenshots/kotlin/`.
@@ -146,6 +172,32 @@ class PhoneExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
         description = "A focused tap counter that gets out of your way",
     )
     fun counter() = capture { CounterScreen(count = 42) }
+}
+```
+
+### Phone with custom style (composable background + title + description)
+
+<img src="example/screenshots/fastlane/metadata/android/en-US/images/phoneScreenshots/counter_styled.png" width="280" />
+
+Same `CounterScreen`, completely different framing via `ScreenshotStyle`:
+
+```kotlin
+class PhoneStyledExampleTest : StoreScreenshotsTest(
+    formFactor = FormFactor.Phone,
+    style = ScreenshotStyle(
+        mockupPosition = MockupPosition.Middle,
+        fontFamily = FontFamily.Serif,
+        background = { MarketingBackground() },              // gradient + blobs
+        title = { text -> StyledTitle(text) },               // black sans-serif with shadow
+        description = { text -> StyledDescription(text) },   // monospace
+    ),
+) {
+    @Test
+    @Screenshot(
+        title = "Designed your way",
+        description = "Custom fonts · gradient backgrounds · centered devices · all from one ScreenshotStyle",
+    )
+    fun counter_styled() = capture { CounterScreen(count = 42) }
 }
 ```
 

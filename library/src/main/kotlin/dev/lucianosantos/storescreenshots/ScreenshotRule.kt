@@ -45,6 +45,7 @@ import java.io.File
  */
 class ScreenshotRule(
     val formFactor: FormFactor,
+    val style: ScreenshotStyle = ScreenshotStyle(),
     private val outputRootDir: File = defaultOutputRoot(),
 ) : TestRule {
 
@@ -120,6 +121,7 @@ class ScreenshotRule(
                 description = currentDescription,
                 backgroundColor = currentBackground,
                 contentColor = currentContentColor,
+                style = style,
                 content = content
             )
             FormFactor.Wear -> WearFrame(
@@ -132,6 +134,7 @@ class ScreenshotRule(
                 description = currentDescription,
                 backgroundColor = currentBackground,
                 contentColor = currentContentColor,
+                style = style,
                 content = content
             )
             FormFactor.AppleIPhone67 -> AppleFrame(
@@ -139,6 +142,7 @@ class ScreenshotRule(
                 description = currentDescription,
                 backgroundColor = currentBackground,
                 contentColor = currentContentColor,
+                style = style,
                 content = content
             )
         }
