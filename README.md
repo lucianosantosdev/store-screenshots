@@ -76,7 +76,6 @@ plugins {
 `mobile/src/screenshots/kotlin/.../MyScreenshots.kt`:
 
 ```kotlin
-@Config(application = MyStubApplication::class)
 class MyScreenshots : StoreScreenshotsTest(FormFactor.Phone) {
 
     @Test
@@ -90,7 +89,7 @@ class MyScreenshots : StoreScreenshotsTest(FormFactor.Phone) {
 }
 ```
 
-`StoreScreenshotsTest` bundles `@RunWith(RobolectricTestRunner)`, `@GraphicsMode(NATIVE)`, `@Config(sdk = [35])`, and a `@get:Rule ScreenshotRule` so the test class only declares what's project-specific (the stub `Application`).
+`StoreScreenshotsTest` bundles `@RunWith(RobolectricTestRunner)`, `@GraphicsMode(NATIVE)`, `@Config(sdk = [35], application = StoreScreenshotsStubApplication)`, and a `@get:Rule ScreenshotRule`. You only need your own `@Config(application = …)` if your app's real `Application` class must be exercised — usually it shouldn't be, since DI/Firebase/etc setup typically crashes under Robolectric.
 
 Prefer the unbundled style? Apply `@get:Rule ScreenshotRule(FormFactor.Phone)` and `@RunWith(RobolectricTestRunner)` yourself, then call `screenshot.capture { … }` directly.
 
@@ -139,7 +138,6 @@ Run all of them with:
 <img src="example/screenshots/fastlane/metadata/android/en-US/images/phoneScreenshots/counter.png" width="280" />
 
 ```kotlin
-@Config(application = StubApplication::class)
 class PhoneExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
 
     @Test
@@ -156,7 +154,6 @@ class PhoneExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
 <img src="example/screenshots/fastlane/metadata/android/en-US/images/wearScreenshots/counter.png" width="240" />
 
 ```kotlin
-@Config(application = StubApplication::class)
 class WearExampleTest : StoreScreenshotsTest(FormFactor.Wear) {
 
     @Test
@@ -170,7 +167,6 @@ class WearExampleTest : StoreScreenshotsTest(FormFactor.Wear) {
 <img src="example/screenshots/fastlane/metadata/android/en-US/images/sevenInchScreenshots/counter.png" width="320" />
 
 ```kotlin
-@Config(application = StubApplication::class)
 class Tablet7ExampleTest : StoreScreenshotsTest(FormFactor.Tablet7) {
 
     @Test
@@ -187,7 +183,6 @@ class Tablet7ExampleTest : StoreScreenshotsTest(FormFactor.Tablet7) {
 <img src="example/screenshots/fastlane/metadata/android/en-US/images/tenInchScreenshots/counter.png" width="360" />
 
 ```kotlin
-@Config(application = StubApplication::class)
 class Tablet10ExampleTest : StoreScreenshotsTest(FormFactor.Tablet10) {
 
     @Test
@@ -204,7 +199,6 @@ class Tablet10ExampleTest : StoreScreenshotsTest(FormFactor.Tablet10) {
 <img src="example/screenshots/fastlane/screenshots/en-US/iphone67/counter.png" width="260" />
 
 ```kotlin
-@Config(application = StubApplication::class)
 class AppleExampleTest : StoreScreenshotsTest(FormFactor.AppleIPhone67) {
 
     @Test
