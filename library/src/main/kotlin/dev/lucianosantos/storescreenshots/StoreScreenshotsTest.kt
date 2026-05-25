@@ -28,16 +28,19 @@ import org.robolectric.annotation.GraphicsMode
  * }
  * ```
  *
- * Subclasses still declare `@Config(application = …)` themselves because the stub Application
- * class is project-specific.
+ * Pass a [ScreenshotStyle] to customize mockup position, font family, or to swap in your own
+ * composables for the background, title, or description.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35], application = StoreScreenshotsStubApplication::class)
-abstract class StoreScreenshotsTest(formFactor: FormFactor) {
+abstract class StoreScreenshotsTest(
+    formFactor: FormFactor,
+    style: ScreenshotStyle = ScreenshotStyle(),
+) {
 
     @get:Rule
-    val screenshot: ScreenshotRule = ScreenshotRule(formFactor)
+    val screenshot: ScreenshotRule = ScreenshotRule(formFactor, style)
 
     /** Render [content] inside the form-factor frame and capture per-locale PNGs. */
     fun capture(content: @Composable () -> Unit) = screenshot.capture(content)

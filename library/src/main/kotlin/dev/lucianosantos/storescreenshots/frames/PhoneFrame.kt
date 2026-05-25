@@ -4,9 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,13 +29,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.lucianosantos.storescreenshots.ScreenshotStyle
 
 /**
- * Phone-shaped frame for Play Store screenshots: title + description banner above a stylized phone
- * mockup. The [content] composable is rendered inside the phone bezel.
+ * Phone-shaped frame for Play Store screenshots. Title + description + a stylized phone
+ * mockup with status bar, notch, and side buttons. Layout/positioning/overrides come from
+ * [style]; [content] is rendered inside the phone bezel.
  */
 @Composable
 fun PhoneFrame(
@@ -44,44 +44,26 @@ fun PhoneFrame(
     description: String,
     backgroundColor: Color,
     contentColor: Color = Color.White,
-    content: @Composable () -> Unit
+    style: ScreenshotStyle = ScreenshotStyle(),
+    content: @Composable () -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(backgroundColor)
-            .padding(horizontal = 28.dp, vertical = 48.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        if (title.isNotEmpty()) {
-            Text(
-                text = title,
-                color = contentColor,
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(Modifier.height(12.dp))
-        }
-        if (description.isNotEmpty()) {
-            Text(
-                text = description,
-                color = contentColor.copy(alpha = 0.85f),
-                fontSize = 16.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(Modifier.height(28.dp))
-        }
-        PhoneMockup { content() }
-    }
+    FramedLayout(
+        title = title,
+        description = description,
+        backgroundColor = backgroundColor,
+        contentColor = contentColor,
+        style = style,
+        horizontalPadding = 28.dp,
+        verticalPadding = 48.dp,
+        mockup = { PhoneMockup(content) }
+    )
 }
 
 @Composable
-private fun PhoneMockup(content: @Composable () -> Unit) {
+private fun ColumnScope.PhoneMockup(content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
+            .weight(1f, fill = false)
             .fillMaxWidth()
             .aspectRatio(9f / 18f)
     ) {

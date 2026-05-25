@@ -1,0 +1,28 @@
+package dev.lucianosantos.storescreenshots
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.ui.text.font.FontFamily
+
+/**
+ * Visual styling for the frame banner around a screenshot. Pass to [ScreenshotRule] or
+ * [StoreScreenshotsTest] to customize:
+ *
+ * - [mockupPosition] — where the device sits vertically.
+ * - [fontFamily] — applied to the default title/description Text composables. Has no effect
+ *   when [title] / [description] composables override the default rendering.
+ * - [background] — full-canvas composable rendered underneath everything. When set, the
+ *   `backgroundColor` from [Screenshot] is ignored.
+ * - [title] / [description] — replace the default Text composables. The current text string
+ *   (resolved per-locale from the annotation) is passed in.
+ *
+ * Defaults preserve the look of every form factor in the library before this API existed.
+ */
+@Immutable
+data class ScreenshotStyle(
+    val mockupPosition: MockupPosition = MockupPosition.Bottom,
+    val fontFamily: FontFamily = FontFamily.Default,
+    val background: (@Composable () -> Unit)? = null,
+    val title: (@Composable (text: String) -> Unit)? = null,
+    val description: (@Composable (text: String) -> Unit)? = null,
+)
