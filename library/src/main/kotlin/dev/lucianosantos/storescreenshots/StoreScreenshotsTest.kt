@@ -33,7 +33,7 @@ import org.robolectric.annotation.GraphicsMode
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [35])
+@Config(sdk = [35], application = StoreScreenshotsStubApplication::class)
 abstract class StoreScreenshotsTest(formFactor: FormFactor) {
 
     @get:Rule

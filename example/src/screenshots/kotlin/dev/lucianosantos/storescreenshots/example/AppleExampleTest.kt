@@ -4,9 +4,7 @@ import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.Screenshot
 import dev.lucianosantos.storescreenshots.StoreScreenshotsTest
 import org.junit.Test
-import org.robolectric.annotation.Config
 
-@Config(application = StubApplication::class)
 class AppleExampleTest : StoreScreenshotsTest(FormFactor.AppleIPhone67) {
 
     @Test
