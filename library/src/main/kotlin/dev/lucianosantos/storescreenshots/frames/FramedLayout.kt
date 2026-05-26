@@ -60,7 +60,7 @@ internal fun FramedLayout(
                         color = contentColor,
                         fontSize = titleFontSize,
                         fontWeight = FontWeight.Bold,
-                        fontFamily = style.fontFamily,
+                        fontFamily = style.titleFontFamily,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -77,7 +77,7 @@ internal fun FramedLayout(
                         text = description,
                         color = contentColor.copy(alpha = 0.85f),
                         fontSize = descriptionFontSize,
-                        fontFamily = style.fontFamily,
+                        fontFamily = style.descriptionFontFamily,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -92,6 +92,7 @@ internal fun FramedLayout(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             when (style.mockupPosition) {
+                MockupPosition.Inherit,
                 MockupPosition.Top -> {
                     mockup(offsetModifier)
                     Spacer(Modifier.height(24.dp))
