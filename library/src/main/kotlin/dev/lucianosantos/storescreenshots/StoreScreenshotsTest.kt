@@ -42,6 +42,13 @@ abstract class StoreScreenshotsTest(
     @get:Rule
     val screenshot: ScreenshotRule = ScreenshotRule(formFactor, style)
 
-    /** Render [content] inside the form-factor frame and capture per-locale PNGs. */
-    fun capture(content: @Composable () -> Unit) = screenshot.capture(content)
+    /**
+     * Render [content] inside the form-factor frame and capture per-locale PNGs.
+     *
+     * Pass [style] to override the class-level style for just this screenshot.
+     */
+    fun capture(
+        style: ScreenshotStyle = screenshot.style,
+        content: @Composable () -> Unit,
+    ) = screenshot.capture(style, content)
 }

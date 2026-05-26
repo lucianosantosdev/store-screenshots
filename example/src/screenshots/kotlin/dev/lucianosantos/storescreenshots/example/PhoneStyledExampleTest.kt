@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -20,9 +19,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.lucianosantos.storescreenshots.FontFamilyName
 import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.MockupPosition
 import dev.lucianosantos.storescreenshots.Screenshot
@@ -31,31 +30,33 @@ import dev.lucianosantos.storescreenshots.StoreScreenshotsTest
 import org.junit.Test
 
 /**
- * Demonstrates every customization point on [ScreenshotStyle]:
+ * Demonstrates annotation-level styling combined with composable overrides.
  *
- * - `MockupPosition.Middle` — title above, device centered, description below.
- * - `fontFamily = FontFamily.Serif` — affects the default Text composables when no override is set.
- * - `background` — replaces the flat `backgroundColor` with a gradient + decorative blobs.
- * - `title` / `description` — render with custom typography (shadows, larger size, monospace).
+ * Simple properties (mockupPosition, offsets, font families) live on `@Screenshot` directly.
+ * Composable overrides (custom background, title, description) are passed via `capture(style = …)`
+ * because annotation parameters can't hold lambdas.
  */
-class PhoneStyledExampleTest : StoreScreenshotsTest(
-    formFactor = FormFactor.Phone,
-    style = ScreenshotStyle(
-        mockupPosition = MockupPosition.Middle,
-        mockupOffset = DpOffset(x = 24.dp, y = 32.dp),
-        fontFamily = FontFamily.Serif,
-        background = { MarketingBackground() },
-        title = { text -> StyledTitle(text) },
-        description = { text -> StyledDescription(text) },
-    ),
-) {
+class PhoneStyledExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
 
     @Test
     @Screenshot(
         title = "Designed your way",
-        description = "Custom fonts · gradient backgrounds · centered devices · all from one ScreenshotStyle",
+        description = "Custom fonts · gradient backgrounds · centered devices · all from @Screenshot",
+        mockupPosition = MockupPosition.Middle,
+        mockupOffsetXDp = 24f,
+        mockupOffsetYDp = 32f,
+        titleFontFamily = FontFamilyName.Serif,
+        descriptionFontFamily = FontFamilyName.Monospace,
     )
-    fun counter_styled() = capture { CounterScreen(count = 42) }
+    fun counter_styled() = capture(
+        style = ScreenshotStyle(
+            background = { MarketingBackground() },
+            title = { text -> StyledTitle(text) },
+            description = { text -> StyledDescription(text) },
+        ),
+    ) {
+        CounterScreen(count = 42)
+    }
 }
 
 @Composable
@@ -97,7 +98,11 @@ private fun StyledTitle(text: String) {
             fontSize = 38.sp,
             fontWeight = FontWeight.Black,
             fontFamily = FontFamily.SansSerif,
-            shadow = Shadow(color = Color.Black.copy(alpha = 0.4f), offset = androidx.compose.ui.geometry.Offset(0f, 4f), blurRadius = 8f),
+            shadow = Shadow(
+                color = Color.Black.copy(alpha = 0.4f),
+                offset = androidx.compose.ui.geometry.Offset(0f, 4f),
+                blurRadius = 8f,
+            ),
         ),
         modifier = Modifier.fillMaxWidth(),
     )
