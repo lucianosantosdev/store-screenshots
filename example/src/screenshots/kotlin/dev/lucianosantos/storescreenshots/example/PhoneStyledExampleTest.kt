@@ -19,9 +19,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.lucianosantos.storescreenshots.FontFamilyName
 import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.MockupPosition
 import dev.lucianosantos.storescreenshots.Screenshot
@@ -30,26 +30,27 @@ import dev.lucianosantos.storescreenshots.StoreScreenshotsTest
 import org.junit.Test
 
 /**
- * Demonstrates annotation-level styling combined with composable overrides.
+ * Demonstrates per-method styling via `capture(style = …)`.
  *
- * Simple properties (mockupPosition, offsets, font families) live on `@Screenshot` directly.
- * Composable overrides (custom background, title, description) are passed via `capture(style = …)`
- * because annotation parameters can't hold lambdas.
+ * All visual customization lives in one [ScreenshotStyle] passed right next to `@Screenshot`:
+ * - `MockupPosition.Middle` — title above, device centered, description below.
+ * - `mockupOffset` — visual nudge.
+ * - `titleFontFamily` / `descriptionFontFamily` — per-slot fonts.
+ * - `background` / `title` / `description` — composable overrides.
  */
 class PhoneStyledExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
 
     @Test
     @Screenshot(
         title = "Designed your way",
-        description = "Custom fonts · gradient backgrounds · centered devices · all from @Screenshot",
-        mockupPosition = MockupPosition.Middle,
-        mockupOffsetXDp = 24f,
-        mockupOffsetYDp = 32f,
-        titleFontFamily = FontFamilyName.Serif,
-        descriptionFontFamily = FontFamilyName.Monospace,
+        description = "Custom fonts · gradient backgrounds · centered devices · all from one ScreenshotStyle",
     )
     fun counter_styled() = capture(
         style = ScreenshotStyle(
+            mockupPosition = MockupPosition.Middle,
+            mockupOffset = DpOffset(x = 24.dp, y = 32.dp),
+            titleFontFamily = FontFamily.Serif,
+            descriptionFontFamily = FontFamily.Monospace,
             background = { MarketingBackground() },
             title = { text -> StyledTitle(text) },
             description = { text -> StyledDescription(text) },

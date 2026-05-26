@@ -7,8 +7,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.RoborazziOptions
 import com.github.takahirom.roborazzi.captureRoboImage
-import androidx.compose.ui.unit.DpOffset
-import androidx.compose.ui.unit.dp
 import dev.lucianosantos.storescreenshots.frames.AppleFrame
 import dev.lucianosantos.storescreenshots.frames.PhoneFrame
 import dev.lucianosantos.storescreenshots.frames.TabletFrame
@@ -58,8 +56,6 @@ class ScreenshotRule(
     private var currentDescription: String = ""
     private var currentBackground: Color = Screenshot.DEFAULT_BACKGROUND.toComposeColor()
     private var currentContentColor: Color = Color.White
-    private var currentMergedStyle: ScreenshotStyle = style
-
     override fun apply(base: Statement, description: Description): Statement {
         val annotation = description.getAnnotation(Screenshot::class.java)
             ?: error(
@@ -67,7 +63,6 @@ class ScreenshotRule(
                     "Either add @Screenshot or remove ScreenshotRule from this class."
             )
         testMethodName = description.methodName ?: error("Test has no method name")
-        currentMergedStyle = mergeAnnotationIntoStyle(annotation, style)
 
         return object : Statement() {
             override fun evaluate() {
@@ -108,7 +103,7 @@ class ScreenshotRule(
      * Defaults to the style passed to the [ScreenshotRule] constructor.
      */
     fun capture(
-        style: ScreenshotStyle = currentMergedStyle,
+        style: ScreenshotStyle = this.style,
         content: @Composable () -> Unit,
     ) {
         require(::composeRule.isInitialized) {
@@ -197,34 +192,4 @@ private fun Long.toComposeColor(): Color {
     val g = ((this shr 8) and 0xFF).toInt()
     val b = (this and 0xFF).toInt()
     return Color(red = r, green = g, blue = b, alpha = a)
-}
-
-/**
- * Overlay any non-sentinel annotation values on top of the class-level [base] style.
- * Sentinel values (Inherit, Float.NaN) mean "keep whatever the base says."
- */
-private fun mergeAnnotationIntoStyle(annotation: Screenshot, base: ScreenshotStyle): ScreenshotStyle {
-    val position = if (annotation.mockupPosition != MockupPosition.Inherit) {
-        annotation.mockupPosition
-    } else {
-        base.mockupPosition
-    }
-    val offsetX = if (!annotation.mockupOffsetXDp.isNaN()) annotation.mockupOffsetXDp.dp else base.mockupOffset.x
-    val offsetY = if (!annotation.mockupOffsetYDp.isNaN()) annotation.mockupOffsetYDp.dp else base.mockupOffset.y
-    val titleFont = if (annotation.titleFontFamily != FontFamilyName.Inherit) {
-        annotation.titleFontFamily.toFontFamily()
-    } else {
-        base.titleFontFamily
-    }
-    val descFont = if (annotation.descriptionFontFamily != FontFamilyName.Inherit) {
-        annotation.descriptionFontFamily.toFontFamily()
-    } else {
-        base.descriptionFontFamily
-    }
-    return base.copy(
-        mockupPosition = position,
-        mockupOffset = DpOffset(offsetX, offsetY),
-        titleFontFamily = titleFont,
-        descriptionFontFamily = descFont,
-    )
 }
