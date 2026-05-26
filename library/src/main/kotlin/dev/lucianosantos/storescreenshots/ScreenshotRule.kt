@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.RoborazziOptions
 import com.github.takahirom.roborazzi.captureRoboImage
+import android.content.Context
 import dev.lucianosantos.storescreenshots.frames.AppleFrame
 import dev.lucianosantos.storescreenshots.frames.PhoneFrame
 import dev.lucianosantos.storescreenshots.frames.TabletFrame
@@ -15,6 +16,7 @@ import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.shadows.ShadowApplication
 import java.io.File
 
 /**
@@ -71,13 +73,23 @@ class ScreenshotRule(
 
                 for (locale in annotation.locales) {
                     currentLocale = locale
-                    currentTitle = titleOverrides[locale] ?: annotation.title
-                    currentDescription = descOverrides[locale] ?: annotation.description
                     currentBackground = annotation.backgroundColor.toComposeColor()
                     currentContentColor = annotation.contentColor.toComposeColor()
 
                     RuntimeEnvironment.setQualifiers(formFactor.qualifiers)
                     RuntimeEnvironment.setQualifiers("+${locale.toAndroidResourceQualifier()}")
+
+                    // Resolve string resources AFTER qualifiers are set so Robolectric
+                    // returns the locale-appropriate translation.
+                    val context: Context = RuntimeEnvironment.getApplication()
+                    currentTitle = when {
+                        annotation.titleRes != 0 -> context.getString(annotation.titleRes)
+                        else -> titleOverrides[locale] ?: annotation.title
+                    }
+                    currentDescription = when {
+                        annotation.descriptionRes != 0 -> context.getString(annotation.descriptionRes)
+                        else -> descOverrides[locale] ?: annotation.description
+                    }
 
                     val freshComposeRule = createComposeRule()
                     composeRule = freshComposeRule

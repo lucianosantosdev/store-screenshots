@@ -11,9 +11,14 @@ package dev.lucianosantos.storescreenshots
  * `capture(style = …)` (per-method override).
  *
  * @param locales BCP-47 locale tags. Each entry produces one image. Default is en-US.
- * @param title Headline shown above the device frame.
- * @param description Sub-headline shown below the title.
- * @param titleByLocale Per-locale overrides for [title]. Format: "locale=text".
+ * @param title Headline shown above the device frame (raw string, same for all locales unless
+ *   overridden by [titleByLocale]). Ignored when [titleRes] is set.
+ * @param description Sub-headline shown below the title. Ignored when [descriptionRes] is set.
+ * @param titleRes Android string resource ID for the title (e.g. `R.string.screenshot_home_title`).
+ *   Resolved per locale automatically — no need for [titleByLocale]. Takes precedence over [title].
+ * @param descriptionRes Same as [titleRes] but for the description.
+ * @param titleByLocale Per-locale overrides for [title]. Format: "locale=text". Only used when
+ *   [titleRes] is 0.
  * @param descriptionByLocale Per-locale overrides for [description]. Same format.
  * @param backgroundColor Banner background as 0xAARRGGBB (e.g. 0xFF1F2937).
  * @param contentColor Foreground text color as 0xAARRGGBB. Default white.
@@ -24,6 +29,8 @@ annotation class Screenshot(
     val locales: Array<String> = ["en-US"],
     val title: String = "",
     val description: String = "",
+    val titleRes: Int = 0,
+    val descriptionRes: Int = 0,
     val titleByLocale: Array<String> = [],
     val descriptionByLocale: Array<String> = [],
     val backgroundColor: Long = DEFAULT_BACKGROUND,
