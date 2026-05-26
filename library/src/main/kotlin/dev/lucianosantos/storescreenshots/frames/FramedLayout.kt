@@ -92,7 +92,6 @@ internal fun FramedLayout(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             when (style.mockupPosition) {
-                MockupPosition.Inherit,
                 MockupPosition.Top -> {
                     mockup(offsetModifier)
                     Spacer(Modifier.height(24.dp))

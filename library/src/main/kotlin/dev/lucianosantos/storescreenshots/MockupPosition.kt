@@ -8,8 +8,4 @@ package dev.lucianosantos.storescreenshots
  * - [Bottom]: title + description at the top, device pushed to the bottom (default; matches
  *   the most common Play Store screenshot layout).
  */
-enum class MockupPosition {
-    Top, Middle, Bottom,
-    /** Use the class-level [ScreenshotStyle.mockupPosition] default. Only valid inside [Screenshot]. */
-    Inherit,
-}
+enum class MockupPosition { Top, Middle, Bottom }
