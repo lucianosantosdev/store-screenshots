@@ -33,6 +33,7 @@ data class ScreenshotStyle(
     val descriptionFontFamily: FontFamily = FontFamily.Default,
     val showStatusBar: Boolean = true,
     val statusBarClock: String = "12:00",
+    val mockupFrame: (@Composable (content: @Composable () -> Unit) -> Unit)? = null,
     val background: (@Composable () -> Unit)? = null,
     val title: (@Composable (text: String) -> Unit)? = null,
     val description: (@Composable (text: String) -> Unit)? = null,

@@ -2,7 +2,10 @@ package dev.lucianosantos.storescreenshots
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.unit.dp
 import dev.lucianosantos.storescreenshots.frames.AppleFrame
+import dev.lucianosantos.storescreenshots.frames.FramedLayout
 import dev.lucianosantos.storescreenshots.frames.PhoneFrame
 import dev.lucianosantos.storescreenshots.frames.TabletFrame
 import dev.lucianosantos.storescreenshots.frames.WearFrame
@@ -40,11 +43,27 @@ fun ScreenshotPreview(
     style: ScreenshotStyle = ScreenshotStyle(),
     content: @Composable () -> Unit,
 ) {
-    when (formFactor) {
-        FormFactor.Phone -> PhoneFrame(title, description, backgroundColor, contentColor, style, content)
-        FormFactor.Wear -> WearFrame(backgroundColor, content)
-        FormFactor.Tablet7,
-        FormFactor.Tablet10 -> TabletFrame(title, description, backgroundColor, contentColor, style, content = content)
-        FormFactor.AppleIPhone67 -> AppleFrame(title, description, backgroundColor, contentColor, style, content)
+    val customFrame = style.mockupFrame
+    if (customFrame != null) {
+        FramedLayout(
+            title = title,
+            description = description,
+            backgroundColor = backgroundColor,
+            contentColor = contentColor,
+            style = style,
+            horizontalPadding = 28.dp,
+            verticalPadding = 48.dp,
+            mockup = { externalModifier ->
+                Box(externalModifier) { customFrame(content) }
+            }
+        )
+    } else {
+        when (formFactor) {
+            FormFactor.Phone -> PhoneFrame(title, description, backgroundColor, contentColor, style, content)
+            FormFactor.Wear -> WearFrame(backgroundColor, content)
+            FormFactor.Tablet7,
+            FormFactor.Tablet10 -> TabletFrame(title, description, backgroundColor, contentColor, style, content = content)
+            FormFactor.AppleIPhone67 -> AppleFrame(title, description, backgroundColor, contentColor, style, content)
+        }
     }
 }
