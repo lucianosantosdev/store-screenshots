@@ -66,16 +66,34 @@ class PhoneCustomExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
                     .padding(start = 28.dp, end = 28.dp, top = 64.dp, bottom = 40.dp),
             ) {
                 Text(
-                    text = buildAnnotatedString {
-                        withStyle(SpanStyle(color = Color.White)) { append("STORE\n") }
-                        withStyle(SpanStyle(color = Color.White)) { append("SCREENSHOTS\n") }
-                        withStyle(SpanStyle(color = Color(0xFF8B5CF6))) { append("TEMPLATE.") }
-                    },
+                    text = "STORE\nSCREENSHOTS",
+                    color = Color.White,
                     fontSize = 42.sp,
                     fontWeight = FontWeight.Black,
                     fontStyle = FontStyle.Italic,
                     lineHeight = 46.sp,
                 )
+                Spacer(Modifier.height(4.dp))
+                // "TEMPLATE." with an angled dark background so it reads over the mockup
+                Box(Modifier.fillMaxWidth()) {
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .offset(x = (-28).dp)
+                            .rotate(-2f)
+                            .fillMaxWidth()
+                            .background(Color(0xFF0A0A0F))
+                            .padding(horizontal = 40.dp)
+                    )
+                    Text(
+                        text = "TEMPLATE.",
+                        color = Color(0xFF8B5CF6),
+                        fontSize = 42.sp,
+                        fontWeight = FontWeight.Black,
+                        fontStyle = FontStyle.Italic,
+                        lineHeight = 46.sp,
+                    )
+                }
 
                 Spacer(Modifier.weight(1f))
 
