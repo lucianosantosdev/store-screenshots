@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="screenshot_counter_title">Count anything, anywhere</string>
+    <string name="screenshot_counter_desc">A focused tap counter that gets out of your way</string>
+    <string name="screenshot_tablet7_title">Built for every screen</string>
+    <string name="screenshot_tablet7_desc">The same Compose UI, framed for 7-inch tablets</string>
+    <string name="screenshot_tablet10_title">Big screen, same code</string>
+    <string name="screenshot_tablet10_desc">10-inch layout uses identical Compose UI</string>
+    <string name="screenshot_apple_title">Ship cross-store</string>
+    <string name="screenshot_apple_desc">App Store Connect 6.7\" size, ready to upload</string>
+    <string name="screenshot_styled_title">Designed your way</string>
+    <string name="screenshot_styled_desc">Custom fonts · gradient backgrounds · centered devices · all from one ScreenshotStyle</string>
+</resources>

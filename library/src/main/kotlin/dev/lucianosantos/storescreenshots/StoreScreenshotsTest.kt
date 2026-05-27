@@ -45,10 +45,18 @@ abstract class StoreScreenshotsTest(
     /**
      * Render [content] inside the form-factor frame and capture per-locale PNGs.
      *
-     * Pass [style] to override the class-level style for just this screenshot.
+     * @param title Raw string headline. Ignored when [titleRes] is set.
+     * @param description Raw string sub-headline. Ignored when [descriptionRes] is set.
+     * @param titleRes String resource ID (`R.string.xxx`). Resolved per locale automatically.
+     * @param descriptionRes Same as [titleRes] for the description.
+     * @param style Override the class-level style for just this screenshot.
      */
     fun capture(
+        title: String = "",
+        description: String = "",
+        titleRes: Int = 0,
+        descriptionRes: Int = 0,
         style: ScreenshotStyle = screenshot.style,
         content: @Composable () -> Unit,
-    ) = screenshot.capture(style, content)
+    ) = screenshot.capture(title, description, titleRes, descriptionRes, style, content)
 }

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="screenshot_counter_title">Conte qualquer coisa, em qualquer lugar</string>
+    <string name="screenshot_counter_desc">Um contador de toques focado que não atrapalha</string>
+    <string name="screenshot_tablet7_title">Feito para toda tela</string>
+    <string name="screenshot_tablet7_desc">A mesma UI Compose, enquadrada para tablets de 7 polegadas</string>
+    <string name="screenshot_tablet10_title">Tela grande, mesmo código</string>
+    <string name="screenshot_tablet10_desc">Layout de 10 polegadas usa a mesma UI Compose</string>
+    <string name="screenshot_apple_title">Publique em todas as lojas</string>
+    <string name="screenshot_apple_desc">Tamanho 6.7\" do App Store Connect, pronto para enviar</string>
+    <string name="screenshot_styled_title">Do seu jeito</string>
+    <string name="screenshot_styled_desc">Fontes personalizadas · fundos gradientes · dispositivos centralizados · tudo em um ScreenshotStyle</string>
+</resources>
