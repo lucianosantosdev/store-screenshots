@@ -14,8 +14,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -62,8 +62,9 @@ class PhoneCustomExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
                     .fillMaxSize()
                     .padding(start = 28.dp, end = 28.dp, top = 64.dp, bottom = 40.dp),
             ) {
-                // Bold headline with accent color on last word
+                // Bold headline — zIndex keeps it above the rotated mockup
                 Text(
+                    modifier = Modifier.zIndex(1f),
                     text = buildAnnotatedString {
                         withStyle(SpanStyle(color = Color.White)) { append("STORE\n") }
                         withStyle(SpanStyle(color = Color.White)) { append("SCREENSHOTS\n") }
