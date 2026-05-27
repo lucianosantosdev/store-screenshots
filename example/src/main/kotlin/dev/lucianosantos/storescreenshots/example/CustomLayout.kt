@@ -9,13 +9,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -31,9 +33,64 @@ fun CustomScreenshotLayout(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0A0A0F))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF0A0A1A),
+                        Color(0xFF0F0A2A),
+                        Color(0xFF150D35),
+                        Color(0xFF0A0A1A),
+                    )
+                )
+            )
     ) {
-        // Layer 1: diagonal purple accent stripe
+        // Ambient glow blobs
+        Box(
+            modifier = Modifier
+                .size(320.dp)
+                .offset(x = (-80).dp, y = (-60).dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFF7C3AED).copy(alpha = 0.3f),
+                            Color.Transparent,
+                        )
+                    )
+                )
+        )
+        Box(
+            modifier = Modifier
+                .size(260.dp)
+                .align(Alignment.CenterEnd)
+                .offset(x = 100.dp, y = 60.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFF3B82F6).copy(alpha = 0.25f),
+                            Color.Transparent,
+                        )
+                    )
+                )
+        )
+        Box(
+            modifier = Modifier
+                .size(200.dp)
+                .align(Alignment.BottomStart)
+                .offset(x = (-40).dp, y = 40.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFFEC4899).copy(alpha = 0.2f),
+                            Color.Transparent,
+                        )
+                    )
+                )
+        )
+
+        // Diagonal purple accent stripe
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -42,13 +99,17 @@ fun CustomScreenshotLayout(
                 .rotate(-12f)
                 .background(
                     Brush.horizontalGradient(
-                        listOf(Color(0xFF6D28D9), Color(0xFF7C3AED), Color(0xFF8B5CF6))
+                        listOf(
+                            Color(0xFF6D28D9).copy(alpha = 0.8f),
+                            Color(0xFF7C3AED).copy(alpha = 0.6f),
+                            Color(0xFF8B5CF6).copy(alpha = 0.4f),
+                        )
                     ),
                     RoundedCornerShape(24.dp),
                 )
         )
 
-        // Layer 2: device mockup (drawn before text so text stays on top)
+        // Device mockup (drawn before text so text stays on top)
         Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
@@ -59,7 +120,7 @@ fun CustomScreenshotLayout(
             mockup()
         }
 
-        // Layer 3: text (drawn last = on top of everything)
+        // Text layer (drawn last = on top)
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -76,9 +137,11 @@ fun CustomScreenshotLayout(
             Spacer(Modifier.height(4.dp))
             Box(Modifier.fillMaxWidth()) {
                 Text(
-                    modifier = Modifier.background(Color.White).padding(horizontal = 12.dp),
+                    modifier = Modifier
+                        .background(Color.White, RoundedCornerShape(4.dp))
+                        .padding(horizontal = 12.dp, vertical = 2.dp),
                     text = "TEMPLATE",
-                    color = Color(0xFF8B5CF6),
+                    color = Color(0xFF6D28D9),
                     fontSize = 42.sp,
                     fontWeight = FontWeight.Black,
                     fontStyle = FontStyle.Italic,
@@ -97,12 +160,17 @@ fun CustomScreenshotLayout(
                         Modifier
                             .fillMaxWidth(0.15f)
                             .height(2.dp)
-                            .background(Color(0xFF8B5CF6), RoundedCornerShape(1.dp))
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(Color.Transparent, Color(0xFF8B5CF6), Color.Transparent)
+                                ),
+                                RoundedCornerShape(1.dp),
+                            )
                     )
                     Spacer(Modifier.height(16.dp))
                     Text(
                         text = "BY STORE-SCREENSHOTS",
-                        color = Color.White,
+                        color = Color.White.copy(alpha = 0.7f),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 3.sp,
