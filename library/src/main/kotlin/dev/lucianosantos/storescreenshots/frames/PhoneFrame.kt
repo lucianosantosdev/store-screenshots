@@ -55,13 +55,14 @@ fun PhoneFrame(
         style = style,
         horizontalPadding = 28.dp,
         verticalPadding = 48.dp,
-        mockup = { externalModifier -> PhoneMockup(externalModifier, content) }
+        mockup = { externalModifier -> PhoneMockup(externalModifier, style.statusBarClock, content) }
     )
 }
 
 @Composable
 private fun ColumnScope.PhoneMockup(
     externalModifier: Modifier,
+    clock: String,
     content: @Composable () -> Unit,
 ) {
     Box(
@@ -98,7 +99,7 @@ private fun ColumnScope.PhoneMockup(
                 .clip(RoundedCornerShape(32.dp))
         ) {
             Box(modifier = Modifier.fillMaxSize()) { content() }
-            StatusBar(modifier = Modifier.align(Alignment.TopCenter))
+            StatusBar(clock = clock, modifier = Modifier.align(Alignment.TopCenter))
             CameraNotch(modifier = Modifier.align(Alignment.TopCenter))
         }
     }
@@ -125,7 +126,7 @@ private fun SideButton(modifier: Modifier, heightDp: Int, isLeft: Boolean) {
 }
 
 @Composable
-private fun StatusBar(modifier: Modifier = Modifier) {
+private fun StatusBar(clock: String, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -134,7 +135,7 @@ private fun StatusBar(modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = "10:28", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+        Text(text = clock, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
