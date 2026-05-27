@@ -1,5 +1,12 @@
 # store-screenshots
 
+**Build your store screenshots with Compose. Automate the process. Keep them always in sync with your app's real design.**
+
+| | | | |
+| :---: | :---: | :---: | :---: |
+| <img src="example/screenshots/en-US/images/phoneScreenshots/counter.png" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/custom_layout.png" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/counter_styled.png" width="200" /> | <img src="example/screenshots/pt-BR/images/phoneScreenshots/counter.png" width="200" /> |
+| Phone (en-US) | Custom layout | Styled | Phone (pt-BR) |
+
 Gradle plugin + Compose library for generating framed Play Store / App Store screenshots from Compose UI under Robolectric.
 
 ## What it gives you
