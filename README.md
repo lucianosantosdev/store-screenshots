@@ -171,6 +171,35 @@ Pass a `ScreenshotStyle` to `StoreScreenshotsTest` (class-level default) or to `
 | `background` | Composable rendered behind everything. Overrides `backgroundColor`. |
 | `title` / `description` | Full composable control over banner text rendering. |
 
+## Fully custom layout
+
+For complete control, use `customScreenshot {}`. You get a `ScreenshotScope` with a `Mockup {}` composable that renders just the device bezel — everything else is yours:
+
+<img src="example/screenshots/en-US/images/phoneScreenshots/custom_layout.png" width="280" />
+
+```kotlin
+@Test fun custom_layout() = customScreenshot {
+    Box(
+        Modifier.fillMaxSize().background(
+            Brush.verticalGradient(listOf(Color(0xFF0F172A), Color(0xFF1E3A5F)))
+        )
+    ) {
+        Column(
+            Modifier.fillMaxSize().padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text("Fully custom layout", color = Color.White, fontSize = 28.sp)
+            Spacer(Modifier.height(8.dp))
+            Text("You place the Mockup wherever you want", color = Color.White.copy(alpha = 0.7f))
+            Spacer(Modifier.height(24.dp))
+            Mockup(Modifier.weight(1f)) { HomeScreen() }
+            Spacer(Modifier.height(16.dp))
+            Text("Footer text goes here too", color = Color(0xFF60A5FA))
+        }
+    }
+}
+```
+
 ## Previews
 
 Per-form-factor `@Preview` annotations bundle the right `widthDp`/`heightDp`:
