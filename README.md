@@ -284,6 +284,7 @@ Wear screenshots have no title/description banner, so `mockupPosition` doesn't a
     style = ScreenshotStyle(
         mockupPosition = MockupPosition.Middle,
         mockupOffset = DpOffset(x = 100.dp, y = 32.dp),
+        mockupRotation = -5f,
         background = { MarketingBackground() },
         title = { text -> StyledTitle(text) },
         description = { text -> StyledDescription(text) },
