@@ -45,6 +45,7 @@ dependencies {
     api(libs.compose.foundation)
     api(libs.compose.material.icons.extended)
     api(libs.compose.ui.test.junit4)
+    api(libs.compose.ui.tooling.preview)
 
     api(libs.junit)
     api(libs.robolectric)

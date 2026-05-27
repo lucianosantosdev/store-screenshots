@@ -1,9 +1,9 @@
 package dev.lucianosantos.storescreenshots.example
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
 import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.ScreenshotPreview
+import dev.lucianosantos.storescreenshots.Tablet10ScreenshotPreview
 import dev.lucianosantos.storescreenshots.StoreScreenshotsTest
 import org.junit.Test
 
@@ -17,7 +17,7 @@ class Tablet10ExampleTest : StoreScreenshotsTest(FormFactor.Tablet10) {
     ) { CounterScreen(count = 42) }
 }
 
-@Preview(widthDp = 800, heightDp = 1280)
+@Tablet10ScreenshotPreview
 @Composable
 private fun Tablet10Preview() = ScreenshotPreview(
     formFactor = FormFactor.Tablet10,
