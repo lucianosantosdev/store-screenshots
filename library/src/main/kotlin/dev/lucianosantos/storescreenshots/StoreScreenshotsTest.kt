@@ -1,6 +1,7 @@
 package dev.lucianosantos.storescreenshots
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import org.junit.Rule
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -52,11 +53,14 @@ abstract class StoreScreenshotsTest(
      * @param style Override the class-level style for just this screenshot.
      */
     fun capture(
+        locales: List<String> = listOf("en-US"),
         title: String = "",
         description: String = "",
         titleRes: Int = 0,
         descriptionRes: Int = 0,
+        backgroundColor: Color = Color(0xFF1F2937),
+        contentColor: Color = Color.White,
         style: ScreenshotStyle = screenshot.style,
         content: @Composable () -> Unit,
-    ) = screenshot.capture(title, description, titleRes, descriptionRes, style, content)
+    ) = screenshot.capture(locales, title, description, titleRes, descriptionRes, backgroundColor, contentColor, style, content)
 }

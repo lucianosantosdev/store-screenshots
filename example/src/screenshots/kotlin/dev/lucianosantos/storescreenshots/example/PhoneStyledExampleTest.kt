@@ -25,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.MockupPosition
-import dev.lucianosantos.storescreenshots.Screenshot
 import dev.lucianosantos.storescreenshots.ScreenshotPreview
 import dev.lucianosantos.storescreenshots.ScreenshotStyle
 import dev.lucianosantos.storescreenshots.StoreScreenshotsTest
@@ -44,8 +43,8 @@ private val styledStyle = ScreenshotStyle(
 class PhoneStyledExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
 
     @Test
-    @Screenshot(locales = ["en-US", "pt-BR"])
     fun counter_styled() = capture(
+        locales = listOf("en-US", "pt-BR"),
         titleRes = R.string.screenshot_styled_title,
         descriptionRes = R.string.screenshot_styled_desc,
         style = styledStyle,
