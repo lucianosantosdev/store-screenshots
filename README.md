@@ -103,19 +103,25 @@ Output lands at `fastlane/metadata/android/{locale}/images/{phone|wear|sevenInch
 
 ## Custom output directory
 
-By default, screenshots are written under the **root project** directory so they land alongside `fastlane/`. Override with the `storeScreenshots {}` extension:
+By default, screenshots land in `build/outputs/store-screenshots/{locale}/images/{subdir}/` (Android form factors) or `{locale}/{subdir}/` (Apple). To write directly into Fastlane's metadata layout:
 
 ```kotlin
 storeScreenshots {
-    destDir = layout.projectDirectory.dir("custom/output")
+    // Android Play Store — matches what `fastlane supply` expects:
+    destDir = rootProject.layout.projectDirectory.dir("fastlane/metadata/android")
+    // → fastlane/metadata/android/{locale}/images/phoneScreenshots/*.png
 }
 ```
 
-The Fastlane subdirectory layout (`{locale}/images/phoneScreenshots/`, etc.) is always preserved beneath whatever you set.
+For Apple App Store, point at the Fastlane snapshots root instead:
+```kotlin
+    destDir = rootProject.layout.projectDirectory.dir("fastlane/screenshots")
+    // → fastlane/screenshots/{locale}/iphone67/*.png
+```
 
 ## Supported form factors
 
-| FormFactor | Output size | Fastlane dir |
+| FormFactor | Output size | Subdir |
 | --- | --- | --- |
 | `Phone` | 1080 x 1920 | `phoneScreenshots` |
 | `Wear` | 384 x 384 | `wearScreenshots` |
@@ -162,7 +168,7 @@ Run all of them with:
 
 ### Phone
 
-<img src="example/screenshots/fastlane/metadata/android/en-US/images/phoneScreenshots/counter.png" width="280" />
+<img src="example/screenshots/en-US/images/phoneScreenshots/counter.png" width="280" />
 
 ```kotlin
 class PhoneExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
@@ -178,7 +184,7 @@ class PhoneExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
 
 ### Phone with custom style (composable background + title + description)
 
-<img src="example/screenshots/fastlane/metadata/android/en-US/images/phoneScreenshots/counter_styled.png" width="280" />
+<img src="example/screenshots/en-US/images/phoneScreenshots/counter_styled.png" width="280" />
 
 Same `CounterScreen`, completely different framing via `ScreenshotStyle`:
 
@@ -205,7 +211,7 @@ class PhoneStyledExampleTest : StoreScreenshotsTest(
 
 ### Wear OS
 
-<img src="example/screenshots/fastlane/metadata/android/en-US/images/wearScreenshots/counter.png" width="240" />
+<img src="example/screenshots/en-US/images/wearScreenshots/counter.png" width="240" />
 
 ```kotlin
 class WearExampleTest : StoreScreenshotsTest(FormFactor.Wear) {
@@ -218,7 +224,7 @@ class WearExampleTest : StoreScreenshotsTest(FormFactor.Wear) {
 
 ### 7-inch tablet
 
-<img src="example/screenshots/fastlane/metadata/android/en-US/images/sevenInchScreenshots/counter.png" width="320" />
+<img src="example/screenshots/en-US/images/sevenInchScreenshots/counter.png" width="320" />
 
 ```kotlin
 class Tablet7ExampleTest : StoreScreenshotsTest(FormFactor.Tablet7) {
@@ -234,7 +240,7 @@ class Tablet7ExampleTest : StoreScreenshotsTest(FormFactor.Tablet7) {
 
 ### 10-inch tablet
 
-<img src="example/screenshots/fastlane/metadata/android/en-US/images/tenInchScreenshots/counter.png" width="360" />
+<img src="example/screenshots/en-US/images/tenInchScreenshots/counter.png" width="360" />
 
 ```kotlin
 class Tablet10ExampleTest : StoreScreenshotsTest(FormFactor.Tablet10) {
@@ -250,7 +256,7 @@ class Tablet10ExampleTest : StoreScreenshotsTest(FormFactor.Tablet10) {
 
 ### Apple App Store (iPhone 6.7")
 
-<img src="example/screenshots/fastlane/screenshots/en-US/iphone67/counter.png" width="260" />
+<img src="example/screenshots/en-US/iphone67/counter.png" width="260" />
 
 ```kotlin
 class AppleExampleTest : StoreScreenshotsTest(FormFactor.AppleIPhone67) {

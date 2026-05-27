@@ -1,25 +1,29 @@
 package dev.lucianosantos.storescreenshots
 
 /**
- * Each form factor encodes the output pixel size and the Fastlane subdirectory the store expects.
+ * Each form factor encodes the output pixel size and the subdirectory name for screenshots.
  *
- * Pixel sizes are the minimums required by the store, chosen to match what the Play Console and
- * App Store Connect actually accept on new submissions.
+ * The output path under `destDir` is:
+ * - Android form factors: `{locale}/images/{subdir}/{name}.png`
+ * - Apple form factors: `{locale}/{subdir}/{name}.png`
+ *
+ * To match Fastlane's layout, set `destDir` to `fastlane/metadata/android` (Android) or
+ * `fastlane/screenshots` (Apple). By default screenshots land in `build/outputs/store-screenshots/`.
  */
 enum class FormFactor(
     val widthPx: Int,
     val heightPx: Int,
     val qualifiers: String,
-    val fastlaneSubdir: String,
-    val rootRelativeDir: String,
+    val subdir: String,
+    val useImagesSubdir: Boolean,
 ) {
     /** Play Store phone screenshot. Portrait 1080x1920. */
     Phone(
         widthPx = 1080,
         heightPx = 1920,
         qualifiers = "w411dp-h914dp-xxhdpi",
-        fastlaneSubdir = "phoneScreenshots",
-        rootRelativeDir = "fastlane/metadata/android",
+        subdir = "phoneScreenshots",
+        useImagesSubdir = true,
     ),
 
     /** Play Store Wear OS screenshot. Round 384x384. */
@@ -27,8 +31,8 @@ enum class FormFactor(
         widthPx = 384,
         heightPx = 384,
         qualifiers = "w227dp-h227dp-round-xxhdpi",
-        fastlaneSubdir = "wearScreenshots",
-        rootRelativeDir = "fastlane/metadata/android",
+        subdir = "wearScreenshots",
+        useImagesSubdir = true,
     ),
 
     /** Play Store 7-inch tablet screenshot. Portrait 1200x1920. */
@@ -36,8 +40,8 @@ enum class FormFactor(
         widthPx = 1200,
         heightPx = 1920,
         qualifiers = "w600dp-h960dp-xhdpi",
-        fastlaneSubdir = "sevenInchScreenshots",
-        rootRelativeDir = "fastlane/metadata/android",
+        subdir = "sevenInchScreenshots",
+        useImagesSubdir = true,
     ),
 
     /** Play Store 10-inch tablet screenshot. Portrait 1600x2560. */
@@ -45,8 +49,8 @@ enum class FormFactor(
         widthPx = 1600,
         heightPx = 2560,
         qualifiers = "w800dp-h1280dp-xhdpi",
-        fastlaneSubdir = "tenInchScreenshots",
-        rootRelativeDir = "fastlane/metadata/android",
+        subdir = "tenInchScreenshots",
+        useImagesSubdir = true,
     ),
 
     /** Apple App Store iPhone 6.7" screenshot. Portrait 1290x2796 (iPhone 14/15 Pro Max etc.). */
@@ -54,7 +58,7 @@ enum class FormFactor(
         widthPx = 1290,
         heightPx = 2796,
         qualifiers = "w430dp-h932dp-xxhdpi",
-        fastlaneSubdir = "iphone67",
-        rootRelativeDir = "fastlane/screenshots",
+        subdir = "iphone67",
+        useImagesSubdir = false,
     ),
 }
