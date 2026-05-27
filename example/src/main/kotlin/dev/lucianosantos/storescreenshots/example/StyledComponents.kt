@@ -27,7 +27,7 @@ import dev.lucianosantos.storescreenshots.ScreenshotStyle
 
 val styledScreenshotStyle = ScreenshotStyle(
     mockupPosition = MockupPosition.Middle,
-    mockupOffset = DpOffset(x = 24.dp, y = 32.dp),
+    mockupOffset = DpOffset(x = 0.dp, y = 0.dp),
     titleFontFamily = FontFamily.Serif,
     descriptionFontFamily = FontFamily.Monospace,
     background = { MarketingBackground() },
