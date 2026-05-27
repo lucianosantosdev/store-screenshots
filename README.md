@@ -4,8 +4,8 @@
 
 | | | | |
 | :---: | :---: | :---: | :---: |
-| <img src="example/screenshots/en-US/images/phoneScreenshots/counter.png" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/custom_layout.png" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/counter_styled.png" width="200" /> | <img src="example/screenshots/pt-BR/images/phoneScreenshots/counter.png" width="200" /> |
-| Phone (en-US) | Custom layout | Styled | Phone (pt-BR) |
+| <img src="example/screenshots/en-US/images/phoneScreenshots/counter.png" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/custom_layout.png" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/counter_styled.png" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/custom_frame.png" width="200" /> |
+| Phone | Custom layout | Styled | Custom frame |
 
 Gradle plugin + Compose library for generating framed Play Store / App Store screenshots from Compose UI under Robolectric.
 
