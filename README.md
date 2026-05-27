@@ -183,6 +183,8 @@ Pass a `ScreenshotStyle` to `StoreScreenshotsTest` (class-level default) or to `
 
 Replace the built-in device bezel with your own composable via `mockupFrame`. Title/description/positioning still work — only the device shape changes:
 
+<img src="example/screenshots/en-US/images/phoneScreenshots/custom_frame.png" width="280" />
+
 ```kotlin
 @Test fun home() = screenshot(
     title = "My app",
