@@ -59,7 +59,6 @@ private fun ColumnScope.PhoneMockup(
 ) {
     Box(
         modifier = externalModifier
-            .weight(1f, fill = false)
             .fillMaxWidth()
             .aspectRatio(9f / 18f)
     ) {
