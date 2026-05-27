@@ -4,10 +4,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -40,13 +42,15 @@ fun TabletFrame(
         verticalPadding = 56.dp,
         titleFontSize = 36.sp,
         descriptionFontSize = 18.sp,
-        mockup = { externalModifier -> TabletMockup(externalModifier, aspectRatio, content) }
+        mockup = { externalModifier -> TabletMockup(externalModifier, style.showStatusBar, style.statusBarClock, aspectRatio, content) }
     )
 }
 
 @Composable
 private fun ColumnScope.TabletMockup(
     externalModifier: Modifier,
+    showStatusBar: Boolean,
+    clock: String,
     aspectRatio: Float,
     content: @Composable () -> Unit,
 ) {
@@ -63,6 +67,7 @@ private fun ColumnScope.TabletMockup(
             .padding(8.dp)
             .clip(RoundedCornerShape(20.dp))
     ) {
-        content()
+        Box(Modifier.fillMaxSize()) { content() }
+        if (showStatusBar) StatusBar(clock = clock, modifier = Modifier.align(Alignment.TopCenter))
     }
 }
