@@ -2,9 +2,9 @@ package dev.lucianosantos.storescreenshots.example
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
 import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.ScreenshotPreview
+import dev.lucianosantos.storescreenshots.WearScreenshotPreview
 import dev.lucianosantos.storescreenshots.StoreScreenshotsTest
 import org.junit.Test
 
@@ -17,7 +17,7 @@ class WearExampleTest : StoreScreenshotsTest(FormFactor.Wear) {
     ) { WearCounterScreen(count = 42) }
 }
 
-@Preview(widthDp = 227, heightDp = 227)
+@WearScreenshotPreview
 @Composable
 private fun WearPreview() = ScreenshotPreview(
     formFactor = FormFactor.Wear,

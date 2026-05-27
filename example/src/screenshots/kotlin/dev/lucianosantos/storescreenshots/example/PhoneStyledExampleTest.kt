@@ -19,13 +19,13 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.MockupPosition
 import dev.lucianosantos.storescreenshots.ScreenshotPreview
+import dev.lucianosantos.storescreenshots.PhoneScreenshotPreview
 import dev.lucianosantos.storescreenshots.ScreenshotStyle
 import dev.lucianosantos.storescreenshots.StoreScreenshotsTest
 import org.junit.Test
@@ -51,7 +51,7 @@ class PhoneStyledExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
     ) { CounterScreen(count = 42) }
 }
 
-@Preview(widthDp = 411, heightDp = 914)
+@PhoneScreenshotPreview
 @Composable
 private fun StyledPreview() = ScreenshotPreview(
     formFactor = FormFactor.Phone,
