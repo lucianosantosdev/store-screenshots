@@ -11,12 +11,9 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.zIndex
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
@@ -38,7 +35,7 @@ class PhoneCustomExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
                 .fillMaxSize()
                 .background(Color(0xFF0A0A0F))
         ) {
-            // Diagonal purple accent stripe behind the mockup
+            // Layer 1: diagonal purple accent stripe
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -47,24 +44,28 @@ class PhoneCustomExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
                     .rotate(-12f)
                     .background(
                         Brush.horizontalGradient(
-                            colors = listOf(
-                                Color(0xFF6D28D9),
-                                Color(0xFF7C3AED),
-                                Color(0xFF8B5CF6),
-                            )
+                            listOf(Color(0xFF6D28D9), Color(0xFF7C3AED), Color(0xFF8B5CF6))
                         ),
                         RoundedCornerShape(24.dp),
                     )
             )
 
+            // Layer 2: device mockup (drawn before text so text stays on top)
+            Mockup(
+                Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxWidth(0.85f)
+                    .offset(x = 60.dp, y = 80.dp)
+                    .rotate(12f)
+            ) { CounterScreen(count = 42) }
+
+            // Layer 3: text (drawn last = on top of everything)
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(start = 28.dp, end = 28.dp, top = 64.dp, bottom = 40.dp),
             ) {
-                // Bold headline — zIndex keeps it above the rotated mockup
                 Text(
-                    modifier = Modifier.zIndex(1f),
                     text = buildAnnotatedString {
                         withStyle(SpanStyle(color = Color.White)) { append("STORE\n") }
                         withStyle(SpanStyle(color = Color.White)) { append("SCREENSHOTS\n") }
@@ -76,20 +77,8 @@ class PhoneCustomExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
                     lineHeight = 46.sp,
                 )
 
-                Spacer(Modifier.height(32.dp))
+                Spacer(Modifier.weight(1f))
 
-                // Device mockup — rotated and offset to crop into the right edge
-                Mockup(
-                    Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .offset(x = 60.dp, y = 20.dp)
-                        .rotate(12f)
-                ) { CounterScreen(count = 42) }
-
-                Spacer(Modifier.height(24.dp))
-
-                // Footer with thin line
                 Box(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center,
