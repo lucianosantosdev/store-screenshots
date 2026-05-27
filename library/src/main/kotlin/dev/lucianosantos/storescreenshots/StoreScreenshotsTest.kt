@@ -52,7 +52,7 @@ abstract class StoreScreenshotsTest(
      * @param descriptionRes Same as [titleRes] for the description.
      * @param style Override the class-level style for just this screenshot.
      */
-    fun capture(
+    fun screenshot(
         locales: List<String> = listOf("en-US"),
         title: String = "",
         description: String = "",
@@ -62,5 +62,5 @@ abstract class StoreScreenshotsTest(
         contentColor: Color = Color.White,
         style: ScreenshotStyle = screenshot.style,
         content: @Composable () -> Unit,
-    ) = screenshot.capture(locales, title, description, titleRes, descriptionRes, backgroundColor, contentColor, style, content)
+    ) = screenshot.screenshot(locales, title, description, titleRes, descriptionRes, backgroundColor, contentColor, style, content)
 }

@@ -10,7 +10,7 @@ import org.junit.Test
 class AppleExampleTest : StoreScreenshotsTest(FormFactor.AppleIPhone67) {
 
     @Test
-    fun counter() = capture(
+    fun counter() = screenshot(
         locales = listOf("en-US", "pt-BR"),
         titleRes = R.string.screenshot_apple_title,
         descriptionRes = R.string.screenshot_apple_desc,

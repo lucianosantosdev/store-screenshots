@@ -10,14 +10,14 @@ import org.junit.Test
 class PhoneExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
 
     @Test
-    fun counter() = capture(
+    fun counter() = screenshot(
         locales = listOf("en-US", "pt-BR"),
         titleRes = R.string.screenshot_counter_title,
         descriptionRes = R.string.screenshot_counter_desc,
     ) { CounterScreen(count = 42) }
 }
 
-@Preview(widthDp = 411, heightDp = 914)
+@Preview(showBackground = true, showSystemUi = true, widthDp = 411, heightDp = 914)
 @Composable
 private fun PhonePreview() = ScreenshotPreview(
     formFactor = FormFactor.Phone,
