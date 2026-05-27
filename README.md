@@ -199,67 +199,68 @@ Previews go in `src/debug/` (Studio only renders debug variant). Tests go in `sr
 
 ## Examples
 
-The [`example/`](example) module generates one screenshot per form factor from the same `CounterScreen` composable.
+The [`example/`](example) module generates screenshots from the same `CounterScreen` composable. Source: `example/src/screenshots/kotlin/`.
 
-### Phone
+### Mockup positions
 
-<img src="example/screenshots/en-US/images/phoneScreenshots/counter.png" width="280" />
+`MockupPosition.Top` / `Middle` / `Bottom` — controls where the device sits relative to the title and description.
+
+#### Phone
+
+| Top | Middle | Bottom (default) |
+| :---: | :---: | :---: |
+| <img src="example/screenshots/en-US/images/phoneScreenshots/phone_top.png" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/phone_middle.png" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/phone_bottom.png" width="200" /> |
+
+#### 7-inch tablet
+
+| Top | Middle | Bottom (default) |
+| :---: | :---: | :---: |
+| <img src="example/screenshots/en-US/images/sevenInchScreenshots/tablet7_top.png" width="220" /> | <img src="example/screenshots/en-US/images/sevenInchScreenshots/tablet7_middle.png" width="220" /> | <img src="example/screenshots/en-US/images/sevenInchScreenshots/tablet7_bottom.png" width="220" /> |
+
+#### 10-inch tablet
+
+| Top | Middle | Bottom (default) |
+| :---: | :---: | :---: |
+| <img src="example/screenshots/en-US/images/tenInchScreenshots/tablet10_top.png" width="240" /> | <img src="example/screenshots/en-US/images/tenInchScreenshots/tablet10_middle.png" width="240" /> | <img src="example/screenshots/en-US/images/tenInchScreenshots/tablet10_bottom.png" width="240" /> |
+
+#### Apple iPhone 6.7"
+
+| Top | Middle | Bottom (default) |
+| :---: | :---: | :---: |
+| <img src="example/screenshots/en-US/iphone67/apple_top.png" width="180" /> | <img src="example/screenshots/en-US/iphone67/apple_middle.png" width="180" /> | <img src="example/screenshots/en-US/iphone67/apple_bottom.png" width="180" /> |
 
 ```kotlin
-class PhoneExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
-    @Test fun counter() = screenshot(
-        locales = listOf("en-US", "pt-BR"),
-        titleRes = R.string.screenshot_counter_title,
-        descriptionRes = R.string.screenshot_counter_desc,
-    ) { CounterScreen(count = 42) }
-}
-```
-
-### Phone with custom style
-
-<img src="example/screenshots/en-US/images/phoneScreenshots/counter_styled.png" width="280" />
-
-```kotlin
-class PhoneStyledExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
-    @Test fun counter_styled() = screenshot(
-        locales = listOf("en-US", "pt-BR"),
-        titleRes = R.string.screenshot_styled_title,
-        descriptionRes = R.string.screenshot_styled_desc,
-        style = ScreenshotStyle(
-            mockupPosition = MockupPosition.Middle,
-            mockupOffset = DpOffset(x = 100.dp, y = 32.dp),
-            background = { MarketingBackground() },
-            title = { text -> StyledTitle(text) },
-            description = { text -> StyledDescription(text) },
-        ),
-    ) { CounterScreen(count = 42) }
-}
+// One line to change the position:
+@Test fun home_top() = screenshot(
+    title = "Mockup at top",
+    description = "Title and description below the device",
+    style = ScreenshotStyle(mockupPosition = MockupPosition.Top),
+) { HomeScreen() }
 ```
 
 ### Wear OS
 
 <img src="example/screenshots/en-US/images/wearScreenshots/counter.png" width="240" />
 
+Wear screenshots have no title/description banner, so `mockupPosition` doesn't apply.
+
+### Custom style (composable background + title + description)
+
+<img src="example/screenshots/en-US/images/phoneScreenshots/counter_styled.png" width="280" />
+
 ```kotlin
-class WearExampleTest : StoreScreenshotsTest(FormFactor.Wear) {
-    @Test fun counter() = screenshot(
-        locales = listOf("en-US", "pt-BR"),
-        backgroundColor = Color.Black,
-    ) { WearCounterScreen(count = 42) }
-}
+@Test fun counter_styled() = screenshot(
+    titleRes = R.string.screenshot_styled_title,
+    descriptionRes = R.string.screenshot_styled_desc,
+    style = ScreenshotStyle(
+        mockupPosition = MockupPosition.Middle,
+        mockupOffset = DpOffset(x = 100.dp, y = 32.dp),
+        background = { MarketingBackground() },
+        title = { text -> StyledTitle(text) },
+        description = { text -> StyledDescription(text) },
+    ),
+) { CounterScreen(count = 42) }
 ```
-
-### 7-inch tablet
-
-<img src="example/screenshots/en-US/images/sevenInchScreenshots/counter.png" width="320" />
-
-### 10-inch tablet
-
-<img src="example/screenshots/en-US/images/tenInchScreenshots/counter.png" width="360" />
-
-### Apple App Store (iPhone 6.7")
-
-<img src="example/screenshots/en-US/iphone67/counter.png" width="260" />
 
 ## Releasing
 
