@@ -54,11 +54,8 @@ private fun ColumnScope.IPhoneMockup(
     clock: String,
     content: @Composable () -> Unit,
 ) {
-    // weight(1f) + aspectRatio lets the device shrink to whatever vertical space is left
-    // after the title/description, avoiding overflow on the tall 1290x2796 canvas.
     Box(
         modifier = externalModifier
-            .weight(1f, fill = false)
             .fillMaxHeight()
             .aspectRatio(1290f / 2796f)
     ) {

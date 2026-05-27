@@ -56,7 +56,6 @@ private fun ColumnScope.TabletMockup(
 ) {
     Box(
         modifier = externalModifier
-            .weight(1f, fill = false)
             .fillMaxWidth()
             .aspectRatio(aspectRatio)
             .clip(RoundedCornerShape(28.dp))

@@ -57,7 +57,7 @@ private fun ColumnScope.LaptopMockup(
     content: @Composable () -> Unit,
 ) {
     Column(
-        modifier = externalModifier.weight(1f, fill = false).fillMaxWidth(),
+        modifier = externalModifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // Screen

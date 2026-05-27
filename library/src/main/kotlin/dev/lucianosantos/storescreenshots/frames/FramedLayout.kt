@@ -93,10 +93,14 @@ internal fun FramedLayout(
                 .padding(horizontal = horizontalPadding, vertical = verticalPadding),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            // Top/Bottom: mockup gets weight so it fills remaining space after title/desc.
+            // Middle: mockup takes intrinsic size; weighted spacers center it.
+            val weightedOffset = offsetModifier.weight(1f, fill = false)
+
             when (style.mockupPosition) {
                 MockupPosition.Top -> {
                     if (oy < 0.dp) Spacer(Modifier.height(-oy))
-                    mockup(offsetModifier)
+                    mockup(weightedOffset)
                     if (oy > 0.dp) Spacer(Modifier.height(oy))
                     Spacer(Modifier.height(24.dp))
                     titleSlot()
@@ -118,7 +122,7 @@ internal fun FramedLayout(
                     descriptionSlot()
                     Spacer(Modifier.height(24.dp))
                     if (oy < 0.dp) Spacer(Modifier.height(-oy))
-                    mockup(offsetModifier)
+                    mockup(weightedOffset)
                     if (oy > 0.dp) Spacer(Modifier.height(oy))
                 }
             }
