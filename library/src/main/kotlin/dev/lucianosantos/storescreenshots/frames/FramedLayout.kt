@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -41,16 +42,12 @@ internal fun FramedLayout(
     descriptionFontSize: TextUnit = 16.sp,
     mockup: @Composable ColumnScope.(externalModifier: Modifier) -> Unit,
 ) {
-    // Use layout-affecting padding instead of visual-only offset() so the Column
-    // allocates space for the shift and text doesn't overlap the moved device.
+    // X offset: visual-only (Modifier.offset) so the device keeps its full size and crops
+    // off the canvas edge. Y offset: layout-affecting (Spacer) so title/description don't
+    // overlap the shifted device.
     val ox = style.mockupOffset.x
     val oy = style.mockupOffset.y
-    val offsetModifier = Modifier.padding(
-        start = if (ox > 0.dp) ox else 0.dp,
-        end = if (ox < 0.dp) -ox else 0.dp,
-        top = if (oy > 0.dp) oy else 0.dp,
-        bottom = if (oy < 0.dp) -oy else 0.dp,
-    )
+    val offsetModifier = Modifier.offset(x = ox)
     Box(modifier = Modifier.fillMaxSize().background(backgroundColor)) {
         style.background?.invoke()
 
@@ -98,7 +95,9 @@ internal fun FramedLayout(
         ) {
             when (style.mockupPosition) {
                 MockupPosition.Top -> {
+                    if (oy < 0.dp) Spacer(Modifier.height(-oy))
                     mockup(offsetModifier)
+                    if (oy > 0.dp) Spacer(Modifier.height(oy))
                     Spacer(Modifier.height(24.dp))
                     titleSlot()
                     if (title.isNotEmpty() && description.isNotEmpty()) Spacer(Modifier.height(12.dp))
@@ -107,7 +106,9 @@ internal fun FramedLayout(
                 MockupPosition.Middle -> {
                     titleSlot()
                     Spacer(Modifier.weight(1f))
+                    if (oy > 0.dp) Spacer(Modifier.height(oy))
                     mockup(offsetModifier)
+                    if (oy < 0.dp) Spacer(Modifier.height(-oy))
                     Spacer(Modifier.weight(1f))
                     descriptionSlot()
                 }
@@ -116,7 +117,9 @@ internal fun FramedLayout(
                     if (title.isNotEmpty() && description.isNotEmpty()) Spacer(Modifier.height(12.dp))
                     descriptionSlot()
                     Spacer(Modifier.height(24.dp))
+                    if (oy < 0.dp) Spacer(Modifier.height(-oy))
                     mockup(offsetModifier)
+                    if (oy > 0.dp) Spacer(Modifier.height(oy))
                 }
             }
         }
