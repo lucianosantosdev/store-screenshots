@@ -178,31 +178,40 @@ For complete control, use `customScreenshot {}`. You get a `ScreenshotScope` wit
 <img src="example/screenshots/en-US/images/phoneScreenshots/custom_layout.png" width="280" />
 
 ```kotlin
-@Test fun custom_layout() = customScreenshot {
+// Shared layout in src/main/ (used by both test and preview)
+@Composable
+fun CustomScreenshotLayout(mockup: @Composable () -> Unit) {
     Box(Modifier.fillMaxSize().background(Color(0xFF0A0A0F))) {
-        // Diagonal purple accent stripe behind the mockup
-        Box(
-            Modifier.fillMaxWidth().height(300.dp)
-                .offset(x = (-40).dp, y = 520.dp).rotate(-12f)
-                .background(Brush.horizontalGradient(listOf(Color(0xFF6D28D9), Color(0xFF8B5CF6))))
-        )
-        Column(Modifier.fillMaxSize().padding(start = 28.dp, end = 28.dp, top = 64.dp, bottom = 40.dp)) {
-            Text(
-                buildAnnotatedString {
-                    withStyle(SpanStyle(color = Color.White)) { append("STORE\nSCREENSHOTS\n") }
-                    withStyle(SpanStyle(color = Color(0xFF8B5CF6))) { append("TEMPLATE.") }
-                },
-                fontSize = 42.sp, fontWeight = FontWeight.Black, fontStyle = FontStyle.Italic,
-            )
-            Spacer(Modifier.height(32.dp))
-            Mockup(Modifier.weight(1f).offset(x = 60.dp, y = 20.dp).rotate(12f)) {
-                CounterScreen(count = 42)
-            }
-            Spacer(Modifier.height(24.dp))
+        // Layer 1: diagonal purple stripe
+        Box(Modifier.fillMaxWidth().height(300.dp).offset(x = (-40).dp, y = 520.dp)
+            .rotate(-12f).background(Brush.horizontalGradient(
+                listOf(Color(0xFF6D28D9), Color(0xFF7C3AED), Color(0xFF8B5CF6)))))
+        // Layer 2: rotated device mockup
+        Box(Modifier.align(Alignment.CenterEnd).fillMaxWidth(0.85f)
+            .offset(x = 60.dp, y = 80.dp).rotate(12f)) { mockup() }
+        // Layer 3: text on top
+        Column(Modifier.fillMaxSize().padding(28.dp).padding(top = 36.dp, bottom = 12.dp)) {
+            Text("STORE\nSCREENSHOTS", color = Color.White, fontSize = 42.sp,
+                fontWeight = FontWeight.Black, fontStyle = FontStyle.Italic)
+            Text("TEMPLATE", Modifier.background(Color.White).padding(horizontal = 12.dp),
+                color = Color(0xFF8B5CF6), fontSize = 42.sp, fontWeight = FontWeight.Black)
+            Spacer(Modifier.weight(1f))
             Text("BY STORE-SCREENSHOTS", Modifier.align(Alignment.CenterHorizontally),
                 color = Color.White, fontSize = 13.sp, letterSpacing = 3.sp)
         }
     }
+}
+
+// Test — src/screenshots/
+@Test fun custom_layout() = customScreenshot {
+    CustomScreenshotLayout { Mockup { CounterScreen(count = 42) } }
+}
+
+// Preview — src/debug/
+@PhoneScreenshotPreview
+@Composable
+fun CustomLayoutPreview() = CustomScreenshotLayout {
+    DeviceMockup(FormFactor.Phone) { CounterScreen(count = 42) }
 }
 ```
 
