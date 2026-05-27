@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -47,7 +48,9 @@ internal fun FramedLayout(
     // overlap the shifted device.
     val ox = style.mockupOffset.x
     val oy = style.mockupOffset.y
-    val offsetModifier = Modifier.offset(x = ox)
+    val offsetModifier = Modifier
+        .offset(x = ox)
+        .rotate(style.mockupRotation)
     Box(modifier = Modifier.fillMaxSize().background(backgroundColor)) {
         style.background?.invoke()
 

@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 data class ScreenshotStyle(
     val mockupPosition: MockupPosition = MockupPosition.Bottom,
     val mockupOffset: DpOffset = DpOffset(0.dp, 0.dp),
+    val mockupRotation: Float = 0f,
     val fontFamily: FontFamily = FontFamily.Default,
     val titleFontFamily: FontFamily = FontFamily.Default,
     val descriptionFontFamily: FontFamily = FontFamily.Default,
