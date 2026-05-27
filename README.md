@@ -139,7 +139,6 @@ storeScreenshots {
 | `Tablet7` | 1200 x 1920 | `sevenInchScreenshots` |
 | `Tablet10` | 1600 x 2560 | `tenInchScreenshots` |
 | `AppleIPhone67` | 1290 x 2796 | `iphone67` |
-| `Desktop` | 1440 x 900 | `desktopScreenshots` |
 
 ## Styling
 
@@ -194,7 +193,6 @@ fun HomePreview() = ScreenshotPreview(
 | `@Tablet7ScreenshotPreview` | 600 x 960 dp |
 | `@Tablet10ScreenshotPreview` | 800 x 1280 dp |
 | `@AppleIPhone67ScreenshotPreview` | 430 x 932 dp |
-| `@DesktopScreenshotPreview` | 1440 x 900 dp |
 | `@AllScreenshotPreviews` | All five at once |
 
 Previews go in `src/debug/` (Studio only renders debug variant). Tests go in `src/screenshots/`. Shared composables go in `src/main/`.
@@ -230,12 +228,6 @@ The [`example/`](example) module generates screenshots from the same `CounterScr
 | Top | Middle | Bottom (default) |
 | :---: | :---: | :---: |
 | <img src="example/screenshots/en-US/iphone67/apple_top.png" width="180" /> | <img src="example/screenshots/en-US/iphone67/apple_middle.png" width="180" /> | <img src="example/screenshots/en-US/iphone67/apple_bottom.png" width="180" /> |
-
-#### Desktop (1440x900)
-
-| Top | Middle | Bottom (default) |
-| :---: | :---: | :---: |
-| <img src="example/screenshots/en-US/desktopScreenshots/desktop_top.png" width="320" /> | <img src="example/screenshots/en-US/desktopScreenshots/desktop_middle.png" width="320" /> | <img src="example/screenshots/en-US/desktopScreenshots/desktop_bottom.png" width="320" /> |
 
 ```kotlin
 // One line to change the position:
