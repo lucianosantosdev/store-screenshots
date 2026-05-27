@@ -100,6 +100,45 @@ class ScreenshotRule(
         }
     }
 
+    /**
+     * Fully custom layout — you control everything. The [ScreenshotScope] provides a `Mockup`
+     * composable for the device bezel; you place it wherever you want.
+     *
+     * ```kotlin
+     * @Test fun custom() = screenshot {
+     *     Box(Modifier.fillMaxSize().background(Color.Red)) {
+     *         Text("Custom title", Modifier.align(Alignment.TopCenter))
+     *         Mockup(Modifier.align(Alignment.Center)) { HomeScreen() }
+     *     }
+     * }
+     * ```
+     */
+    fun customScreenshot(
+        locales: List<String> = listOf("en-US"),
+        content: @Composable ScreenshotScope.() -> Unit,
+    ) {
+        val scope = ScreenshotScope(formFactor, style)
+        for (locale in locales) {
+            RuntimeEnvironment.setQualifiers(formFactor.qualifiers)
+            RuntimeEnvironment.setQualifiers("+${locale.toAndroidResourceQualifier()}")
+
+            val composeRule = createComposeRule()
+            composeRule.apply(
+                object : Statement() {
+                    override fun evaluate() {
+                        composeRule.setContent { scope.content() }
+                        composeRule.waitForIdle()
+                        composeRule.onRoot().captureRoboImage(
+                            filePath = outputPath(locale).absolutePath,
+                            roborazziOptions = RoborazziOptions(),
+                        )
+                    }
+                },
+                junitDescription,
+            ).evaluate()
+        }
+    }
+
     @Composable
     private fun renderFrame(
         title: String,
