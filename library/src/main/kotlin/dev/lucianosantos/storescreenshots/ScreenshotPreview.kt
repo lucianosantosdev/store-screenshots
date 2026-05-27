@@ -35,14 +35,7 @@ fun ScreenshotPreview(
     formFactor: FormFactor,
     title: String = "",
     description: String = "",
-    backgroundColor: Color = Screenshot.DEFAULT_BACKGROUND.let {
-        Color(
-            red = ((it shr 16) and 0xFF).toInt(),
-            green = ((it shr 8) and 0xFF).toInt(),
-            blue = (it and 0xFF).toInt(),
-            alpha = ((it shr 24) and 0xFF).toInt(),
-        )
-    },
+    backgroundColor: Color = Color(0xFF1F2937),
     contentColor: Color = Color.White,
     style: ScreenshotStyle = ScreenshotStyle(),
     content: @Composable () -> Unit,
