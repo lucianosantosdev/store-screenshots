@@ -4,16 +4,17 @@ Gradle plugin + Compose library for generating framed Play Store / App Store scr
 
 ## What it gives you
 
-- An `@Screenshot(locales = [...], title = "...", description = "...")` annotation
-- A `ScreenshotRule` JUnit rule that renders your composable inside a device frame at the exact pixel size each store expects
+- A `screenshot()` function that renders your composable inside a device frame at the exact pixel size each store expects
+- Localized titles via `R.string.*` resource IDs — one PNG per locale, automatic
 - A `screenshots` source set (auto-created by the plugin) so screenshot code lives separately from regular tests
-- Output written directly into the Fastlane metadata layout
+- Per-form-factor `@Preview` annotations for pixel-identical IDE previews
+- A `ScreenshotPreview` composable so previews match generated PNGs
 
 ## Quick start
 
 ### Option A — GitHub Packages (released versions)
 
-GitHub Packages always requires authentication, even for public packages. Add a personal-access token with `read:packages` scope to `~/.gradle/gradle.properties`:
+GitHub Packages requires authentication. Add a personal-access token with `read:packages` scope to `~/.gradle/gradle.properties`:
 
 ```properties
 gpr.user=your-github-username
@@ -60,7 +61,7 @@ dependencyResolutionManagement {
 
 ```kotlin
 pluginManagement {
-    includeBuild("path/to/store-screenshots")
+    includeBuild("path/to/store-screenshots/plugin")
 }
 includeBuild("path/to/store-screenshots")
 ```
@@ -78,20 +79,15 @@ plugins {
 ```kotlin
 class MyScreenshots : StoreScreenshotsTest(FormFactor.Phone) {
 
-    @Test
-    @Screenshot(
-        locales = ["en-US", "pt-BR"],
-        title = "Set up your workout",
-        description = "Pick sections, train and rest times",
-        backgroundColor = 0xFF1F2937,
-    )
-    fun settings() = capture { MySettingsScreen() }
+    @Test fun settings() = screenshot(
+        locales = listOf("en-US", "pt-BR"),
+        titleRes = R.string.screenshot_settings_title,
+        descriptionRes = R.string.screenshot_settings_desc,
+    ) { MySettingsScreen() }
 }
 ```
 
-`StoreScreenshotsTest` bundles `@RunWith(RobolectricTestRunner)`, `@GraphicsMode(NATIVE)`, `@Config(sdk = [35], application = StoreScreenshotsStubApplication)`, and a `@get:Rule ScreenshotRule`. You only need your own `@Config(application = …)` if your app's real `Application` class must be exercised — usually it shouldn't be, since DI/Firebase/etc setup typically crashes under Robolectric.
-
-Prefer the unbundled style? Apply `@get:Rule ScreenshotRule(FormFactor.Phone)` and `@RunWith(RobolectricTestRunner)` yourself, then call `screenshot.capture { … }` directly.
+`StoreScreenshotsTest` bundles `@RunWith(RobolectricTestRunner)`, `@GraphicsMode(NATIVE)`, `@Config(sdk = [35], application = StoreScreenshotsStubApplication)`, and a `@get:Rule ScreenshotRule`.
 
 Run with:
 
@@ -99,24 +95,39 @@ Run with:
 ./gradlew :mobile:storeScreenshots
 ```
 
-Output lands at `fastlane/metadata/android/{locale}/images/{phone|wear|sevenInch|tenInch}Screenshots/`.
+## screenshot() parameters
+
+Everything is driven by the `screenshot()` function — no annotations needed beyond `@Test`:
+
+```kotlin
+@Test fun home() = screenshot(
+    locales = listOf("en-US", "pt-BR"),   // one PNG per locale (default: en-US)
+    titleRes = R.string.screenshot_title,  // resolved per locale automatically
+    descriptionRes = R.string.screenshot_desc,
+    backgroundColor = Color(0xFF1F2937),  // banner background
+    contentColor = Color.White,           // banner text color
+    style = ScreenshotStyle(...),         // advanced styling (optional)
+) { HomeScreen() }
+```
+
+| Parameter | Purpose |
+| --- | --- |
+| `locales` | BCP-47 tags — one PNG per entry. Default `listOf("en-US")`. |
+| `title` / `description` | Raw string headline/sub-headline. |
+| `titleRes` / `descriptionRes` | `R.string.*` resource ID, resolved per locale. Takes precedence over raw strings. |
+| `backgroundColor` | Banner background color. Default dark gray. |
+| `contentColor` | Banner text color. Default white. |
+| `style` | `ScreenshotStyle` for advanced customization. |
 
 ## Custom output directory
 
-By default, screenshots land in `build/outputs/store-screenshots/{locale}/images/{subdir}/` (Android form factors) or `{locale}/{subdir}/` (Apple). To write directly into Fastlane's metadata layout:
+By default, screenshots land in `build/outputs/store-screenshots/{locale}/images/{subdir}/`. To write into Fastlane's layout:
 
 ```kotlin
 storeScreenshots {
-    // Android Play Store — matches what `fastlane supply` expects:
     destDir = rootProject.layout.projectDirectory.dir("fastlane/metadata/android")
     // → fastlane/metadata/android/{locale}/images/phoneScreenshots/*.png
 }
-```
-
-For Apple App Store, point at the Fastlane snapshots root instead:
-```kotlin
-    destDir = rootProject.layout.projectDirectory.dir("fastlane/screenshots")
-    // → fastlane/screenshots/{locale}/iphone67/*.png
 ```
 
 ## Supported form factors
@@ -127,44 +138,68 @@ For Apple App Store, point at the Fastlane snapshots root instead:
 | `Wear` | 384 x 384 | `wearScreenshots` |
 | `Tablet7` | 1200 x 1920 | `sevenInchScreenshots` |
 | `Tablet10` | 1600 x 2560 | `tenInchScreenshots` |
-| `AppleIPhone67` | 1290 x 2796 | `fastlane/screenshots/{locale}/iphone67` |
+| `AppleIPhone67` | 1290 x 2796 | `iphone67` |
 
 ## Styling
 
-Pass a `ScreenshotStyle` to `StoreScreenshotsTest` (or `ScreenshotRule`) to customize the frame:
+Pass a `ScreenshotStyle` to `StoreScreenshotsTest` (class-level default) or to `screenshot(style = …)` (per-method override):
 
 ```kotlin
-class StyledScreenshots : StoreScreenshotsTest(
-    formFactor = FormFactor.Phone,
+@Test fun home() = screenshot(
+    titleRes = R.string.screenshot_title,
     style = ScreenshotStyle(
-        mockupPosition = MockupPosition.Middle,        // Top / Middle / Bottom
-        fontFamily = FontFamily.Serif,                  // applied to default title/description
-        background = { MyMarketingBackground() },       // composable, replaces backgroundColor
-        title = { text -> StyledTitle(text) },          // composable, replaces default Text
-        description = { text -> StyledDescription(text) },
+        mockupPosition = MockupPosition.Middle,
+        mockupOffset = DpOffset(x = 24.dp, y = 32.dp),
+        showStatusBar = true,
+        statusBarClock = "9:41",
+        titleFontFamily = FontFamily.Serif,
+        descriptionFontFamily = FontFamily.Monospace,
+        background = { MyGradientBackground() },
+        title = { text -> MyStyledTitle(text) },
+        description = { text -> MyStyledDescription(text) },
     ),
-)
+) { HomeScreen() }
 ```
 
 | Option | Purpose |
 | --- | --- |
-| `mockupPosition` | Device frame at `Top`, `Middle`, or `Bottom` (default) of the canvas. |
-| `mockupOffset` | `DpOffset(x, y)` nudge applied after positioning. Useful for cropping the device into a canvas edge or peeking it off-screen. Visual only — doesn't change layout. |
-| `fontFamily` | Font for the default title/description Text composables. |
-| `background` | Composable rendered behind everything. Overrides `Screenshot.backgroundColor`. |
-| `title` / `description` | Full composable control over banner typography per-locale. |
+| `mockupPosition` | Device frame at `Top`, `Middle`, or `Bottom` (default). |
+| `mockupOffset` | `DpOffset(x, y)` — X crops off the canvas edge, Y reserves layout space so text doesn't overlap. |
+| `showStatusBar` | Show/hide the status bar on phone, tablet, and Apple mockups. Default `true`. |
+| `statusBarClock` | Clock text in the status bar. Default `"12:00"`. |
+| `titleFontFamily` / `descriptionFontFamily` | Font for the default title/description Text composables. |
+| `background` | Composable rendered behind everything. Overrides `backgroundColor`. |
+| `title` / `description` | Full composable control over banner text rendering. |
 
-The `@Screenshot` annotation's `backgroundColor` / `contentColor` stay as the simple path — set just those when a flat color and white text are all you need.
+## Previews
+
+Per-form-factor `@Preview` annotations bundle the right `widthDp`/`heightDp`:
+
+```kotlin
+// src/debug/ — Android Studio renders these
+@PhoneScreenshotPreview
+@Composable
+fun HomePreview() = ScreenshotPreview(
+    formFactor = FormFactor.Phone,
+    title = "Welcome home",
+    description = "Sign in to get started",
+) { HomeScreen() }
+```
+
+| Annotation | Dimensions |
+| --- | --- |
+| `@PhoneScreenshotPreview` | 411 x 914 dp |
+| `@WearScreenshotPreview` | 227 x 227 dp |
+| `@Tablet7ScreenshotPreview` | 600 x 960 dp |
+| `@Tablet10ScreenshotPreview` | 800 x 1280 dp |
+| `@AppleIPhone67ScreenshotPreview` | 430 x 932 dp |
+| `@AllScreenshotPreviews` | All five at once |
+
+Previews go in `src/debug/` (Studio only renders debug variant). Tests go in `src/screenshots/`. Shared composables go in `src/main/`.
 
 ## Examples
 
-The [`example/`](example) module generates one screenshot per form factor from the same `CounterScreen` composable. Source code is under `example/src/screenshots/kotlin/`.
-
-Run all of them with:
-
-```
-./gradlew :example:storeScreenshots
-```
+The [`example/`](example) module generates one screenshot per form factor from the same `CounterScreen` composable.
 
 ### Phone
 
@@ -172,40 +207,32 @@ Run all of them with:
 
 ```kotlin
 class PhoneExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
-
-    @Test
-    @Screenshot(
-        title = "Count anything, anywhere",
-        description = "A focused tap counter that gets out of your way",
-    )
-    fun counter() = capture { CounterScreen(count = 42) }
+    @Test fun counter() = screenshot(
+        locales = listOf("en-US", "pt-BR"),
+        titleRes = R.string.screenshot_counter_title,
+        descriptionRes = R.string.screenshot_counter_desc,
+    ) { CounterScreen(count = 42) }
 }
 ```
 
-### Phone with custom style (composable background + title + description)
+### Phone with custom style
 
 <img src="example/screenshots/en-US/images/phoneScreenshots/counter_styled.png" width="280" />
 
-Same `CounterScreen`, completely different framing via `ScreenshotStyle`:
-
 ```kotlin
-class PhoneStyledExampleTest : StoreScreenshotsTest(
-    formFactor = FormFactor.Phone,
-    style = ScreenshotStyle(
-        mockupPosition = MockupPosition.Middle,
-        mockupOffset = DpOffset(x = 24.dp, y = 32.dp),        // nudge down-right
-        fontFamily = FontFamily.Serif,
-        background = { MarketingBackground() },              // gradient + blobs
-        title = { text -> StyledTitle(text) },               // black sans-serif with shadow
-        description = { text -> StyledDescription(text) },   // monospace
-    ),
-) {
-    @Test
-    @Screenshot(
-        title = "Designed your way",
-        description = "Custom fonts · gradient backgrounds · centered devices · all from one ScreenshotStyle",
-    )
-    fun counter_styled() = capture { CounterScreen(count = 42) }
+class PhoneStyledExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
+    @Test fun counter_styled() = screenshot(
+        locales = listOf("en-US", "pt-BR"),
+        titleRes = R.string.screenshot_styled_title,
+        descriptionRes = R.string.screenshot_styled_desc,
+        style = ScreenshotStyle(
+            mockupPosition = MockupPosition.Middle,
+            mockupOffset = DpOffset(x = 100.dp, y = 32.dp),
+            background = { MarketingBackground() },
+            title = { text -> StyledTitle(text) },
+            description = { text -> StyledDescription(text) },
+        ),
+    ) { CounterScreen(count = 42) }
 }
 ```
 
@@ -215,10 +242,10 @@ class PhoneStyledExampleTest : StoreScreenshotsTest(
 
 ```kotlin
 class WearExampleTest : StoreScreenshotsTest(FormFactor.Wear) {
-
-    @Test
-    @Screenshot(backgroundColor = 0xFF000000)
-    fun counter() = capture { WearCounterScreen(count = 42) }
+    @Test fun counter() = screenshot(
+        locales = listOf("en-US", "pt-BR"),
+        backgroundColor = Color.Black,
+    ) { WearCounterScreen(count = 42) }
 }
 ```
 
@@ -226,58 +253,18 @@ class WearExampleTest : StoreScreenshotsTest(FormFactor.Wear) {
 
 <img src="example/screenshots/en-US/images/sevenInchScreenshots/counter.png" width="320" />
 
-```kotlin
-class Tablet7ExampleTest : StoreScreenshotsTest(FormFactor.Tablet7) {
-
-    @Test
-    @Screenshot(
-        title = "Built for every screen",
-        description = "The same Compose UI, framed for 7-inch tablets",
-    )
-    fun counter() = capture { CounterScreen(count = 42) }
-}
-```
-
 ### 10-inch tablet
 
 <img src="example/screenshots/en-US/images/tenInchScreenshots/counter.png" width="360" />
-
-```kotlin
-class Tablet10ExampleTest : StoreScreenshotsTest(FormFactor.Tablet10) {
-
-    @Test
-    @Screenshot(
-        title = "Big screen, same code",
-        description = "10-inch layout uses identical Compose UI",
-    )
-    fun counter() = capture { CounterScreen(count = 42) }
-}
-```
 
 ### Apple App Store (iPhone 6.7")
 
 <img src="example/screenshots/en-US/iphone67/counter.png" width="260" />
 
-```kotlin
-class AppleExampleTest : StoreScreenshotsTest(FormFactor.AppleIPhone67) {
-
-    @Test
-    @Screenshot(
-        title = "Ship cross-store",
-        description = "App Store Connect 6.7\" size, ready to upload",
-    )
-    fun counter() = capture { CounterScreen(count = 42) }
-}
-```
-
 ## Releasing
 
-Push a tag matching `v[0-9]+.[0-9]+.[0-9]+` (e.g. `v0.2.0`). The release workflow builds and publishes the library, plugin, and plugin marker artifact to GitHub Packages.
+Push a tag matching `v[0-9]+.[0-9]+.[0-9]+` (e.g. `v0.2.0`). The release workflow publishes to GitHub Packages.
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
-## Status
-
-Pre-1.0. Used by the [Interval Timer](https://github.com/lucianosantosdev/IntervalTimer) app.

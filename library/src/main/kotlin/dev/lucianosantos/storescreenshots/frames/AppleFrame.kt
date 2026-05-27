@@ -43,13 +43,15 @@ fun AppleFrame(
         verticalPadding = 28.dp,
         titleFontSize = 26.sp,
         descriptionFontSize = 14.sp,
-        mockup = { externalModifier -> IPhoneMockup(externalModifier, content) }
+        mockup = { externalModifier -> IPhoneMockup(externalModifier, style.showStatusBar, style.statusBarClock, content) }
     )
 }
 
 @Composable
 private fun ColumnScope.IPhoneMockup(
     externalModifier: Modifier,
+    showStatusBar: Boolean,
+    clock: String,
     content: @Composable () -> Unit,
 ) {
     // weight(1f) + aspectRatio lets the device shrink to whatever vertical space is left
@@ -72,6 +74,7 @@ private fun ColumnScope.IPhoneMockup(
                 .clip(RoundedCornerShape(50.dp))
         ) {
             Box(modifier = Modifier.fillMaxSize()) { content() }
+            if (showStatusBar) StatusBar(clock = clock, modifier = Modifier.align(Alignment.TopCenter))
             DynamicIsland(modifier = Modifier.align(Alignment.TopCenter))
         }
     }
