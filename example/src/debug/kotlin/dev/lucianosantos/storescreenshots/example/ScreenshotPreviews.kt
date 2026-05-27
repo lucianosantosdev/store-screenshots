@@ -3,6 +3,7 @@ package dev.lucianosantos.storescreenshots.example
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import dev.lucianosantos.storescreenshots.AppleIPhone67ScreenshotPreview
+import dev.lucianosantos.storescreenshots.DeviceMockup
 import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.PhoneScreenshotPreview
 import dev.lucianosantos.storescreenshots.ScreenshotPreview
@@ -58,3 +59,8 @@ fun StyledPreview() = ScreenshotPreview(
     style = styledScreenshotStyle,
 ) { CounterScreen(count = 42) }
 
+@PhoneScreenshotPreview
+@Composable
+fun CustomLayoutPreview() = CustomScreenshotLayout {
+    DeviceMockup(formFactor = FormFactor.Phone) { CounterScreen(count = 42) }
+}
