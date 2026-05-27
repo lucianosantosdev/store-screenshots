@@ -62,130 +62,123 @@ private fun SwarovskiFrame(content: @Composable () -> Unit) {
                         )
                     )
                 )
-                .padding(14.dp)
-                .clip(RoundedCornerShape(30.dp))
+                .padding(16.dp)
+                .clip(RoundedCornerShape(28.dp))
                 .background(Color.Black)
                 .padding(3.dp)
-                .clip(RoundedCornerShape(28.dp))
+                .clip(RoundedCornerShape(26.dp))
         ) {
             content()
         }
 
-        // ---- TOP EDGE ----
-        Gem(6.dp, diamond, Modifier.align(Alignment.TopCenter).offset(x = (-100).dp, y = (-3).dp))
-        Gem(5.dp, ruby, Modifier.align(Alignment.TopCenter).offset(x = (-78).dp, y = (-2).dp))
-        Gem(7.dp, sapphire, Modifier.align(Alignment.TopCenter).offset(x = (-54).dp, y = (-3).dp))
-        Gem(5.dp, emerald, Modifier.align(Alignment.TopCenter).offset(x = (-32).dp, y = (-2).dp))
-        Gem(8.dp, diamond, Modifier.align(Alignment.TopCenter).offset(x = (-10).dp, y = (-4).dp))
-        Gem(6.dp, topaz, Modifier.align(Alignment.TopCenter).offset(x = 12.dp, y = (-2).dp))
-        Gem(5.dp, pink, Modifier.align(Alignment.TopCenter).offset(x = 34.dp, y = (-3).dp))
-        Gem(7.dp, aqua, Modifier.align(Alignment.TopCenter).offset(x = 56.dp, y = (-2).dp))
-        Gem(5.dp, ruby, Modifier.align(Alignment.TopCenter).offset(x = 78.dp, y = (-3).dp))
-        Gem(6.dp, diamond, Modifier.align(Alignment.TopCenter).offset(x = 100.dp, y = (-2).dp))
+        // ---- TOP EDGE — gems inset into the gold border ----
+        Gem(7.dp, diamond, Modifier.align(Alignment.TopCenter).offset(x = (-95).dp, y = 4.dp))
+        Gem(6.dp, ruby, Modifier.align(Alignment.TopCenter).offset(x = (-72).dp, y = 3.dp))
+        Gem(8.dp, sapphire, Modifier.align(Alignment.TopCenter).offset(x = (-48).dp, y = 4.dp))
+        Gem(6.dp, emerald, Modifier.align(Alignment.TopCenter).offset(x = (-26).dp, y = 3.dp))
+        Gem(9.dp, diamond, Modifier.align(Alignment.TopCenter).offset(x = 0.dp, y = 4.dp))
+        Gem(6.dp, topaz, Modifier.align(Alignment.TopCenter).offset(x = 26.dp, y = 3.dp))
+        Gem(8.dp, pink, Modifier.align(Alignment.TopCenter).offset(x = 48.dp, y = 4.dp))
+        Gem(6.dp, aqua, Modifier.align(Alignment.TopCenter).offset(x = 72.dp, y = 3.dp))
+        Gem(7.dp, ruby, Modifier.align(Alignment.TopCenter).offset(x = 95.dp, y = 4.dp))
 
         // ---- BOTTOM EDGE ----
-        Gem(6.dp, diamond, Modifier.align(Alignment.BottomCenter).offset(x = (-100).dp, y = 3.dp))
-        Gem(5.dp, amethyst, Modifier.align(Alignment.BottomCenter).offset(x = (-78).dp, y = 2.dp))
-        Gem(7.dp, ruby, Modifier.align(Alignment.BottomCenter).offset(x = (-54).dp, y = 3.dp))
-        Gem(5.dp, topaz, Modifier.align(Alignment.BottomCenter).offset(x = (-32).dp, y = 2.dp))
-        Gem(8.dp, diamond, Modifier.align(Alignment.BottomCenter).offset(x = (-10).dp, y = 4.dp))
-        Gem(6.dp, sapphire, Modifier.align(Alignment.BottomCenter).offset(x = 12.dp, y = 2.dp))
-        Gem(5.dp, emerald, Modifier.align(Alignment.BottomCenter).offset(x = 34.dp, y = 3.dp))
-        Gem(7.dp, pink, Modifier.align(Alignment.BottomCenter).offset(x = 56.dp, y = 2.dp))
-        Gem(5.dp, aqua, Modifier.align(Alignment.BottomCenter).offset(x = 78.dp, y = 3.dp))
-        Gem(6.dp, diamond, Modifier.align(Alignment.BottomCenter).offset(x = 100.dp, y = 2.dp))
+        Gem(7.dp, amethyst, Modifier.align(Alignment.BottomCenter).offset(x = (-95).dp, y = (-4).dp))
+        Gem(6.dp, diamond, Modifier.align(Alignment.BottomCenter).offset(x = (-72).dp, y = (-3).dp))
+        Gem(8.dp, ruby, Modifier.align(Alignment.BottomCenter).offset(x = (-48).dp, y = (-4).dp))
+        Gem(6.dp, topaz, Modifier.align(Alignment.BottomCenter).offset(x = (-26).dp, y = (-3).dp))
+        Gem(9.dp, diamond, Modifier.align(Alignment.BottomCenter).offset(x = 0.dp, y = (-4).dp))
+        Gem(6.dp, sapphire, Modifier.align(Alignment.BottomCenter).offset(x = 26.dp, y = (-3).dp))
+        Gem(8.dp, emerald, Modifier.align(Alignment.BottomCenter).offset(x = 48.dp, y = (-4).dp))
+        Gem(6.dp, pink, Modifier.align(Alignment.BottomCenter).offset(x = 72.dp, y = (-3).dp))
+        Gem(7.dp, aqua, Modifier.align(Alignment.BottomCenter).offset(x = 95.dp, y = (-4).dp))
 
         // ---- LEFT EDGE ----
-        Gem(5.dp, emerald, Modifier.align(Alignment.CenterStart).offset(x = (-3).dp, y = (-200).dp))
-        Gem(7.dp, diamond, Modifier.align(Alignment.CenterStart).offset(x = (-4).dp, y = (-170).dp))
-        Gem(5.dp, ruby, Modifier.align(Alignment.CenterStart).offset(x = (-3).dp, y = (-140).dp))
-        Gem(6.dp, sapphire, Modifier.align(Alignment.CenterStart).offset(x = (-3).dp, y = (-110).dp))
-        Gem(5.dp, diamond, Modifier.align(Alignment.CenterStart).offset(x = (-4).dp, y = (-80).dp))
-        Gem(7.dp, topaz, Modifier.align(Alignment.CenterStart).offset(x = (-3).dp, y = (-50).dp))
-        Gem(5.dp, pink, Modifier.align(Alignment.CenterStart).offset(x = (-3).dp, y = (-20).dp))
-        Gem(6.dp, diamond, Modifier.align(Alignment.CenterStart).offset(x = (-4).dp, y = 10.dp))
-        Gem(5.dp, amethyst, Modifier.align(Alignment.CenterStart).offset(x = (-3).dp, y = 40.dp))
-        Gem(7.dp, aqua, Modifier.align(Alignment.CenterStart).offset(x = (-3).dp, y = 70.dp))
-        Gem(5.dp, diamond, Modifier.align(Alignment.CenterStart).offset(x = (-4).dp, y = 100.dp))
-        Gem(6.dp, ruby, Modifier.align(Alignment.CenterStart).offset(x = (-3).dp, y = 130.dp))
-        Gem(5.dp, emerald, Modifier.align(Alignment.CenterStart).offset(x = (-3).dp, y = 160.dp))
-        Gem(7.dp, diamond, Modifier.align(Alignment.CenterStart).offset(x = (-4).dp, y = 190.dp))
+        Gem(6.dp, emerald, Modifier.align(Alignment.CenterStart).offset(x = 4.dp, y = (-200).dp))
+        Gem(7.dp, diamond, Modifier.align(Alignment.CenterStart).offset(x = 3.dp, y = (-170).dp))
+        Gem(6.dp, ruby, Modifier.align(Alignment.CenterStart).offset(x = 4.dp, y = (-140).dp))
+        Gem(7.dp, sapphire, Modifier.align(Alignment.CenterStart).offset(x = 3.dp, y = (-110).dp))
+        Gem(6.dp, diamond, Modifier.align(Alignment.CenterStart).offset(x = 4.dp, y = (-80).dp))
+        Gem(7.dp, topaz, Modifier.align(Alignment.CenterStart).offset(x = 3.dp, y = (-50).dp))
+        Gem(6.dp, pink, Modifier.align(Alignment.CenterStart).offset(x = 4.dp, y = (-20).dp))
+        Gem(7.dp, diamond, Modifier.align(Alignment.CenterStart).offset(x = 3.dp, y = 10.dp))
+        Gem(6.dp, amethyst, Modifier.align(Alignment.CenterStart).offset(x = 4.dp, y = 40.dp))
+        Gem(7.dp, aqua, Modifier.align(Alignment.CenterStart).offset(x = 3.dp, y = 70.dp))
+        Gem(6.dp, diamond, Modifier.align(Alignment.CenterStart).offset(x = 4.dp, y = 100.dp))
+        Gem(7.dp, ruby, Modifier.align(Alignment.CenterStart).offset(x = 3.dp, y = 130.dp))
+        Gem(6.dp, emerald, Modifier.align(Alignment.CenterStart).offset(x = 4.dp, y = 160.dp))
+        Gem(7.dp, diamond, Modifier.align(Alignment.CenterStart).offset(x = 3.dp, y = 190.dp))
 
         // ---- RIGHT EDGE ----
-        Gem(5.dp, ruby, Modifier.align(Alignment.CenterEnd).offset(x = 3.dp, y = (-200).dp))
-        Gem(7.dp, diamond, Modifier.align(Alignment.CenterEnd).offset(x = 4.dp, y = (-170).dp))
-        Gem(5.dp, emerald, Modifier.align(Alignment.CenterEnd).offset(x = 3.dp, y = (-140).dp))
-        Gem(6.dp, amethyst, Modifier.align(Alignment.CenterEnd).offset(x = 3.dp, y = (-110).dp))
-        Gem(5.dp, diamond, Modifier.align(Alignment.CenterEnd).offset(x = 4.dp, y = (-80).dp))
-        Gem(7.dp, pink, Modifier.align(Alignment.CenterEnd).offset(x = 3.dp, y = (-50).dp))
-        Gem(5.dp, sapphire, Modifier.align(Alignment.CenterEnd).offset(x = 3.dp, y = (-20).dp))
-        Gem(6.dp, diamond, Modifier.align(Alignment.CenterEnd).offset(x = 4.dp, y = 10.dp))
-        Gem(5.dp, topaz, Modifier.align(Alignment.CenterEnd).offset(x = 3.dp, y = 40.dp))
-        Gem(7.dp, aqua, Modifier.align(Alignment.CenterEnd).offset(x = 3.dp, y = 70.dp))
-        Gem(5.dp, diamond, Modifier.align(Alignment.CenterEnd).offset(x = 4.dp, y = 100.dp))
-        Gem(6.dp, emerald, Modifier.align(Alignment.CenterEnd).offset(x = 3.dp, y = 130.dp))
-        Gem(5.dp, ruby, Modifier.align(Alignment.CenterEnd).offset(x = 3.dp, y = 160.dp))
-        Gem(7.dp, diamond, Modifier.align(Alignment.CenterEnd).offset(x = 4.dp, y = 190.dp))
+        Gem(6.dp, ruby, Modifier.align(Alignment.CenterEnd).offset(x = (-4).dp, y = (-200).dp))
+        Gem(7.dp, diamond, Modifier.align(Alignment.CenterEnd).offset(x = (-3).dp, y = (-170).dp))
+        Gem(6.dp, emerald, Modifier.align(Alignment.CenterEnd).offset(x = (-4).dp, y = (-140).dp))
+        Gem(7.dp, amethyst, Modifier.align(Alignment.CenterEnd).offset(x = (-3).dp, y = (-110).dp))
+        Gem(6.dp, diamond, Modifier.align(Alignment.CenterEnd).offset(x = (-4).dp, y = (-80).dp))
+        Gem(7.dp, pink, Modifier.align(Alignment.CenterEnd).offset(x = (-3).dp, y = (-50).dp))
+        Gem(6.dp, sapphire, Modifier.align(Alignment.CenterEnd).offset(x = (-4).dp, y = (-20).dp))
+        Gem(7.dp, diamond, Modifier.align(Alignment.CenterEnd).offset(x = (-3).dp, y = 10.dp))
+        Gem(6.dp, topaz, Modifier.align(Alignment.CenterEnd).offset(x = (-4).dp, y = 40.dp))
+        Gem(7.dp, aqua, Modifier.align(Alignment.CenterEnd).offset(x = (-3).dp, y = 70.dp))
+        Gem(6.dp, diamond, Modifier.align(Alignment.CenterEnd).offset(x = (-4).dp, y = 100.dp))
+        Gem(7.dp, emerald, Modifier.align(Alignment.CenterEnd).offset(x = (-3).dp, y = 130.dp))
+        Gem(6.dp, ruby, Modifier.align(Alignment.CenterEnd).offset(x = (-4).dp, y = 160.dp))
+        Gem(7.dp, diamond, Modifier.align(Alignment.CenterEnd).offset(x = (-3).dp, y = 190.dp))
 
         // ---- CORNERS — large statement gems ----
-        Gem(14.dp, diamond, Modifier.align(Alignment.TopStart).offset(x = 4.dp, y = 4.dp))
-        Gem(14.dp, diamond, Modifier.align(Alignment.TopEnd).offset(x = (-4).dp, y = 4.dp))
-        Gem(14.dp, diamond, Modifier.align(Alignment.BottomStart).offset(x = 4.dp, y = (-4).dp))
-        Gem(14.dp, diamond, Modifier.align(Alignment.BottomEnd).offset(x = (-4).dp, y = (-4).dp))
-
-        // ---- SPARKLE highlights — tiny white dots scattered on the border ----
-        Sparkle(Modifier.align(Alignment.TopCenter).offset(x = (-65).dp, y = 5.dp))
-        Sparkle(Modifier.align(Alignment.TopCenter).offset(x = 45.dp, y = 7.dp))
-        Sparkle(Modifier.align(Alignment.BottomCenter).offset(x = (-40).dp, y = (-6).dp))
-        Sparkle(Modifier.align(Alignment.BottomCenter).offset(x = 70.dp, y = (-5).dp))
-        Sparkle(Modifier.align(Alignment.CenterStart).offset(x = 6.dp, y = (-95).dp))
-        Sparkle(Modifier.align(Alignment.CenterStart).offset(x = 5.dp, y = 55.dp))
-        Sparkle(Modifier.align(Alignment.CenterEnd).offset(x = (-6).dp, y = (-60).dp))
-        Sparkle(Modifier.align(Alignment.CenterEnd).offset(x = (-5).dp, y = 120.dp))
-        Sparkle(Modifier.align(Alignment.TopStart).offset(x = 18.dp, y = 18.dp))
-        Sparkle(Modifier.align(Alignment.TopEnd).offset(x = (-18).dp, y = 18.dp))
-        Sparkle(Modifier.align(Alignment.BottomStart).offset(x = 18.dp, y = (-18).dp))
-        Sparkle(Modifier.align(Alignment.BottomEnd).offset(x = (-18).dp, y = (-18).dp))
+        Gem(16.dp, diamond, Modifier.align(Alignment.TopStart).offset(x = 6.dp, y = 6.dp))
+        Gem(16.dp, diamond, Modifier.align(Alignment.TopEnd).offset(x = (-6).dp, y = 6.dp))
+        Gem(16.dp, diamond, Modifier.align(Alignment.BottomStart).offset(x = 6.dp, y = (-6).dp))
+        Gem(16.dp, diamond, Modifier.align(Alignment.BottomEnd).offset(x = (-6).dp, y = (-6).dp))
     }
 }
 
 @Composable
 private fun Gem(size: Dp, color: Color, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .size(size)
-            .clip(CircleShape)
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(
-                        Color.White,
-                        Color.White.copy(alpha = 0.9f),
-                        color.copy(alpha = 0.8f),
-                        color,
-                        color.copy(alpha = 0.6f),
-                    ),
-                    radius = size.value * 2.5f,
-                )
-            )
-            .border(0.5.dp, gold.copy(alpha = 0.8f), CircleShape)
-    ) {
-        // Inner sparkle highlight
+    val glowSize = size * 3f
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        // Radial glow around the gem
         Box(
             Modifier
-                .size(size * 0.35f)
-                .offset(x = size * 0.15f, y = size * 0.1f)
+                .size(glowSize)
                 .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.9f))
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            color.copy(alpha = 0.5f),
+                            color.copy(alpha = 0.2f),
+                            Color.Transparent,
+                        )
+                    )
+                )
         )
+        // Gem body
+        Box(
+            Modifier
+                .size(size)
+                .clip(CircleShape)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            Color.White,
+                            Color.White.copy(alpha = 0.85f),
+                            color.copy(alpha = 0.7f),
+                            color,
+                            color.copy(alpha = 0.5f),
+                        ),
+                        radius = size.value * 3f,
+                    )
+                )
+                .border(0.5.dp, gold.copy(alpha = 0.7f), CircleShape)
+        ) {
+            // Inner sparkle highlight
+            Box(
+                Modifier
+                    .size(size * 0.3f)
+                    .offset(x = size * 0.12f, y = size * 0.08f)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.95f))
+            )
+        }
     }
-}
-
-@Composable
-private fun Sparkle(modifier: Modifier) {
-    Box(
-        modifier = modifier
-            .size(3.dp)
-            .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.85f))
-    )
 }
