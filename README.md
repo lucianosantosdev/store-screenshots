@@ -179,22 +179,28 @@ For complete control, use `customScreenshot {}`. You get a `ScreenshotScope` wit
 
 ```kotlin
 @Test fun custom_layout() = customScreenshot {
-    Box(
-        Modifier.fillMaxSize().background(
-            Brush.verticalGradient(listOf(Color(0xFF0F172A), Color(0xFF1E3A5F)))
+    Box(Modifier.fillMaxSize().background(Color(0xFF0A0A0F))) {
+        // Diagonal purple accent stripe behind the mockup
+        Box(
+            Modifier.fillMaxWidth().height(300.dp)
+                .offset(x = (-40).dp, y = 520.dp).rotate(-12f)
+                .background(Brush.horizontalGradient(listOf(Color(0xFF6D28D9), Color(0xFF8B5CF6))))
         )
-    ) {
-        Column(
-            Modifier.fillMaxSize().padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text("Fully custom layout", color = Color.White, fontSize = 28.sp)
-            Spacer(Modifier.height(8.dp))
-            Text("You place the Mockup wherever you want", color = Color.White.copy(alpha = 0.7f))
+        Column(Modifier.fillMaxSize().padding(start = 28.dp, end = 28.dp, top = 64.dp, bottom = 40.dp)) {
+            Text(
+                buildAnnotatedString {
+                    withStyle(SpanStyle(color = Color.White)) { append("STORE\nSCREENSHOTS\n") }
+                    withStyle(SpanStyle(color = Color(0xFF8B5CF6))) { append("TEMPLATE.") }
+                },
+                fontSize = 42.sp, fontWeight = FontWeight.Black, fontStyle = FontStyle.Italic,
+            )
+            Spacer(Modifier.height(32.dp))
+            Mockup(Modifier.weight(1f).offset(x = 60.dp, y = 20.dp).rotate(12f)) {
+                CounterScreen(count = 42)
+            }
             Spacer(Modifier.height(24.dp))
-            Mockup(Modifier.weight(1f)) { HomeScreen() }
-            Spacer(Modifier.height(16.dp))
-            Text("Footer text goes here too", color = Color(0xFF60A5FA))
+            Text("BY STORE-SCREENSHOTS", Modifier.align(Alignment.CenterHorizontally),
+                color = Color.White, fontSize = 13.sp, letterSpacing = 3.sp)
         }
     }
 }
