@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.RoborazziOptions
 import com.github.takahirom.roborazzi.captureRoboImage
 import dev.lucianosantos.storescreenshots.frames.AppleFrame
+import dev.lucianosantos.storescreenshots.frames.DesktopFrame
 import dev.lucianosantos.storescreenshots.frames.PhoneFrame
 import dev.lucianosantos.storescreenshots.frames.TabletFrame
 import dev.lucianosantos.storescreenshots.frames.WearFrame
@@ -115,6 +116,7 @@ class ScreenshotRule(
             FormFactor.Tablet7,
             FormFactor.Tablet10 -> TabletFrame(title, description, backgroundColor, contentColor, style, content = content)
             FormFactor.AppleIPhone67 -> AppleFrame(title, description, backgroundColor, contentColor, style, content)
+            FormFactor.Desktop -> DesktopFrame(title, description, backgroundColor, contentColor, style, content)
         }
     }
 
