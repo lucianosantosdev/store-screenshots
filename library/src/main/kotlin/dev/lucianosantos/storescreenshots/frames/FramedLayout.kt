@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -42,9 +41,15 @@ internal fun FramedLayout(
     descriptionFontSize: TextUnit = 16.sp,
     mockup: @Composable ColumnScope.(externalModifier: Modifier) -> Unit,
 ) {
-    val offsetModifier = Modifier.offset(
-        x = style.mockupOffset.x,
-        y = style.mockupOffset.y,
+    // Use layout-affecting padding instead of visual-only offset() so the Column
+    // allocates space for the shift and text doesn't overlap the moved device.
+    val ox = style.mockupOffset.x
+    val oy = style.mockupOffset.y
+    val offsetModifier = Modifier.padding(
+        start = if (ox > 0.dp) ox else 0.dp,
+        end = if (ox < 0.dp) -ox else 0.dp,
+        top = if (oy > 0.dp) oy else 0.dp,
+        bottom = if (oy < 0.dp) -oy else 0.dp,
     )
     Box(modifier = Modifier.fillMaxSize().background(backgroundColor)) {
         style.background?.invoke()
