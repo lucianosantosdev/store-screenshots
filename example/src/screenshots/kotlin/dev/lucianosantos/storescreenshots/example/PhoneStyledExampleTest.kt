@@ -43,7 +43,7 @@ private val styledStyle = ScreenshotStyle(
 class PhoneStyledExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
 
     @Test
-    fun counter_styled() = capture(
+    fun counter_styled() = screenshot(
         locales = listOf("en-US", "pt-BR"),
         titleRes = R.string.screenshot_styled_title,
         descriptionRes = R.string.screenshot_styled_desc,

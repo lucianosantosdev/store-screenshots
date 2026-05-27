@@ -10,7 +10,7 @@ import org.junit.Test
 class Tablet7ExampleTest : StoreScreenshotsTest(FormFactor.Tablet7) {
 
     @Test
-    fun counter() = capture(
+    fun counter() = screenshot(
         locales = listOf("en-US", "pt-BR"),
         titleRes = R.string.screenshot_tablet7_title,
         descriptionRes = R.string.screenshot_tablet7_desc,

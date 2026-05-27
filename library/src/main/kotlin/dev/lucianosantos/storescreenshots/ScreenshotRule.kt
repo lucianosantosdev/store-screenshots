@@ -25,7 +25,7 @@ import java.io.File
  *
  * ```kotlin
  * class HomeScreenshots : StoreScreenshotsTest(FormFactor.Phone) {
- *     @Test fun home() = capture(
+ *     @Test fun home() = screenshot(
  *         locales = listOf("en-US", "pt-BR"),
  *         titleRes = R.string.screenshot_home_title,
  *         descriptionRes = R.string.screenshot_home_desc,
@@ -60,7 +60,7 @@ class ScreenshotRule(
      * @param contentColor Foreground text color.
      * @param style Override the class-level style for just this screenshot.
      */
-    fun capture(
+    fun screenshot(
         locales: List<String> = listOf("en-US"),
         title: String = "",
         description: String = "",

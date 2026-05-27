@@ -11,7 +11,7 @@ import org.junit.Test
 class WearExampleTest : StoreScreenshotsTest(FormFactor.Wear) {
 
     @Test
-    fun counter() = capture(
+    fun counter() = screenshot(
         locales = listOf("en-US", "pt-BR"),
         backgroundColor = Color.Black,
     ) { WearCounterScreen(count = 42) }
