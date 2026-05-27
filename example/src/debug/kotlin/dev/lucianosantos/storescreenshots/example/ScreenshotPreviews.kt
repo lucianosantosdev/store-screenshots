@@ -3,6 +3,7 @@ package dev.lucianosantos.storescreenshots.example
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import dev.lucianosantos.storescreenshots.AppleIPhone67ScreenshotPreview
+import dev.lucianosantos.storescreenshots.DesktopScreenshotPreview
 import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.PhoneScreenshotPreview
 import dev.lucianosantos.storescreenshots.ScreenshotPreview
@@ -56,4 +57,12 @@ fun StyledPreview() = ScreenshotPreview(
     title = "Designed your way",
     description = "Custom fonts · gradient backgrounds · centered devices · all from one ScreenshotStyle",
     style = styledScreenshotStyle,
+) { CounterScreen(count = 42) }
+
+@DesktopScreenshotPreview
+@Composable
+fun DesktopPreview() = ScreenshotPreview(
+    formFactor = FormFactor.Desktop,
+    title = "Count anything, anywhere",
+    description = "A focused tap counter that gets out of your way",
 ) { CounterScreen(count = 42) }

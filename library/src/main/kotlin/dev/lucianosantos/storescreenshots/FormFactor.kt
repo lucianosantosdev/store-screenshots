@@ -61,4 +61,13 @@ enum class FormFactor(
         subdir = "iphone67",
         useImagesSubdir = false,
     ),
+
+    /** Desktop / web app screenshot. Landscape 1440x900 (common laptop resolution). */
+    Desktop(
+        widthPx = 1440,
+        heightPx = 900,
+        qualifiers = "w1440dp-h900dp-mdpi",
+        subdir = "desktopScreenshots",
+        useImagesSubdir = false,
+    ),
 }
