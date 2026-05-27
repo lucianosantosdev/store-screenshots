@@ -167,14 +167,13 @@ class ScreenshotRule(
     }
 
     private fun outputPath(): File {
-        val localeDir = File(outputRootDir, formFactor.rootRelativeDir).let { base ->
-            when (formFactor.rootRelativeDir) {
-                "fastlane/screenshots" -> File(base, "$currentLocale/${formFactor.fastlaneSubdir}")
-                else -> File(base, "$currentLocale/images/${formFactor.fastlaneSubdir}")
-            }
+        val subPath = if (formFactor.useImagesSubdir) {
+            "$currentLocale/images/${formFactor.subdir}"
+        } else {
+            "$currentLocale/${formFactor.subdir}"
         }
-        localeDir.mkdirs()
-        return File(localeDir, "$testMethodName.png")
+        val dir = File(outputRootDir, subPath).apply { mkdirs() }
+        return File(dir, "$testMethodName.png")
     }
 
     companion object {

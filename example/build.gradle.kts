@@ -32,7 +32,6 @@ kotlin {
 }
 
 storeScreenshots {
-    // Keep example PNGs inside this module so README links stay stable.
     destDir = layout.projectDirectory.dir("screenshots")
 }
 

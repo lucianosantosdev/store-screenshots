@@ -29,7 +29,7 @@ import java.util.Properties
 class StoreScreenshotsPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         val extension = target.extensions.create("storeScreenshots", StoreScreenshotsExtension::class.java)
-        extension.destDir.convention(target.rootProject.layout.projectDirectory)
+        extension.destDir.convention(target.layout.buildDirectory.dir("outputs/store-screenshots"))
 
         // Apply Roborazzi by class to avoid id-based plugin lookup, which doesn't resolve
         // when this plugin is consumed via composite build.
