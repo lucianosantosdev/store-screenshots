@@ -63,4 +63,22 @@ abstract class StoreScreenshotsTest(
         style: ScreenshotStyle = screenshot.style,
         content: @Composable () -> Unit,
     ) = screenshot.screenshot(locales, title, description, titleRes, descriptionRes, backgroundColor, contentColor, style, content)
+
+    /**
+     * Fully custom layout — you control everything. [ScreenshotScope] provides a `Mockup`
+     * composable for the device bezel; place it wherever you want.
+     *
+     * ```kotlin
+     * @Test fun custom() = screenshot {
+     *     Box(Modifier.fillMaxSize().background(Color.Red)) {
+     *         Text("Custom title")
+     *         Mockup { HomeScreen() }
+     *     }
+     * }
+     * ```
+     */
+    fun customScreenshot(
+        locales: List<String> = listOf("en-US"),
+        content: @Composable ScreenshotScope.() -> Unit,
+    ) = screenshot.customScreenshot(locales, content)
 }
