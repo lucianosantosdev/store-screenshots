@@ -29,11 +29,18 @@ class ScreenshotScope internal constructor(
     fun Mockup(
         modifier: Modifier = Modifier,
         content: @Composable () -> Unit,
-    ) = DeviceMockup(
-        formFactor = formFactor,
-        modifier = modifier,
-        showStatusBar = style.showStatusBar,
-        statusBarClock = style.statusBarClock,
-        content = content,
-    )
+    ) {
+        val customFrame = style.mockupFrame
+        if (customFrame != null) {
+            androidx.compose.foundation.layout.Box(modifier) { customFrame(content) }
+        } else {
+            DeviceMockup(
+                formFactor = formFactor,
+                modifier = modifier,
+                showStatusBar = style.showStatusBar,
+                statusBarClock = style.statusBarClock,
+                content = content,
+            )
+        }
+    }
 }

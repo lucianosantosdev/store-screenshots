@@ -176,7 +176,29 @@ Pass a `ScreenshotStyle` to `StoreScreenshotsTest` (class-level default) or to `
 | `statusBarClock` | Clock text in the status bar. Default `"12:00"`. |
 | `titleFontFamily` / `descriptionFontFamily` | Font for the default title/description Text composables. |
 | `background` | Composable rendered behind everything. Overrides `backgroundColor`. |
+| `mockupFrame` | Composable that replaces the built-in device bezel entirely. Receives app content as a parameter. |
 | `title` / `description` | Full composable control over banner text rendering. |
+
+## Custom device frame
+
+Replace the built-in device bezel with your own composable via `mockupFrame`. Title/description/positioning still work — only the device shape changes:
+
+```kotlin
+@Test fun home() = screenshot(
+    title = "My app",
+    style = ScreenshotStyle(
+        mockupFrame = { content ->
+            // Your custom bezel — draw anything, put content() inside
+            Box(
+                Modifier.fillMaxWidth().aspectRatio(9f / 16f)
+                    .clip(RoundedCornerShape(32.dp))
+                    .border(4.dp, Color.Cyan, RoundedCornerShape(32.dp))
+                    .background(Color.Black)
+            ) { content() }
+        },
+    ),
+) { HomeScreen() }
+```
 
 ## Fully custom layout
 

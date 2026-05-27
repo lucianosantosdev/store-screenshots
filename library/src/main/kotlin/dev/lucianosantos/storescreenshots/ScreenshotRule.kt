@@ -7,7 +7,10 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.RoborazziOptions
 import com.github.takahirom.roborazzi.captureRoboImage
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.unit.dp
 import dev.lucianosantos.storescreenshots.frames.AppleFrame
+import dev.lucianosantos.storescreenshots.frames.FramedLayout
 import dev.lucianosantos.storescreenshots.frames.PhoneFrame
 import dev.lucianosantos.storescreenshots.frames.TabletFrame
 import dev.lucianosantos.storescreenshots.frames.WearFrame
@@ -148,12 +151,30 @@ class ScreenshotRule(
         style: ScreenshotStyle,
         content: @Composable () -> Unit,
     ) {
-        when (formFactor) {
-            FormFactor.Phone -> PhoneFrame(title, description, backgroundColor, contentColor, style, content)
-            FormFactor.Wear -> WearFrame(backgroundColor, content)
-            FormFactor.Tablet7,
-            FormFactor.Tablet10 -> TabletFrame(title, description, backgroundColor, contentColor, style, content = content)
-            FormFactor.AppleIPhone67 -> AppleFrame(title, description, backgroundColor, contentColor, style, content)
+        val customFrame = style.mockupFrame
+        if (customFrame != null) {
+            // User-defined frame replaces the built-in bezel but keeps FramedLayout
+            // for title/description/positioning.
+            FramedLayout(
+                title = title,
+                description = description,
+                backgroundColor = backgroundColor,
+                contentColor = contentColor,
+                style = style,
+                horizontalPadding = 28.dp,
+                verticalPadding = 48.dp,
+                mockup = { externalModifier ->
+                    Box(externalModifier) { customFrame(content) }
+                }
+            )
+        } else {
+            when (formFactor) {
+                FormFactor.Phone -> PhoneFrame(title, description, backgroundColor, contentColor, style, content)
+                FormFactor.Wear -> WearFrame(backgroundColor, content)
+                FormFactor.Tablet7,
+                FormFactor.Tablet10 -> TabletFrame(title, description, backgroundColor, contentColor, style, content = content)
+                FormFactor.AppleIPhone67 -> AppleFrame(title, description, backgroundColor, contentColor, style, content)
+            }
         }
     }
 
