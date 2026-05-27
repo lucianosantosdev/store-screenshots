@@ -16,7 +16,6 @@ import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
 import org.robolectric.RuntimeEnvironment
-import org.robolectric.shadows.ShadowApplication
 import java.io.File
 
 /**
@@ -54,10 +53,13 @@ class ScreenshotRule(
     private lateinit var composeRule: ComposeContentTestRule
     private lateinit var testMethodName: String
     private var currentLocale: String = "en-US"
-    private var currentTitle: String = ""
-    private var currentDescription: String = ""
     private var currentBackground: Color = Screenshot.DEFAULT_BACKGROUND.toComposeColor()
     private var currentContentColor: Color = Color.White
+
+    // Set by capture() for the current invocation; read by renderFrame().
+    private var currentTitle: String = ""
+    private var currentDescription: String = ""
+
     override fun apply(base: Statement, description: Description): Statement {
         val annotation = description.getAnnotation(Screenshot::class.java)
             ?: error(
@@ -68,9 +70,6 @@ class ScreenshotRule(
 
         return object : Statement() {
             override fun evaluate() {
-                val titleOverrides = parseLocaleMap(annotation.titleByLocale)
-                val descOverrides = parseLocaleMap(annotation.descriptionByLocale)
-
                 for (locale in annotation.locales) {
                     currentLocale = locale
                     currentBackground = annotation.backgroundColor.toComposeColor()
@@ -78,18 +77,6 @@ class ScreenshotRule(
 
                     RuntimeEnvironment.setQualifiers(formFactor.qualifiers)
                     RuntimeEnvironment.setQualifiers("+${locale.toAndroidResourceQualifier()}")
-
-                    // Resolve string resources AFTER qualifiers are set so Robolectric
-                    // returns the locale-appropriate translation.
-                    val context: Context = RuntimeEnvironment.getApplication()
-                    currentTitle = when {
-                        annotation.titleRes != 0 -> context.getString(annotation.titleRes)
-                        else -> titleOverrides[locale] ?: annotation.title
-                    }
-                    currentDescription = when {
-                        annotation.descriptionRes != 0 -> context.getString(annotation.descriptionRes)
-                        else -> descOverrides[locale] ?: annotation.description
-                    }
 
                     val freshComposeRule = createComposeRule()
                     composeRule = freshComposeRule
@@ -107,20 +94,31 @@ class ScreenshotRule(
     }
 
     /**
-     * Render [content] inside the form-factor frame and capture a PNG for the current locale iteration.
-     * Must be called from inside a `@Test` method that has [ScreenshotRule] as a `@Rule`.
+     * Render [content] inside the form-factor frame and capture a PNG for the current locale.
      *
-     * Pass [style] to override the class-level style for just this screenshot — useful when one
-     * `@Screenshot` wants different positioning, fonts, or composable backgrounds than its siblings.
-     * Defaults to the style passed to the [ScreenshotRule] constructor.
+     * @param title Raw string headline. Ignored when [titleRes] is set.
+     * @param description Raw string sub-headline. Ignored when [descriptionRes] is set.
+     * @param titleRes String resource ID (`R.string.xxx`). Resolved per locale automatically.
+     * @param descriptionRes Same as [titleRes] for the description.
+     * @param style Override the class-level style for just this screenshot.
      */
     fun capture(
+        title: String = "",
+        description: String = "",
+        titleRes: Int = 0,
+        descriptionRes: Int = 0,
         style: ScreenshotStyle = this.style,
         content: @Composable () -> Unit,
     ) {
         require(::composeRule.isInitialized) {
             "capture() called outside a test body. Ensure ScreenshotRule is wired as @get:Rule."
         }
+        // Resolve title/description from resource IDs (already locale-qualified by setQualifiers)
+        // or fall back to raw strings.
+        val context: Context = RuntimeEnvironment.getApplication()
+        currentTitle = if (titleRes != 0) context.getString(titleRes) else title
+        currentDescription = if (descriptionRes != 0) context.getString(descriptionRes) else description
+
         composeRule.setContent {
             renderFrame(style, content)
         }
@@ -182,14 +180,6 @@ class ScreenshotRule(
             return File(System.getProperty("user.dir"))
         }
     }
-}
-
-private fun parseLocaleMap(entries: Array<String>): Map<String, String> {
-    if (entries.isEmpty()) return emptyMap()
-    return entries.mapNotNull { entry ->
-        val eq = entry.indexOf('=')
-        if (eq < 0) null else entry.substring(0, eq) to entry.substring(eq + 1)
-    }.toMap()
 }
 
 private fun String.toAndroidResourceQualifier(): String {

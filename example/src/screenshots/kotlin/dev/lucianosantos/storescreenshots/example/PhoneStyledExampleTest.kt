@@ -19,49 +19,50 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.MockupPosition
 import dev.lucianosantos.storescreenshots.Screenshot
+import dev.lucianosantos.storescreenshots.ScreenshotPreview
 import dev.lucianosantos.storescreenshots.ScreenshotStyle
 import dev.lucianosantos.storescreenshots.StoreScreenshotsTest
 import org.junit.Test
 
-/**
- * Demonstrates per-method styling via `capture(style = …)`.
- *
- * All visual customization lives in one [ScreenshotStyle] passed right next to `@Screenshot`:
- * - `MockupPosition.Middle` — title above, device centered, description below.
- * - `mockupOffset` — visual nudge.
- * - `titleFontFamily` / `descriptionFontFamily` — per-slot fonts.
- * - `background` / `title` / `description` — composable overrides.
- */
+private val styledStyle = ScreenshotStyle(
+    mockupPosition = MockupPosition.Middle,
+    mockupOffset = DpOffset(x = 24.dp, y = 32.dp),
+    titleFontFamily = FontFamily.Serif,
+    descriptionFontFamily = FontFamily.Monospace,
+    background = { MarketingBackground() },
+    title = { text -> StyledTitle(text) },
+    description = { text -> StyledDescription(text) },
+)
+
 class PhoneStyledExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
 
     @Test
-    @Screenshot(
-        title = "Designed your way",
-        description = "Custom fonts · gradient backgrounds · centered devices · all from one ScreenshotStyle",
-    )
+    @Screenshot(locales = ["en-US", "pt-BR"])
     fun counter_styled() = capture(
-        style = ScreenshotStyle(
-            mockupPosition = MockupPosition.Middle,
-            mockupOffset = DpOffset(x = 24.dp, y = 32.dp),
-            titleFontFamily = FontFamily.Serif,
-            descriptionFontFamily = FontFamily.Monospace,
-            background = { MarketingBackground() },
-            title = { text -> StyledTitle(text) },
-            description = { text -> StyledDescription(text) },
-        ),
-    ) {
-        CounterScreen(count = 42)
-    }
+        titleRes = R.string.screenshot_styled_title,
+        descriptionRes = R.string.screenshot_styled_desc,
+        style = styledStyle,
+    ) { CounterScreen(count = 42) }
 }
 
+@Preview(widthDp = 411, heightDp = 914)
 @Composable
-private fun MarketingBackground() {
+private fun StyledPreview() = ScreenshotPreview(
+    formFactor = FormFactor.Phone,
+    title = "Designed your way",
+    description = "Custom fonts · gradient backgrounds · centered devices · all from one ScreenshotStyle",
+    style = styledStyle,
+) { CounterScreen(count = 42) }
+
+@Composable
+internal fun MarketingBackground() {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -90,7 +91,7 @@ private fun MarketingBackground() {
 }
 
 @Composable
-private fun StyledTitle(text: String) {
+internal fun StyledTitle(text: String) {
     Text(
         text = text,
         color = Color.White,
@@ -110,7 +111,7 @@ private fun StyledTitle(text: String) {
 }
 
 @Composable
-private fun StyledDescription(text: String) {
+internal fun StyledDescription(text: String) {
     Text(
         text = text,
         color = Color.White.copy(alpha = 0.95f),
