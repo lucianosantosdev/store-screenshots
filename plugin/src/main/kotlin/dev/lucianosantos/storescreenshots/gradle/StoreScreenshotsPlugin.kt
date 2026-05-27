@@ -39,6 +39,9 @@ class StoreScreenshotsPlugin : Plugin<Project> {
         target.pluginManager.withPlugin("com.android.library") { configureAndroid(target) }
 
         target.dependencies.add("testImplementation", libraryNotation())
+        // Also add to debug so Android Studio can render @Preview functions that
+        // reference library classes (ScreenshotPreview, FormFactor, frames, etc.).
+        target.dependencies.add("debugImplementation", libraryNotation())
 
         // If the consuming project lives in the same build as a `:library` project that
         // matches our group/name (i.e. the example module inside this very repo), wire it
@@ -89,6 +92,14 @@ class StoreScreenshotsPlugin : Plugin<Project> {
         testSourceSet.java.srcDir("src/screenshots/java")
         testSourceSet.resources.srcDir("src/screenshots/resources")
         testSourceSet.res.srcDir("src/screenshots/res")
+
+        // Mirror into the debug source set so Android Studio renders @Preview
+        // functions from src/screenshots/ (Studio only previews debug variant sources).
+        val debugSourceSet = androidExt.sourceSets.getByName("debug")
+        debugSourceSet.java.srcDir("src/screenshots/kotlin")
+        debugSourceSet.java.srcDir("src/screenshots/java")
+        debugSourceSet.resources.srcDir("src/screenshots/resources")
+        debugSourceSet.res.srcDir("src/screenshots/res")
 
         common.testOptions.unitTests.apply {
             isIncludeAndroidResources = true
