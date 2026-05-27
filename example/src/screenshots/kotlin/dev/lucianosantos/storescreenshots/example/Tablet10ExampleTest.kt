@@ -1,9 +1,6 @@
 package dev.lucianosantos.storescreenshots.example
 
-import androidx.compose.runtime.Composable
 import dev.lucianosantos.storescreenshots.FormFactor
-import dev.lucianosantos.storescreenshots.ScreenshotPreview
-import dev.lucianosantos.storescreenshots.Tablet10ScreenshotPreview
 import dev.lucianosantos.storescreenshots.StoreScreenshotsTest
 import org.junit.Test
 
@@ -16,11 +13,3 @@ class Tablet10ExampleTest : StoreScreenshotsTest(FormFactor.Tablet10) {
         descriptionRes = R.string.screenshot_tablet10_desc,
     ) { CounterScreen(count = 42) }
 }
-
-@Tablet10ScreenshotPreview
-@Composable
-private fun Tablet10Preview() = ScreenshotPreview(
-    formFactor = FormFactor.Tablet10,
-    title = "Big screen, same code",
-    description = "10-inch layout uses identical Compose UI",
-) { CounterScreen(count = 42) }

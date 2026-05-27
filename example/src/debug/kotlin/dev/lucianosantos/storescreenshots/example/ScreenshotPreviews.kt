@@ -1,0 +1,59 @@
+package dev.lucianosantos.storescreenshots.example
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+import dev.lucianosantos.storescreenshots.AppleIPhone67ScreenshotPreview
+import dev.lucianosantos.storescreenshots.FormFactor
+import dev.lucianosantos.storescreenshots.PhoneScreenshotPreview
+import dev.lucianosantos.storescreenshots.ScreenshotPreview
+import dev.lucianosantos.storescreenshots.Tablet10ScreenshotPreview
+import dev.lucianosantos.storescreenshots.Tablet7ScreenshotPreview
+import dev.lucianosantos.storescreenshots.WearScreenshotPreview
+
+@PhoneScreenshotPreview
+@Composable
+fun PhonePreview() = ScreenshotPreview(
+    formFactor = FormFactor.Phone,
+    title = "Count anything, anywhere",
+    description = "A focused tap counter that gets out of your way",
+) { CounterScreen(count = 42) }
+
+@WearScreenshotPreview
+@Composable
+fun WearPreview() = ScreenshotPreview(
+    formFactor = FormFactor.Wear,
+    backgroundColor = Color.Black,
+) { WearCounterScreen(count = 42) }
+
+@Tablet7ScreenshotPreview
+@Composable
+fun Tablet7Preview() = ScreenshotPreview(
+    formFactor = FormFactor.Tablet7,
+    title = "Built for every screen",
+    description = "The same Compose UI, framed for 7-inch tablets",
+) { CounterScreen(count = 42) }
+
+@Tablet10ScreenshotPreview
+@Composable
+fun Tablet10Preview() = ScreenshotPreview(
+    formFactor = FormFactor.Tablet10,
+    title = "Big screen, same code",
+    description = "10-inch layout uses identical Compose UI",
+) { CounterScreen(count = 42) }
+
+@AppleIPhone67ScreenshotPreview
+@Composable
+fun ApplePreview() = ScreenshotPreview(
+    formFactor = FormFactor.AppleIPhone67,
+    title = "Ship cross-store",
+    description = "App Store Connect 6.7\" size, ready to upload",
+) { CounterScreen(count = 42) }
+
+@PhoneScreenshotPreview
+@Composable
+fun StyledPreview() = ScreenshotPreview(
+    formFactor = FormFactor.Phone,
+    title = "Designed your way",
+    description = "Custom fonts · gradient backgrounds · centered devices · all from one ScreenshotStyle",
+    style = styledScreenshotStyle,
+) { CounterScreen(count = 42) }

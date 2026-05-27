@@ -93,13 +93,6 @@ class StoreScreenshotsPlugin : Plugin<Project> {
         testSourceSet.resources.srcDir("src/screenshots/resources")
         testSourceSet.res.srcDir("src/screenshots/res")
 
-        // Mirror into the debug source set so Android Studio renders @Preview
-        // functions from src/screenshots/ (Studio only previews debug variant sources).
-        val debugSourceSet = androidExt.sourceSets.getByName("debug")
-        debugSourceSet.java.srcDir("src/screenshots/kotlin")
-        debugSourceSet.java.srcDir("src/screenshots/java")
-        debugSourceSet.resources.srcDir("src/screenshots/resources")
-        debugSourceSet.res.srcDir("src/screenshots/res")
 
         common.testOptions.unitTests.apply {
             isIncludeAndroidResources = true
