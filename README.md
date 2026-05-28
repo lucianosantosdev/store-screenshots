@@ -1,5 +1,8 @@
 # store-screenshots
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.lucianosantosdev/storescreenshots-plugin?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.lucianosantosdev/storescreenshots-plugin)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 **Build your store screenshots with Compose. Automate the process. Keep them always in sync with your app's real design.**
 
 | | | | |
@@ -19,16 +22,9 @@ Gradle plugin + Compose library for generating framed Play Store / App Store scr
 
 ## Quick start
 
-### Option A — GitHub Packages (released versions)
+### Option A — Maven Central (released versions)
 
-GitHub Packages requires authentication. Add a personal-access token with `read:packages` scope to `~/.gradle/gradle.properties`:
-
-```properties
-gpr.user=your-github-username
-gpr.token=ghp_xxx
-```
-
-Then in your `settings.gradle.kts`:
+The plugin and library are published to Maven Central, so no authentication is required. In your `settings.gradle.kts`, make sure `mavenCentral()` is listed for both plugins and dependencies:
 
 ```kotlin
 pluginManagement {
@@ -36,16 +32,9 @@ pluginManagement {
         gradlePluginPortal()
         google()
         mavenCentral()
-        maven {
-            url = uri("https://maven.pkg.github.com/lucianosantosdev/store-screenshots")
-            credentials {
-                username = providers.gradleProperty("gpr.user").get()
-                password = providers.gradleProperty("gpr.token").get()
-            }
-        }
     }
     plugins {
-        id("dev.lucianosantos.storescreenshots") version "0.1.0"
+        id("dev.lucianosantos.storescreenshots") version "1.0.0"
     }
 }
 
@@ -53,16 +42,11 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven {
-            url = uri("https://maven.pkg.github.com/lucianosantosdev/store-screenshots")
-            credentials {
-                username = providers.gradleProperty("gpr.user").get()
-                password = providers.gradleProperty("gpr.token").get()
-            }
-        }
     }
 }
 ```
+
+The plugin resolves its runtime library (`io.github.lucianosantosdev:storescreenshots-library`) automatically — you only declare the plugin id.
 
 ### Option B — Composite build (local development)
 
@@ -340,7 +324,7 @@ Wear screenshots have no title/description banner, so `mockupPosition` doesn't a
 
 ## Releasing
 
-Push a tag matching `v[0-9]+.[0-9]+.[0-9]+` (e.g. `v0.2.0`). The release workflow publishes to GitHub Packages.
+Push a tag matching `v[0-9]+.[0-9]+.[0-9]+` (e.g. `v0.2.0`). The release workflow publishes to Maven Central and GitHub Packages.
 
 ## License
 
