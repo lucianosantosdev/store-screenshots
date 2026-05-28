@@ -16,4 +16,4 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "plugin"
+rootProject.name = "storescreenshots-plugin"

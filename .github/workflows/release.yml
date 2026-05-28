@@ -54,6 +54,6 @@ jobs:
           echo "### Published $RELEASE_VERSION to GitHub Packages :rocket:" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Artifacts:" >> "$GITHUB_STEP_SUMMARY"
-          echo "- \`dev.lucianosantos.storescreenshots:library:$RELEASE_VERSION\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- \`dev.lucianosantos.storescreenshots:plugin:$RELEASE_VERSION\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- \`dev.lucianosantos:storescreenshots-library:$RELEASE_VERSION\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- \`dev.lucianosantos:storescreenshots-plugin:$RELEASE_VERSION\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Plugin id: \`dev.lucianosantos.storescreenshots\` version \`$RELEASE_VERSION\`" >> "$GITHUB_STEP_SUMMARY"
