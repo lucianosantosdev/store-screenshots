@@ -63,6 +63,27 @@ jobs:
           GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
           GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
 
+      # The Gradle upload above lands in an "open" staging repo on the OSSRH compatibility
+      # API. Promote it so it validates and auto-publishes to Maven Central.
+      - name: Release deployment on Central Portal
+        run: |
+          BASE="https://ossrh-staging-api.central.sonatype.com"
+          TOKEN=$(printf '%s:%s' "$MAVEN_CENTRAL_USERNAME" "$MAVEN_CENTRAL_PASSWORD" | base64 -w0)
+          KEY=$(curl -fsS -H "Authorization: Bearer $TOKEN" \
+            "$BASE/manual/search/repositories?profile_id=io.github.lucianosantosdev&state=open" \
+            | jq -r '.repositories[0].key')
+          if [ -z "$KEY" ] || [ "$KEY" = "null" ]; then
+            echo "No open staging repository found to promote." >&2
+            exit 1
+          fi
+          echo "Promoting staging repository: $KEY"
+          ENCODED_KEY=$(jq -rn --arg k "$KEY" '$k|@uri')
+          curl -fsS -X POST -H "Authorization: Bearer $TOKEN" \
+            "$BASE/manual/upload/repository/$ENCODED_KEY?publishing_type=automatic"
+        env:
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+
       - name: Summary
         if: success()
         run: |
