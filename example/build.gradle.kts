@@ -4,7 +4,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.composeCompiler)
-    id("dev.lucianosantos.storescreenshots")
+    id("io.github.lucianosantosdev.storescreenshots")
 }
 
 android {

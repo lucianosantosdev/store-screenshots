@@ -1,11 +1,11 @@
+import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.composeCompiler)
-    `maven-publish`
-    signing
+    alias(libs.plugins.mavenPublish)
 }
 
 android {
@@ -23,12 +23,6 @@ android {
 
     buildFeatures {
         compose = true
-    }
-
-    publishing {
-        singleVariant("release") {
-            withSourcesJar()
-        }
     }
 }
 
@@ -55,35 +49,52 @@ dependencies {
     api(libs.roborazzi.junit.rule)
 }
 
+mavenPublishing {
+    configure(
+        AndroidSingleVariantLibrary(
+            variant = "release",
+            sourcesJar = true,
+            publishJavadocJar = true,
+        )
+    )
+    publishToMavenCentral(automaticRelease = true)
+    signAllPublications()
+    coordinates(project.group.toString(), "storescreenshots-library", project.version.toString())
+    pom {
+        name.set("store-screenshots library")
+        description.set("Runtime API (annotation, rule, frames) for store-screenshots.")
+        inceptionYear.set("2026")
+        url.set("https://github.com/lucianosantosdev/store-screenshots")
+        licenses {
+            license {
+                name.set("MIT")
+                url.set("https://opensource.org/licenses/MIT")
+            }
+        }
+        developers {
+            developer {
+                id.set("lucianosantosdev")
+                name.set("Luciano Santos")
+                email.set("contact@lucianosantos.dev")
+            }
+        }
+        scm {
+            connection.set("scm:git:git://github.com/lucianosantosdev/store-screenshots.git")
+            developerConnection.set("scm:git:ssh://github.com/lucianosantosdev/store-screenshots.git")
+            url.set("https://github.com/lucianosantosdev/store-screenshots")
+        }
+    }
+}
+
+// Keep GitHub Packages as a secondary target alongside Maven Central.
 publishing {
-    publications {
-        register<MavenPublication>("release") {
-            // android.publishing.singleVariant("release") is created after evaluation, so
-            // wiring `from(components["release"])` must wait.
-            afterEvaluate { from(components["release"]) }
-            artifactId = "storescreenshots-library"
-            pom {
-                name.set("store-screenshots library")
-                description.set("Runtime API (annotation, rule, frames) for store-screenshots.")
-                url.set("https://github.com/lucianosantosdev/store-screenshots")
-                licenses {
-                    license {
-                        name.set("MIT")
-                        url.set("https://opensource.org/licenses/MIT")
-                    }
-                }
-                developers {
-                    developer {
-                        id.set("lucianosantosdev")
-                        name.set("Luciano Santos")
-                        email.set("contact@lucianosantos.dev")
-                    }
-                }
-                scm {
-                    connection.set("scm:git:git://github.com/lucianosantosdev/store-screenshots.git")
-                    developerConnection.set("scm:git:ssh://github.com/lucianosantosdev/store-screenshots.git")
-                    url.set("https://github.com/lucianosantosdev/store-screenshots")
-                }
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/lucianosantosdev/store-screenshots")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR") ?: providers.gradleProperty("gpr.user").orNull
+                password = System.getenv("GITHUB_TOKEN") ?: providers.gradleProperty("gpr.token").orNull
             }
         }
     }
