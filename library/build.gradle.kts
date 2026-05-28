@@ -60,7 +60,7 @@ publishing {
             // android.publishing.singleVariant("release") is created after evaluation, so
             // wiring `from(components["release"])` must wait.
             afterEvaluate { from(components["release"]) }
-            artifactId = "library"
+            artifactId = "storescreenshots-library"
             pom {
                 name.set("store-screenshots library")
                 description.set("Runtime API (annotation, rule, frames) for store-screenshots.")

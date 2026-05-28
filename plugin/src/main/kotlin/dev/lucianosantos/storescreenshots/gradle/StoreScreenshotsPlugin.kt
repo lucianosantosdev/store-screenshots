@@ -51,12 +51,12 @@ class StoreScreenshotsPlugin : Plugin<Project> {
             val siblingLibrary = target.rootProject.allprojects.firstOrNull { sibling ->
                 sibling.path != target.path &&
                     sibling.name == "library" &&
-                    sibling.group.toString() == "dev.lucianosantos.storescreenshots"
+                    sibling.group.toString() == "dev.lucianosantos"
             }
             if (siblingLibrary != null) {
                 target.configurations.configureEach { config ->
                     config.resolutionStrategy.dependencySubstitution { rules ->
-                        rules.substitute(rules.module("dev.lucianosantos.storescreenshots:library"))
+                        rules.substitute(rules.module("dev.lucianosantos:storescreenshots-library"))
                             .using(rules.project(siblingLibrary.path))
                             .because("same-build sibling project takes precedence over Maven lookup")
                     }
@@ -105,8 +105,8 @@ class StoreScreenshotsPlugin : Plugin<Project> {
         // group:name pair with the included build's project. When consumed from GitHub Packages,
         // this resolves to the matching library version published alongside the plugin.
         return mapOf(
-            "group" to "dev.lucianosantos.storescreenshots",
-            "name" to "library",
+            "group" to "dev.lucianosantos",
+            "name" to "storescreenshots-library",
             "version" to pluginVersion,
         )
     }
