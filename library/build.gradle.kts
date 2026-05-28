@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.composeCompiler)
     `maven-publish`
+    signing
 }
 
 android {
@@ -70,6 +71,18 @@ publishing {
                         name.set("MIT")
                         url.set("https://opensource.org/licenses/MIT")
                     }
+                }
+                developers {
+                    developer {
+                        id.set("lucianosantosdev")
+                        name.set("Luciano Santos")
+                        email.set("contact@lucianosantos.dev")
+                    }
+                }
+                scm {
+                    connection.set("scm:git:git://github.com/lucianosantosdev/store-screenshots.git")
+                    developerConnection.set("scm:git:ssh://github.com/lucianosantosdev/store-screenshots.git")
+                    url.set("https://github.com/lucianosantosdev/store-screenshots")
                 }
             }
         }

@@ -12,9 +12,6 @@ subprojects {
     group = rootProject.group
     version = rootProject.version
 
-    // Every publishable subproject targets GitHub Packages. Credentials come from env vars
-    // GITHUB_ACTOR / GITHUB_TOKEN so local `publishToMavenLocal` works without secrets,
-    // and the release workflow injects the real values.
     plugins.withId("maven-publish") {
         extensions.configure<PublishingExtension> {
             repositories {
@@ -26,6 +23,25 @@ subprojects {
                         password = System.getenv("GITHUB_TOKEN") ?: providers.gradleProperty("gpr.token").orNull
                     }
                 }
+                maven {
+                    name = "MavenCentral"
+                    url = uri("https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/")
+                    credentials {
+                        username = System.getenv("MAVEN_CENTRAL_USERNAME") ?: providers.gradleProperty("mavenCentral.user").orNull
+                        password = System.getenv("MAVEN_CENTRAL_PASSWORD") ?: providers.gradleProperty("mavenCentral.password").orNull
+                    }
+                }
+            }
+        }
+    }
+
+    plugins.withId("signing") {
+        extensions.configure<SigningExtension> {
+            val signingKey = System.getenv("GPG_SIGNING_KEY")
+            val signingKeyId = System.getenv("GPG_KEY_ID")
+            if (signingKey != null) {
+                useInMemoryPgpKeys(signingKeyId, signingKey, "")
+                sign(extensions.getByType<PublishingExtension>().publications)
             }
         }
     }
