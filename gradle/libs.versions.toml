@@ -8,6 +8,7 @@ material-icons-extended = "1.7.8"
 roborazzi = "1.60.0"
 robolectric = "4.16"
 junit = "4.13.2"
+mavenPublish = "0.36.0"
 android-compileSdk = "36"
 android-minSdk = "26"
 
@@ -41,3 +42,4 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
+mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }

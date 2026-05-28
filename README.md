@@ -34,7 +34,7 @@ pluginManagement {
         mavenCentral()
     }
     plugins {
-        id("dev.lucianosantos.storescreenshots") version "1.0.0"
+        id("io.github.lucianosantosdev.storescreenshots") version "1.0.0"
     }
 }
 
@@ -61,7 +61,7 @@ includeBuild("path/to/store-screenshots")
 
 ```kotlin
 plugins {
-    id("dev.lucianosantos.storescreenshots")
+    id("io.github.lucianosantosdev.storescreenshots")
 }
 ```
 
