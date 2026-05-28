@@ -41,18 +41,20 @@ jobs:
         run: |
           ./gradlew \
             :library:publishReleasePublicationToGitHubPackagesRepository \
-            :plugin:publishAllPublicationsToGitHubPackagesRepository \
+            :plugin:publishPluginMavenPublicationToGitHubPackagesRepository \
             -Pversion=${{ env.RELEASE_VERSION }} \
             --no-daemon --stacktrace
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
+          GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
 
       - name: Publish to Maven Central
         run: |
           ./gradlew \
             :library:publishReleasePublicationToMavenCentralRepository \
-            :plugin:publishAllPublicationsToMavenCentralRepository \
+            :plugin:publishPluginMavenPublicationToMavenCentralRepository \
             -Pversion=${{ env.RELEASE_VERSION }} \
             --no-daemon --stacktrace
         env:
