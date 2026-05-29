@@ -1,6 +1,7 @@
 # store-screenshots
 
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.lucianosantosdev/storescreenshots-plugin?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.lucianosantosdev/storescreenshots-plugin)
+[![Maven Central: plugin](https://img.shields.io/maven-central/v/io.github.lucianosantosdev/storescreenshots-plugin?label=plugin)](https://central.sonatype.com/artifact/io.github.lucianosantosdev/storescreenshots-plugin)
+[![Maven Central: library](https://img.shields.io/maven-central/v/io.github.lucianosantosdev/storescreenshots-library?label=library)](https://central.sonatype.com/artifact/io.github.lucianosantosdev/storescreenshots-library)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **Build your store screenshots with Compose. Automate the process. Keep them always in sync with your app's real design.**
@@ -97,6 +98,7 @@ Everything is driven by the `screenshot()` function — no annotations needed be
     descriptionRes = R.string.screenshot_desc,
     backgroundColor = Color(0xFF1F2937),  // banner background
     contentColor = Color.White,           // banner text color
+    fileName = "01_home",                 // PNG name (default: test method name)
     style = ScreenshotStyle(...),         // advanced styling (optional)
 ) { HomeScreen() }
 ```
@@ -108,6 +110,7 @@ Everything is driven by the `screenshot()` function — no annotations needed be
 | `titleRes` / `descriptionRes` | `R.string.*` resource ID, resolved per locale. Takes precedence over raw strings. |
 | `backgroundColor` | Banner background color. Default dark gray. |
 | `contentColor` | Banner text color. Default white. |
+| `fileName` | Output PNG name (without the locale path). Defaults to the test method name. `.png` is appended if omitted. Useful to control ordering in the store (e.g. `"01_home"`). |
 | `style` | `ScreenshotStyle` for advanced customization. |
 
 ## Custom output directory
