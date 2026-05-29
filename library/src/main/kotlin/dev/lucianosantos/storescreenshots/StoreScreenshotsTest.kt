@@ -50,6 +50,7 @@ abstract class StoreScreenshotsTest(
      * @param description Raw string sub-headline. Ignored when [descriptionRes] is set.
      * @param titleRes String resource ID (`R.string.xxx`). Resolved per locale automatically.
      * @param descriptionRes Same as [titleRes] for the description.
+     * @param fileName Output PNG name (without locale path). Defaults to the test method name.
      * @param style Override the class-level style for just this screenshot.
      */
     fun screenshot(
@@ -60,9 +61,10 @@ abstract class StoreScreenshotsTest(
         descriptionRes: Int = 0,
         backgroundColor: Color = Color(0xFF1F2937),
         contentColor: Color = Color.White,
+        fileName: String? = null,
         style: ScreenshotStyle = screenshot.style,
         content: @Composable () -> Unit,
-    ) = screenshot.screenshot(locales, title, description, titleRes, descriptionRes, backgroundColor, contentColor, style, content)
+    ) = screenshot.screenshot(locales, title, description, titleRes, descriptionRes, backgroundColor, contentColor, fileName, style, content)
 
     /**
      * Fully custom layout — you control everything. [ScreenshotScope] provides a `Mockup`
@@ -79,6 +81,7 @@ abstract class StoreScreenshotsTest(
      */
     fun customScreenshot(
         locales: List<String> = listOf("en-US"),
+        fileName: String? = null,
         content: @Composable ScreenshotScope.() -> Unit,
-    ) = screenshot.customScreenshot(locales, content)
+    ) = screenshot.customScreenshot(locales, fileName, content)
 }

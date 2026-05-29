@@ -61,6 +61,8 @@ class ScreenshotRule(
      * @param descriptionRes Same as [titleRes] for the description.
      * @param backgroundColor Banner background color.
      * @param contentColor Foreground text color.
+     * @param fileName Output PNG name (without locale path). Defaults to the test method name.
+     *   A `.png` extension is added automatically if omitted.
      * @param style Override the class-level style for just this screenshot.
      */
     fun screenshot(
@@ -71,6 +73,7 @@ class ScreenshotRule(
         descriptionRes: Int = 0,
         backgroundColor: Color = Color(0xFF1F2937),
         contentColor: Color = Color.White,
+        fileName: String? = null,
         style: ScreenshotStyle = this.style,
         content: @Composable () -> Unit,
     ) {
@@ -91,7 +94,7 @@ class ScreenshotRule(
                         }
                         composeRule.waitForIdle()
 
-                        val outputFile = outputPath(locale)
+                        val outputFile = outputPath(locale, fileName ?: testMethodName)
                         composeRule.onRoot().captureRoboImage(
                             filePath = outputFile.absolutePath,
                             roborazziOptions = RoborazziOptions(),
@@ -118,6 +121,7 @@ class ScreenshotRule(
      */
     fun customScreenshot(
         locales: List<String> = listOf("en-US"),
+        fileName: String? = null,
         content: @Composable ScreenshotScope.() -> Unit,
     ) {
         val scope = ScreenshotScope(formFactor, style)
@@ -132,7 +136,7 @@ class ScreenshotRule(
                         composeRule.setContent { scope.content() }
                         composeRule.waitForIdle()
                         composeRule.onRoot().captureRoboImage(
-                            filePath = outputPath(locale).absolutePath,
+                            filePath = outputPath(locale, fileName ?: testMethodName).absolutePath,
                             roborazziOptions = RoborazziOptions(),
                         )
                     }
@@ -178,14 +182,15 @@ class ScreenshotRule(
         }
     }
 
-    private fun outputPath(locale: String): File {
+    private fun outputPath(locale: String, name: String): File {
         val subPath = if (formFactor.useImagesSubdir) {
             "$locale/images/${formFactor.subdir}"
         } else {
             "$locale/${formFactor.subdir}"
         }
         val dir = File(outputRootDir, subPath).apply { mkdirs() }
-        return File(dir, "$testMethodName.png")
+        val pngName = if (name.endsWith(".png", ignoreCase = true)) name else "$name.png"
+        return File(dir, pngName)
     }
 
     companion object {
