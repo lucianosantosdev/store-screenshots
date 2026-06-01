@@ -1,7 +1,6 @@
 # store-screenshots
 
-[![Maven Central: plugin](https://img.shields.io/maven-central/v/io.github.lucianosantosdev/storescreenshots-plugin?label=plugin)](https://central.sonatype.com/artifact/io.github.lucianosantosdev/storescreenshots-plugin)
-[![Maven Central: library](https://img.shields.io/maven-central/v/io.github.lucianosantosdev/storescreenshots-library?label=library)](https://central.sonatype.com/artifact/io.github.lucianosantosdev/storescreenshots-library)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.lucianosantosdev/storescreenshots-plugin?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.lucianosantosdev/storescreenshots-plugin)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **Build your store screenshots with Compose. Automate the process. Keep them always in sync with your app's real design.**
