@@ -10,10 +10,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -36,9 +39,27 @@ fun FeatureGraphicBanner() {
         modifier = Modifier
             .fillMaxSize()
             .background(
-                Brush.linearGradient(listOf(Color(0xFFF8FAFC), Color(0xFFE2E8F0)))
+                Brush.linearGradient(
+                    listOf(Color(0xFF2E1065), Color(0xFF7E22CE), Color(0xFFDB2777))
+                )
             )
     ) {
+        // Soft decorative circles for a marketing feel.
+        Box(
+            modifier = Modifier
+                .size(240.dp)
+                .offset(x = (-60).dp, y = (-80).dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.10f))
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .size(320.dp)
+                .offset(x = 120.dp, y = 130.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.08f))
+        )
         Row(
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically,
@@ -51,7 +72,7 @@ fun FeatureGraphicBanner() {
             ) {
                 Text(
                     text = stringResource(R.string.screenshot_feature_title),
-                    color = Color(0xFF0F172A),
+                    color = Color.White,
                     fontSize = 30.sp,
                     fontWeight = FontWeight.Bold,
                     lineHeight = 36.sp,
@@ -59,49 +80,50 @@ fun FeatureGraphicBanner() {
                 Spacer(Modifier.height(12.dp))
                 Text(
                     text = stringResource(R.string.screenshot_feature_desc),
-                    color = Color(0xFF475569),
+                    color = Color.White.copy(alpha = 0.85f),
                     fontSize = 16.sp,
                     lineHeight = 22.sp,
                 )
             }
 
-            // Device family on the right: tablet behind, phone in front, and both a round and a
-            // square watch peeking in. Each device is sized by height (the other dimension
-            // follows its aspect ratio).
+            // Device family, arranged on a shared baseline and ascending in size left-to-right:
+            // the two watches sit at the front-left, the phone in the middle, and the tablet
+            // large and mostly unobscured on the right. Each device is sized by height (the other
+            // dimension follows its aspect ratio); drawn back-to-front so the tablet stays behind.
             Box(
                 modifier = Modifier
-                    .weight(1.3f)
+                    .weight(1.45f)
                     .fillMaxHeight()
-                    .padding(end = 20.dp),
+                    .padding(end = 16.dp, bottom = 18.dp),
             ) {
                 DeviceMockup(
                     formFactor = FormFactor.Tablet10,
                     modifier = Modifier
-                        .fillMaxHeight(0.82f)
-                        .align(Alignment.CenterEnd),
+                        .fillMaxHeight(0.84f)
+                        .align(Alignment.BottomEnd),
                 ) { CounterScreen(count = 42) }
 
                 DeviceMockup(
                     formFactor = FormFactor.Phone,
                     modifier = Modifier
-                        .fillMaxHeight(0.74f)
-                        .align(Alignment.BottomCenter)
-                        .offset(x = 34.dp),
+                        .fillMaxHeight(0.66f)
+                        .align(Alignment.BottomStart)
+                        .offset(x = 104.dp),
                 ) { CounterScreen(count = 42) }
 
                 WatchMockup(
                     shape = WatchShape.Square,
                     modifier = Modifier
-                        .fillMaxHeight(0.72f)
+                        .fillMaxHeight(0.5f)
                         .align(Alignment.BottomStart),
                 ) { WearCounterScreen(count = 42) }
 
                 WatchMockup(
                     shape = WatchShape.Round,
                     modifier = Modifier
-                        .fillMaxHeight(0.66f)
+                        .fillMaxHeight(0.46f)
                         .align(Alignment.BottomStart)
-                        .offset(x = 74.dp),
+                        .offset(x = 50.dp),
                 ) { WearCounterScreen(count = 42) }
             }
         }
