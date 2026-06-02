@@ -40,7 +40,7 @@ fun FeatureGraphicBanner() {
             .fillMaxSize()
             .background(
                 Brush.linearGradient(
-                    listOf(Color(0xFF2E1065), Color(0xFF7E22CE), Color(0xFFDB2777))
+                    listOf(Color(0xFF083344), Color(0xFF0E7490), Color(0xFF0EA5E9))
                 )
             )
     ) {
