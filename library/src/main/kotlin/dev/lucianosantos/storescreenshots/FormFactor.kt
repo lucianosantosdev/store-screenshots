@@ -62,4 +62,17 @@ enum class FormFactor(
         useImagesSubdir = false,
     ),
 
+    /**
+     * Google Play feature graphic. Landscape 1024x500 promotional banner shown at the top of
+     * the store listing. `512dp x 250dp` at xhdpi (density 2.0) renders exactly 1024x500 px.
+     * Output lands under `{locale}/images/featureGraphic/` to match Fastlane's supply layout.
+     */
+    GooglePlayFeatureGraphic(
+        widthPx = 1024,
+        heightPx = 500,
+        qualifiers = "w512dp-h250dp-xhdpi",
+        subdir = "featureGraphic",
+        useImagesSubdir = true,
+    ),
+
 }

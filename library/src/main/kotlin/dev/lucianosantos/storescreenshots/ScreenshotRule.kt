@@ -77,6 +77,11 @@ class ScreenshotRule(
         style: ScreenshotStyle = this.style,
         content: @Composable () -> Unit,
     ) {
+        check(formFactor != FormFactor.GooglePlayFeatureGraphic) {
+            "FormFactor.GooglePlayFeatureGraphic has no built-in title/description frame. " +
+                "A feature graphic is a custom promotional banner — build it with customScreenshot { } " +
+                "and compose DeviceMockup(formFactor = …) for each device you want to show."
+        }
         for (locale in locales) {
             RuntimeEnvironment.setQualifiers(formFactor.qualifiers)
             RuntimeEnvironment.setQualifiers("+${locale.toAndroidResourceQualifier()}")
@@ -178,6 +183,8 @@ class ScreenshotRule(
                 FormFactor.Tablet7,
                 FormFactor.Tablet10 -> TabletFrame(title, description, backgroundColor, contentColor, style, content = content)
                 FormFactor.AppleIPhone67 -> AppleFrame(title, description, backgroundColor, contentColor, style, content)
+                // Guarded against in screenshot(); a feature graphic is composed via customScreenshot.
+                FormFactor.GooglePlayFeatureGraphic -> error("unreachable")
             }
         }
     }

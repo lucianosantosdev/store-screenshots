@@ -43,6 +43,11 @@ fun ScreenshotPreview(
     style: ScreenshotStyle = ScreenshotStyle(),
     content: @Composable () -> Unit,
 ) {
+    check(formFactor != FormFactor.GooglePlayFeatureGraphic) {
+        "FormFactor.GooglePlayFeatureGraphic has no built-in frame to preview. " +
+            "Preview a feature graphic by annotating your own banner composable with " +
+            "@GooglePlayFeatureGraphicScreenshotPreview."
+    }
     val customFrame = style.mockupFrame
     if (customFrame != null) {
         FramedLayout(
@@ -64,6 +69,8 @@ fun ScreenshotPreview(
             FormFactor.Tablet7,
             FormFactor.Tablet10 -> TabletFrame(title, description, backgroundColor, contentColor, style, content = content)
             FormFactor.AppleIPhone67 -> AppleFrame(title, description, backgroundColor, contentColor, style, content)
+            // Guarded against above; a feature graphic is previewed via its own banner composable.
+            FormFactor.GooglePlayFeatureGraphic -> error("unreachable")
         }
     }
 }
