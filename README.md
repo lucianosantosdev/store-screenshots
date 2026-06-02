@@ -132,6 +132,34 @@ storeScreenshots {
 | `Tablet7` | 1200 x 1920 | `sevenInchScreenshots` |
 | `Tablet10` | 1600 x 2560 | `tenInchScreenshots` |
 | `AppleIPhone67` | 1290 x 2796 | `iphone67` |
+| `GooglePlayFeatureGraphic` | 1024 x 500 | `featureGraphic` |
+
+### Feature graphic
+
+`GooglePlayFeatureGraphic` is the landscape 1024 x 500 banner shown at the top of a Play Store
+listing. Unlike the other form factors it has no built-in title/description frame — a feature
+graphic is promotional art, so you compose it yourself with `customScreenshot { … }` and drop a
+`DeviceMockup(formFactor = …)` for each device your app supports. Each mockup is laid out at its
+native size and uniformly scaled to fit, so the bezel, status bar, and content keep real-device
+proportions no matter how small you draw it. Size it with the `Modifier` you pass — bound the
+height to line several devices up in a `Row`. Calling `screenshot(…)` on this form factor
+throws — use `customScreenshot`.
+
+For watches, `DeviceMockup(FormFactor.Wear)` draws a round case; use `WatchMockup(shape = …)`
+directly to choose `WatchShape.Round` or `WatchShape.Square`.
+
+```kotlin
+class FeatureGraphic : StoreScreenshotsTest(FormFactor.GooglePlayFeatureGraphic) {
+    @Test fun banner() = customScreenshot {
+        Row(verticalAlignment = Alignment.Bottom) {
+            DeviceMockup(FormFactor.Tablet10, Modifier.fillMaxHeight(0.85f)) { HomeScreen() }
+            DeviceMockup(FormFactor.Phone, Modifier.fillMaxHeight(0.7f)) { HomeScreen() }
+            WatchMockup(WatchShape.Round, Modifier.fillMaxHeight(0.35f)) { WatchScreen() }
+            WatchMockup(WatchShape.Square, Modifier.fillMaxHeight(0.35f)) { WatchScreen() }
+        }
+    }
+}
+```
 
 ## Styling
 

@@ -29,6 +29,9 @@ annotation class Tablet10ScreenshotPreview
 @Preview(name = "iPhone 6.7\" (1290×2796)", widthDp = 430, heightDp = 932)
 annotation class AppleIPhone67ScreenshotPreview
 
+@Preview(name = "Feature Graphic (1024×500)", widthDp = 512, heightDp = 250)
+annotation class GooglePlayFeatureGraphicScreenshotPreview
+
 /**
  * Multi-preview: renders all form factors at once. Useful for quick visual checks
  * but produces a large preview panel.
@@ -38,4 +41,5 @@ annotation class AppleIPhone67ScreenshotPreview
 @Tablet7ScreenshotPreview
 @Tablet10ScreenshotPreview
 @AppleIPhone67ScreenshotPreview
+@GooglePlayFeatureGraphicScreenshotPreview
 annotation class AllScreenshotPreviews
