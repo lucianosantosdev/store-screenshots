@@ -36,6 +36,22 @@ val styledScreenshotStyle = ScreenshotStyle(
     description = { text -> StyledDescription(text) },
 )
 
+/**
+ * A perspective 3D tilt: the device turns on its Y axis (left edge toward the viewer), tips a
+ * little on X, and spins slightly on Z — the look of a marketing hero shot, all from
+ * [ScreenshotStyle]'s `mockupRotationY` / `mockupRotationX` / `mockupRotation`.
+ */
+val perspectiveScreenshotStyle = ScreenshotStyle(
+    mockupPosition = MockupPosition.Middle,
+    mockupOffset = DpOffset(x = 24.dp, y = 0.dp),
+    mockupRotationY = -26f,
+    mockupRotationX = 8f,
+    mockupRotation = -6f,
+    background = { MarketingBackground() },
+    title = { text -> StyledTitle(text) },
+    description = { text -> StyledDescription(text) },
+)
+
 @Composable
 fun MarketingBackground() {
     Box(

@@ -23,11 +23,46 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.lucianosantos.storescreenshots.frames.StatusBar
+
+/**
+ * Default perspective strength for 3D mockup rotation. It is the camera-to-plane distance in
+ * density-independent units (multiplied by display density when applied): larger values flatten
+ * the perspective toward orthographic, smaller values exaggerate the foreshortening. Tune it when
+ * a steep [DeviceMockup] `rotationX`/`rotationY` looks too warped or too flat.
+ */
+const val DefaultMockupCameraDistance = 12f
+
+/**
+ * Applies a perspective 3D rotation (tilt) around the X, Y, and Z axes in a single
+ * [graphicsLayer]. [rotationX] tips the device toward/away from the viewer, [rotationY] turns it
+ * left/right, and [rotationZ] spins it in-plane (the same as `Modifier.rotate`). [cameraDistance]
+ * controls how strong the perspective is — see [DefaultMockupCameraDistance].
+ *
+ * No-ops when all three angles are zero, so an untransformed mockup renders byte-for-byte the same
+ * as before this modifier existed.
+ */
+internal fun Modifier.mockup3dRotation(
+    rotationX: Float,
+    rotationY: Float,
+    rotationZ: Float,
+    cameraDistance: Float = DefaultMockupCameraDistance,
+): Modifier =
+    if (rotationX == 0f && rotationY == 0f && rotationZ == 0f) {
+        this
+    } else {
+        graphicsLayer {
+            this.rotationX = rotationX
+            this.rotationY = rotationY
+            this.rotationZ = rotationZ
+            this.cameraDistance = cameraDistance * density
+        }
+    }
 
 /**
  * Renders just the device bezel/frame for the given [formFactor] — no title, no description,
@@ -51,6 +86,10 @@ import dev.lucianosantos.storescreenshots.frames.StatusBar
  * proportions no matter how small you draw the device. [FormFactor.Wear] renders a round watch;
  * use [WatchMockup] directly to pick [WatchShape.Round] or [WatchShape.Square].
  *
+ * [rotationX], [rotationY], and [rotationZ] tilt the whole device in 3D for a perspective mockup
+ * (degrees): X tips it toward/away from the viewer, Y turns it left/right, Z spins it in-plane.
+ * [cameraDistance] controls the perspective strength — see [DefaultMockupCameraDistance].
+ *
  * [FormFactor.GooglePlayFeatureGraphic] is a banner canvas rather than a device, so it has no
  * bezel — compose real devices onto it instead.
  */
@@ -60,19 +99,24 @@ fun DeviceMockup(
     modifier: Modifier = Modifier,
     showStatusBar: Boolean = true,
     statusBarClock: String = "12:00",
+    rotationX: Float = 0f,
+    rotationY: Float = 0f,
+    rotationZ: Float = 0f,
+    cameraDistance: Float = DefaultMockupCameraDistance,
     content: @Composable () -> Unit,
 ) {
+    val rotated = modifier.mockup3dRotation(rotationX, rotationY, rotationZ, cameraDistance)
     when (formFactor) {
         FormFactor.Phone ->
-            ScaledMockup(411.dp, 822.dp, modifier) { PhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, content) }
+            ScaledMockup(411.dp, 822.dp, rotated) { PhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, content) }
         FormFactor.Wear ->
-            WatchMockup(WatchShape.Round, modifier, content)
+            WatchMockup(WatchShape.Round, rotated, content = content)
         FormFactor.Tablet7 ->
-            ScaledMockup(600.dp, 800.dp, modifier) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, content) }
+            ScaledMockup(600.dp, 800.dp, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, content) }
         FormFactor.Tablet10 ->
-            ScaledMockup(800.dp, 1067.dp, modifier) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, content) }
+            ScaledMockup(800.dp, 1067.dp, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, content) }
         FormFactor.AppleIPhone67 ->
-            ScaledMockup(430.dp, 932.dp, modifier) { AppleBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, content) }
+            ScaledMockup(430.dp, 932.dp, rotated) { AppleBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, content) }
         FormFactor.GooglePlayFeatureGraphic -> error(
             "FormFactor.GooglePlayFeatureGraphic is a banner canvas, not a device. " +
                 "Compose real devices with DeviceMockup(formFactor = FormFactor.Phone / Tablet10 / …) " +
@@ -89,15 +133,23 @@ enum class WatchShape { Round, Square }
  * the case. [Round] is a circular Wear OS-style case; [Square] uses Apple Watch proportions
  * (a 374x446 screen). Sized by [modifier] like [DeviceMockup] (bound width or height; the other
  * follows the watch's footprint) and scaled from a native size so [content] keeps its proportions.
+ *
+ * [rotationX], [rotationY], [rotationZ], and [cameraDistance] tilt the case in 3D exactly like
+ * [DeviceMockup].
  */
 @Composable
 fun WatchMockup(
     shape: WatchShape = WatchShape.Round,
     modifier: Modifier = Modifier,
+    rotationX: Float = 0f,
+    rotationY: Float = 0f,
+    rotationZ: Float = 0f,
+    cameraDistance: Float = DefaultMockupCameraDistance,
     content: @Composable () -> Unit,
 ) {
     val spec = watchSpec(shape)
-    ScaledMockup(spec.nativeWidth, spec.nativeHeight, modifier) { WatchBezel(shape, content) }
+    val rotated = modifier.mockup3dRotation(rotationX, rotationY, rotationZ, cameraDistance)
+    ScaledMockup(spec.nativeWidth, spec.nativeHeight, rotated) { WatchBezel(shape, content) }
 }
 
 /** Geometry for a [WatchMockup], derived per [WatchShape]. All values are native (pre-scale) dp. */

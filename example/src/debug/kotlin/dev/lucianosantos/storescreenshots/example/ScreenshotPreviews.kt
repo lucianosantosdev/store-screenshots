@@ -93,3 +93,12 @@ fun StyledPreview() = ScreenshotPreview(
 fun CustomLayoutPreview() = CustomScreenshotLayout {
     DeviceMockup(formFactor = FormFactor.Phone) { CounterScreen(count = 42) }
 }
+
+@PhoneScreenshotPreview
+@Composable
+fun PerspectivePreview() = ScreenshotPreview(
+    formFactor = FormFactor.Phone,
+    title = "Tilt it in 3D",
+    description = "Perspective XYZ rotation — just mockupRotationX / Y / Z on ScreenshotStyle",
+    style = perspectiveScreenshotStyle,
+) { CounterScreen(count = 42) }

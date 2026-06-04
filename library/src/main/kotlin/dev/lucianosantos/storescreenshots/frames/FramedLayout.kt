@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
-import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -24,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.lucianosantos.storescreenshots.MockupPosition
 import dev.lucianosantos.storescreenshots.ScreenshotStyle
+import dev.lucianosantos.storescreenshots.mockup3dRotation
 
 /**
  * Shared layout used by [PhoneFrame], [TabletFrame], and [AppleFrame]. Renders the background
@@ -50,7 +50,12 @@ internal fun FramedLayout(
     val oy = style.mockupOffset.y
     val offsetModifier = Modifier
         .offset(x = ox)
-        .rotate(style.mockupRotation)
+        .mockup3dRotation(
+            rotationX = style.mockupRotationX,
+            rotationY = style.mockupRotationY,
+            rotationZ = style.mockupRotation,
+            cameraDistance = style.mockupCameraDistance,
+        )
     Box(modifier = Modifier.fillMaxSize().background(backgroundColor)) {
         style.background?.invoke()
 

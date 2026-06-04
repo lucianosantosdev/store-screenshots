@@ -208,6 +208,9 @@ Pass a `ScreenshotStyle` to `StoreScreenshotsTest` (class-level default) or to `
 | --- | --- |
 | `mockupPosition` | Device frame at `Top`, `Middle`, or `Bottom` (default). |
 | `mockupOffset` | `DpOffset(x, y)` — X crops off the canvas edge, Y reserves layout space so text doesn't overlap. |
+| `mockupRotation` | In-plane Z rotation in degrees (the flat `Modifier.rotate` spin). |
+| `mockupRotationX` / `mockupRotationY` | 3D perspective tilt in degrees — X tips the device toward/away, Y turns it left/right. See [3D perspective](#3d-perspective). |
+| `mockupCameraDistance` | Perspective strength for the 3D tilt. Higher = flatter, lower = more dramatic. Default `12`. |
 | `showStatusBar` | Show/hide the status bar on phone, tablet, and Apple mockups. Default `true`. |
 | `statusBarClock` | Clock text in the status bar. Default `"12:00"`. |
 | `titleFontFamily` / `descriptionFontFamily` | Font for the default title/description Text composables. |
@@ -373,6 +376,34 @@ Wear screenshots have no title/description banner, so `mockupPosition` doesn't a
     ),
 ) { CounterScreen(count = 42) }
 ```
+
+### 3D perspective
+
+<img src="example/screenshots/en-US/images/phoneScreenshots/counter_perspective.png" width="280" />
+
+Tilt the device in 3D for a marketing hero shot. `mockupRotationX` tips it toward or away from
+the viewer, `mockupRotationY` turns it left/right, and `mockupRotation` spins it in-plane (Z).
+It's a pure Compose `graphicsLayer` perspective transform — no extra dependency — so it renders
+into the PNG exactly as it previews. Tune `mockupCameraDistance` if a steep angle looks too warped
+(higher) or too flat (lower):
+
+```kotlin
+@Test fun counter_perspective() = screenshot(
+    titleRes = R.string.screenshot_perspective_title,
+    descriptionRes = R.string.screenshot_perspective_desc,
+    style = ScreenshotStyle(
+        mockupPosition = MockupPosition.Middle,
+        mockupRotationY = -26f,  // turn left edge toward the viewer
+        mockupRotationX = 8f,    // tip the top back a little
+        mockupRotation = -6f,    // slight in-plane spin
+        background = { MarketingBackground() },
+    ),
+) { CounterScreen(count = 42) }
+```
+
+The same `rotationX` / `rotationY` / `rotationZ` / `cameraDistance` parameters exist on
+`DeviceMockup`, `WatchMockup`, and the `Mockup { }` composable, so you can tilt individual devices
+inside a `customScreenshot { }` layout or a feature graphic too.
 
 ## Releasing
 

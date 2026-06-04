@@ -12,4 +12,6 @@
     <string name="screenshot_feature_desc">Feito inteiramente com Jetpack Compose</string>
     <string name="screenshot_styled_title">Do seu jeito</string>
     <string name="screenshot_styled_desc">Fontes personalizadas · fundos gradientes · dispositivos centralizados · tudo em um ScreenshotStyle</string>
+    <string name="screenshot_perspective_title">Incline em 3D</string>
+    <string name="screenshot_perspective_desc">Rotação XYZ em perspectiva — só mockupRotationX / Y / Z no ScreenshotStyle</string>
 </resources>
