@@ -1,7 +1,6 @@
 package dev.lucianosantos.storescreenshots.gradle
 
 import com.android.build.api.dsl.CommonExtension
-import com.android.build.gradle.BaseExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.testing.Test
@@ -81,18 +80,20 @@ class StoreScreenshotsPlugin : Plugin<Project> {
     }
 
     private fun configureAndroid(target: Project) {
-        val androidExt = target.extensions.findByType(BaseExtension::class.java)
+        // AGP 9's new DSL exposes only the public interfaces: BaseExtension and the parameterized
+        // CommonExtension are gone, so go through CommonExtension (which carries both sourceSets
+        // and testOptions for app and library modules alike).
+        val common = target.extensions.findByType(CommonExtension::class.java)
             ?: error("Could not find Android extension on project ${target.path}")
 
-        @Suppress("UNCHECKED_CAST")
-        val common = androidExt as CommonExtension<*, *, *, *, *, *>
-
-        val testSourceSet = androidExt.sourceSets.getByName("test")
-        testSourceSet.java.srcDir("src/screenshots/kotlin")
-        testSourceSet.java.srcDir("src/screenshots/java")
-        testSourceSet.resources.srcDir("src/screenshots/resources")
-        testSourceSet.res.srcDir("src/screenshots/res")
-
+        val testSourceSet = common.sourceSets.getByName("test")
+        // Built-in Kotlin compiles only the `kotlin` source set, so register Kotlin dirs there
+        // (the old `java` srcDir trick no longer picks up .kt files); `java` keeps the java dir.
+        // AGP 9 replaced the deprecated `srcDir(...)` with the `directories` mutable set.
+        testSourceSet.kotlin.directories.add("src/screenshots/kotlin")
+        testSourceSet.java.directories.add("src/screenshots/java")
+        testSourceSet.resources.directories.add("src/screenshots/resources")
+        testSourceSet.res.directories.add("src/screenshots/res")
 
         common.testOptions.unitTests.apply {
             isIncludeAndroidResources = true
@@ -104,11 +105,8 @@ class StoreScreenshotsPlugin : Plugin<Project> {
         // When the plugin is consumed via composite build (includeBuild), Gradle substitutes the
         // group:name pair with the included build's project. When consumed from GitHub Packages,
         // this resolves to the matching library version published alongside the plugin.
-        return mapOf(
-            "group" to "io.github.lucianosantosdev",
-            "name" to "storescreenshots-library",
-            "version" to pluginVersion,
-        )
+        // Single-string notation — the map (multi-string) form is deprecated and fails in Gradle 10.
+        return "io.github.lucianosantosdev:storescreenshots-library:$pluginVersion"
     }
 
     companion object {

@@ -3,7 +3,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.androidLibrary)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.mavenPublish)
 }
