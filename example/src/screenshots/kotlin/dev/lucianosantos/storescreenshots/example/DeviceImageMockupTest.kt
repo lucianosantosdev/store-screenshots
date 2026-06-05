@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -17,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -132,6 +134,22 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
                     )
                 }
             }
+        }
+    }
+
+    // CHROMA KEY on a PHOTO: a real photograph of a smartwatch whose screen was painted flat green.
+    // The opaque photo is the banner itself; chroma keying drops the live watch UI onto the screen.
+    @Test
+    fun device_image_watch_chroma() = customScreenshot {
+        Box(Modifier.fillMaxSize().clipToBounds(), contentAlignment = Alignment.Center) {
+            DeviceImageMockup(
+                frame("watch_chroma.png"),
+                screens = listOf { WearCounterScreen(count = 42) },
+                modifier = Modifier.fillMaxWidth(),
+                screenNativeWidth = 200.dp,
+                screenColor = Color.Green,
+                screenColorTolerance = 0.2f,
+            )
         }
     }
 

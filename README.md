@@ -9,6 +9,8 @@
 | :---: | :---: | :---: | :---: |
 | <img src="example/screenshots/en-US/images/phoneScreenshots/counter.jpg" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/custom_layout.jpg" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/counter_styled.jpg" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/custom_frame.jpg" width="200" /> |
 | Phone | Custom layout | Styled | Custom frame |
+| <img src="example/screenshots/en-US/images/featureGraphic/device_image_chroma.jpg" width="410" /> | | <img src="example/screenshots/en-US/images/featureGraphic/device_image_watch_chroma.jpg" width="410" /> | |
+| Live UI on a 3D render | | Live UI on a real photo | |
 
 Gradle plugin + Compose library for generating framed Play Store / App Store screenshots from Compose UI under Robolectric.
 
@@ -415,7 +417,7 @@ automatically, and your UI fills each one (the device's own bezel does the cropp
 | :---: | :---: |
 | <img src="example/screenshots/en-US/images/featureGraphic/device_image_trio.jpg" width="380" /><br>Three phones | <img src="example/screenshots/en-US/images/featureGraphic/device_image_podium.jpg" width="380" /><br>Gray screen |
 | <img src="example/screenshots/en-US/images/featureGraphic/device_image_watch_phone.jpg" width="380" /><br>Watch + phone | <img src="example/screenshots/en-US/images/featureGraphic/device_image_tablet.jpg" width="380" /><br>Tablet |
-| <img src="example/screenshots/en-US/images/featureGraphic/device_image_chroma.jpg" width="380" /><br>Chroma-keyed on a transparent render | |
+| <img src="example/screenshots/en-US/images/featureGraphic/device_image_chroma.jpg" width="380" /><br>Chroma-keyed on a transparent render | <img src="example/screenshots/en-US/images/featureGraphic/device_image_watch_chroma.jpg" width="380" /><br>Chroma-keyed on a real photo |
 
 ### Usage
 
