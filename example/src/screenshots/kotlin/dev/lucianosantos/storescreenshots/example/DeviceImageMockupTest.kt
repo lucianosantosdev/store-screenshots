@@ -16,7 +16,7 @@ import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.StoreScreenshotsTest
 import org.junit.Test
 
-class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.Phone) {
+class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureGraphic) {
 
     // Three different screens placed onto the three detected mockups (left → right).
     @Test
@@ -46,7 +46,12 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.Phone) {
     @Test
     fun device_image_tablet() = customScreenshot {
         Box(Modifier.fillMaxSize().background(Color(0xFF2B2B30)), contentAlignment = Alignment.Center) {
-            DeviceImageMockup(frame("tablet_mockup_keyboard.jpg"), screens = listOf { CounterScreen(count = 42) }, modifier = Modifier.fillMaxSize())
+            DeviceImageMockup(
+                frame("tablet_mockup_keyboard.jpg"),
+                screens = listOf { CounterScreen(count = 42) },
+                modifier = Modifier.fillMaxSize(),
+                screenNativeWidth = 760.dp, // lay the UI out at tablet size, not phone size
+            )
         }
     }
 

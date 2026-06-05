@@ -3,6 +3,7 @@ package dev.lucianosantos.storescreenshots.example
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -37,20 +38,38 @@ private val AccentColor = Color(0xFFFBBF24)
 
 @Composable
 fun CounterScreen(count: Int) {
-    Box(
+    BoxWithConstraints(
         modifier = Modifier.fillMaxSize().background(PageBackground),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            AppBadge()
-            Spacer(Modifier.height(40.dp))
-            CounterCard(count = count)
-            Spacer(Modifier.height(24.dp))
-            ActionRow()
+        if (maxWidth > maxHeight) {
+            // Landscape (e.g. a tablet): the card sits beside the badge + controls.
+            Row(
+                modifier = Modifier.padding(48.dp),
+                horizontalArrangement = Arrangement.spacedBy(56.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CounterCard(count = count)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(28.dp)
+                ) {
+                    AppBadge()
+                    ActionRow()
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier.padding(horizontal = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                AppBadge()
+                Spacer(Modifier.height(40.dp))
+                CounterCard(count = count)
+                Spacer(Modifier.height(24.dp))
+                ActionRow()
+            }
         }
     }
 }

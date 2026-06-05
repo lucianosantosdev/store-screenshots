@@ -411,9 +411,10 @@ Drop your live Compose UI into the empty screen of a real device image — a 3D 
 with correct perspective. You pass the image plus one composable per screen; the screens are found
 automatically, and your UI fills each one (the device's own bezel does the cropping).
 
-| Three phones | Gray screen | Watch + phone | Tablet |
-| :---: | :---: | :---: | :---: |
-| <img src="example/screenshots/en-US/images/phoneScreenshots/device_image_trio.jpg" width="190" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/device_image_podium.jpg" width="110" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/device_image_watch_phone.jpg" width="110" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/device_image_tablet.jpg" width="190" /> |
+| | |
+| :---: | :---: |
+| <img src="example/screenshots/en-US/images/featureGraphic/device_image_trio.jpg" width="380" /><br>Three phones | <img src="example/screenshots/en-US/images/featureGraphic/device_image_podium.jpg" width="380" /><br>Gray screen |
+| <img src="example/screenshots/en-US/images/featureGraphic/device_image_watch_phone.jpg" width="380" /><br>Watch + phone | <img src="example/screenshots/en-US/images/featureGraphic/device_image_tablet.jpg" width="380" /><br>Tablet |
 
 ### Usage
 
