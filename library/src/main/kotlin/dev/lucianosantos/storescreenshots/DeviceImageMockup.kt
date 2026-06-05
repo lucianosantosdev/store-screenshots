@@ -381,6 +381,16 @@ fun DeviceImageMockup(
         magicWandScreens(frame, regions.take(n), screenColorTolerance)
     }
 
+    // The device silhouette (the original frame's own alpha): content is masked to it so overshoot
+    // past a thin or zero-width bezel can't spill outside the device onto a transparent background.
+    val deviceSilhouette = remember(frame) { frame.asAndroidBitmap() }
+    val silhouettePaint = remember {
+        android.graphics.Paint().apply {
+            isFilterBitmap = true
+            xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_IN)
+        }
+    }
+
     // Optional manual quarter-turn per screen, on top of the auto-detected orientation.
     fun steps(i: Int) = screenRotations.getOrElse(i) { ScreenRotation.None }.quarterTurns
 
@@ -413,30 +423,40 @@ fun DeviceImageMockup(
         Canvas(Modifier.fillMaxSize()) {
             val w = size.width
             val h = size.height
-            // 1) Live content, perspective-warped onto each screen quad — drawn BEHIND the frame.
-            for (i in 0 until n) {
-                val r = refined[i]
-                val s = steps(i)
-                val nw = with(density) { screenNativeWidth.toPx() }
-                val nhp = with(density) { nativeHeight(r, s).toPx() }
-                val src = floatArrayOf(0f, 0f, nw, 0f, nw, nhp, 0f, nhp)
-                // Manual rotation = cyclically shift which screen corner each content corner maps to.
-                val q = listOf(r.topLeft, r.topRight, r.bottomRight, r.bottomLeft)
-                val d = (0 until 4).map { q[(it + s) % 4] }
-                val dst = floatArrayOf(
-                    d[0].x * w, d[0].y * h, d[1].x * w, d[1].y * h,
-                    d[2].x * w, d[2].y * h, d[3].x * w, d[3].y * h,
-                )
-                val m = Matrix().apply { setPolyToPoly(src, 0, dst, 0, 4) }
-                drawIntoCanvas { canvas ->
-                    canvas.nativeCanvas.save()
-                    canvas.nativeCanvas.concat(m)
+            val dstRect = android.graphics.Rect(0, 0, w.toInt(), h.toInt())
+            drawIntoCanvas { canvas ->
+                val nc = canvas.nativeCanvas
+                // Group the warped content into a layer so it can be masked as a whole.
+                val layer = nc.saveLayer(null, null)
+                // 1) Live content, perspective-warped onto each screen quad — drawn BEHIND the frame.
+                for (i in 0 until n) {
+                    val r = refined[i]
+                    val s = steps(i)
+                    val nw = with(density) { screenNativeWidth.toPx() }
+                    val nhp = with(density) { nativeHeight(r, s).toPx() }
+                    val src = floatArrayOf(0f, 0f, nw, 0f, nw, nhp, 0f, nhp)
+                    // Manual rotation = cyclically shift which screen corner each content corner maps to.
+                    val q = listOf(r.topLeft, r.topRight, r.bottomRight, r.bottomLeft)
+                    val d = (0 until 4).map { q[(it + s) % 4] }
+                    val dst = floatArrayOf(
+                        d[0].x * w, d[0].y * h, d[1].x * w, d[1].y * h,
+                        d[2].x * w, d[2].y * h, d[3].x * w, d[3].y * h,
+                    )
+                    val m = Matrix().apply { setPolyToPoly(src, 0, dst, 0, 4) }
+                    nc.save()
+                    nc.concat(m)
                     drawLayer(layers[i])
-                    canvas.nativeCanvas.restore()
+                    nc.restore()
                 }
+                // 2) Mask content to the device silhouette (DST_IN keeps it only where the original
+                //    frame is opaque), so a grown quad that overshoots past a thin or zero-width bezel
+                //    can't spill outside the device onto a transparent-background banner. Combined with
+                //    the knocked-out frame on top, content ends up cropped to the screen shape itself.
+                nc.drawBitmap(deviceSilhouette, null, dstRect, silhouettePaint)
+                nc.restoreToCount(layer)
             }
-            // 2) The frame with its screens knocked out, ON TOP — its bezel crops the content.
-            drawImage(image = knockedFrame, dstSize = IntSize(size.width.toInt(), size.height.toInt()))
+            // 3) The frame with its screens knocked out, ON TOP — its bezel crops the content.
+            drawImage(image = knockedFrame, dstSize = IntSize(w.toInt(), h.toInt()))
         }
     }
 }
