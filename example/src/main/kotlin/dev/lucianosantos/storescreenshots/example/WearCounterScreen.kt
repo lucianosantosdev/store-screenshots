@@ -39,16 +39,16 @@ fun WearCounterScreen(count: Int) {
             Text(
                 text = count.toString(),
                 color = Color.White,
-                fontSize = 56.sp,
+                fontSize = 112.sp,
                 fontWeight = FontWeight.ExtraBold
             )
             Spacer(Modifier.height(2.dp))
             Text(
                 text = "TAPS",
                 color = Color(0xFFFBBF24),
-                fontSize = 12.sp,
+                fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 3.sp
+                letterSpacing = 6.sp
             )
         }
     }
