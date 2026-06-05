@@ -515,12 +515,43 @@ private fun magicWandScreens(
             Offset(o[2].x / w, o[2].y / h), Offset(o[3].x / w, o[3].y / h),
         )
     }
+    featherKnockoutEdge(pixels, w, h, queue)
     bmp.setPixels(pixels, 0, w, 0, 0, w, h)
     return bmp.asImageBitmap() to refined
 }
 
 /** How far to grow the detected screen quad outward, as a fraction of each corner's reach from center. */
-private const val SCREEN_MARGIN = 0.012f
+private const val SCREEN_MARGIN = 0.018f
+
+/**
+ * Softens the knockout's edge. The anti-aliased ring where the screen met the bezel in the source
+ * render is a muddy screen/bezel blend that the colour-matched wand doesn't knock out, so it draws as
+ * a hard sliver over the warped UI. This ramps the alpha of the [radius]-pixel rim just outside the
+ * knockout from nearly transparent (touching the screen) up to opaque (solid bezel), so the seam
+ * dissolves into the content behind it — the warped UI overshoots under the bezel (see [grow]), so
+ * there is real content to show through. A breadth-first distance transform out from the transparent
+ * pixels gives each rim pixel its ring index; [scratch] is reused as the BFS queue.
+ */
+private fun featherKnockoutEdge(pixels: IntArray, w: Int, h: Int, scratch: IntArray) {
+    val radius = max(2, min(w, h) / 960)
+    val dist = IntArray(w * h) { -1 }
+    var head = 0; var tail = 0
+    for (i in pixels.indices) if ((pixels[i] ushr 24) == 0) { dist[i] = 0; scratch[tail++] = i }
+    while (head < tail) {
+        val idx = scratch[head++]
+        val d = dist[idx]
+        if (d >= radius) continue
+        val x = idx % w; val y = idx / w
+        if (x > 0 && dist[idx - 1] < 0) { dist[idx - 1] = d + 1; scratch[tail++] = idx - 1 }
+        if (x < w - 1 && dist[idx + 1] < 0) { dist[idx + 1] = d + 1; scratch[tail++] = idx + 1 }
+        if (y > 0 && dist[idx - w] < 0) { dist[idx - w] = d + 1; scratch[tail++] = idx - w }
+        if (y < h - 1 && dist[idx + w] < 0) { dist[idx + w] = d + 1; scratch[tail++] = idx + w }
+    }
+    for (i in pixels.indices) {
+        val d = dist[i]
+        if (d in 1..radius) pixels[i] = (pixels[i] and 0x00FFFFFF) or ((255 * d / (radius + 1)) shl 24)
+    }
+}
 
 /** Pushes each corner outward from the quad centroid by [fraction] of its distance, enlarging it slightly. */
 private fun grow(corners: List<Offset>, fraction: Float): List<Offset> {
