@@ -599,7 +599,7 @@ private fun magicWandScreens(
 }
 
 /** Extra pixels to grow the quad past the dilation reach, covering the keyed rim and the feather ring. */
-private const val SCREEN_MARGIN_PX = 1.5f
+private const val SCREEN_MARGIN_PX = 1f
 
 /**
  * Softens the knockout's edge. The anti-aliased ring where the screen met the bezel in the source
