@@ -14,4 +14,6 @@
     <string name="screenshot_styled_desc">Custom fonts · gradient backgrounds · centered devices · all from one ScreenshotStyle</string>
     <string name="screenshot_perspective_title">Tilt it in 3D</string>
     <string name="screenshot_perspective_desc">Perspective XYZ rotation — just mockupRotationX / Y / Z on ScreenshotStyle</string>
+    <string name="screenshot_chroma_title">Drop your UI into any render</string>
+    <string name="screenshot_chroma_desc">Paint the screen one colour — chroma keying drops your live Compose UI into the render</string>
 </resources>

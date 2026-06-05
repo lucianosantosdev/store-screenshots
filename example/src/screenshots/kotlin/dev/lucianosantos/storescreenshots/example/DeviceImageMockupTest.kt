@@ -3,16 +3,29 @@ package dev.lucianosantos.storescreenshots.example
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import dev.lucianosantos.storescreenshots.DeviceImageMockup
 import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.StoreScreenshotsTest
@@ -60,18 +73,65 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
         }
     }
 
-    // CHROMA KEY: a 3D render whose empty screen is painted flat green. Instead of bezel detection we
-    // pass `screenColor` — detection locks onto the green blob and ignores body, bezel and background.
+    // CHROMA KEY: a 3D render whose empty screen is painted flat green, on a transparent background so
+    // it drops straight onto a colourful marketing banner. Instead of bezel detection we pass
+    // `screenColor` — detection locks onto the green blob and ignores body, bezel and background.
     @Test
     fun device_image_chroma() = customScreenshot {
-        Box(Modifier.fillMaxSize().background(Color(0xFFE8E8E8)), contentAlignment = Alignment.Center) {
-            DeviceImageMockup(
-                frame("phone_chroma.jpg"),
-                screens = listOf { CounterScreen(count = 42) },
-                modifier = Modifier.fillMaxHeight(),
-                screenColor = Color.Green,
-                screenColorTolerance = 0.2f,
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.linearGradient(
+                        listOf(Color(0xFF4338CA), Color(0xFF7C3AED), Color(0xFFDB2777))
+                    )
+                )
+        ) {
+            // Soft decorative circles for a marketing feel.
+            Box(
+                Modifier
+                    .size(260.dp)
+                    .offset(x = (-70).dp, y = (-90).dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.10f))
             )
+            Box(
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(340.dp)
+                    .offset(x = 130.dp, y = 150.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.08f))
+            )
+            Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                // Marketing copy on the left.
+                Column(Modifier.weight(1f).padding(start = 48.dp, end = 16.dp)) {
+                    Text(
+                        text = stringResource(R.string.screenshot_chroma_title),
+                        color = Color.White,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 38.sp,
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    Text(
+                        text = stringResource(R.string.screenshot_chroma_desc),
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 15.sp,
+                        lineHeight = 21.sp,
+                    )
+                }
+                // The chroma-keyed phone, composited onto the gradient via its transparent render.
+                Box(Modifier.weight(0.95f).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                    DeviceImageMockup(
+                        frame("phone_chroma.png"),
+                        screens = listOf { CounterScreen(count = 42) },
+                        modifier = Modifier.fillMaxHeight(0.96f),
+                        screenColor = Color.Green,
+                        screenColorTolerance = 0.2f,
+                    )
+                }
+            }
         }
     }
 

@@ -415,7 +415,7 @@ automatically, and your UI fills each one (the device's own bezel does the cropp
 | :---: | :---: |
 | <img src="example/screenshots/en-US/images/featureGraphic/device_image_trio.jpg" width="380" /><br>Three phones | <img src="example/screenshots/en-US/images/featureGraphic/device_image_podium.jpg" width="380" /><br>Gray screen |
 | <img src="example/screenshots/en-US/images/featureGraphic/device_image_watch_phone.jpg" width="380" /><br>Watch + phone | <img src="example/screenshots/en-US/images/featureGraphic/device_image_tablet.jpg" width="380" /><br>Tablet |
-| <img src="example/screenshots/en-US/images/featureGraphic/device_image_chroma.jpg" width="380" /><br>Chroma-keyed screen | |
+| <img src="example/screenshots/en-US/images/featureGraphic/device_image_chroma.jpg" width="380" /><br>Chroma-keyed on a transparent render | |
 
 ### Usage
 
@@ -467,12 +467,16 @@ bezel, body and background entirely (each connected blob of the colour becomes o
 
 ```kotlin
 DeviceImageMockup(
-    frame = frame("phone_green_screen.jpg"),
+    frame = frame("phone_green_screen.png"),
     screens = listOf { HomeScreen() },
     screenColor = Color(0xFF00C85A),   // the colour you painted the screen
     screenColorTolerance = 0.22f,      // widen if JPEG softened the colour, tighten if it leaks
 )
 ```
+
+Export the render with a **transparent background** (PNG or WebP) and the device drops straight onto
+whatever you compose behind it — a gradient, marketing copy, anything — since only the device pixels
+are drawn. That's how the example above places the phone on a colourful feature-graphic banner.
 
 ### When auto-detection can't find the screen
 

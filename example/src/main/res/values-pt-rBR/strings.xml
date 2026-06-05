@@ -14,4 +14,6 @@
     <string name="screenshot_styled_desc">Fontes personalizadas · fundos gradientes · dispositivos centralizados · tudo em um ScreenshotStyle</string>
     <string name="screenshot_perspective_title">Incline em 3D</string>
     <string name="screenshot_perspective_desc">Rotação XYZ em perspectiva — só mockupRotationX / Y / Z no ScreenshotStyle</string>
+    <string name="screenshot_chroma_title">Coloque sua UI em qualquer render</string>
+    <string name="screenshot_chroma_desc">Pinte a tela de uma cor — o chroma key insere sua UI Compose ao vivo no render</string>
 </resources>
