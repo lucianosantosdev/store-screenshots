@@ -511,6 +511,36 @@ private fun magicWandScreens(
             if (y > 0 && !visited[idx - w] && matchesSeed(pixels[idx - w], sr, sg, sb, tol)) { visited[idx - w] = true; queue[tail++] = idx - w }
             if (y < h - 1 && !visited[idx + w] && matchesSeed(pixels[idx + w], sr, sg, sb, tol)) { visited[idx + w] = true; queue[tail++] = idx + w }
         }
+        // On a real screen the keyed colour is rimmed by a bright glass-edge highlight (a specular
+        // reflection on the bevel) that isn't the key colour, so the flood stops just short of it and
+        // it would draw as a bright sliver over the content. Dilate the selection a few pixels into
+        // those bright neighbours — knocking them out and extending the extents so the corner fit
+        // reaches them — and stop at the dark bezel (which crops the content as before).
+        val maxDilate = max(2, min(w, h) / 480)
+        var waveStart = 0; var waveEnd = tail; var ring = 0
+        while (ring < maxDilate && waveStart < waveEnd) {
+            for (qi in waveStart until waveEnd) {
+                val idx = queue[qi]
+                val x = idx % w; val y = idx / w
+                fun grab(n: Int) {
+                    if (!visited[n] && isBright(pixels[n])) {
+                        visited[n] = true
+                        pixels[n] = pixels[n] and 0x00FFFFFF
+                        val nx = n % w; val ny = n / w
+                        if (nx < rowMinX[ny]) rowMinX[ny] = nx
+                        if (nx > rowMaxX[ny]) rowMaxX[ny] = nx
+                        if (ny < colMinY[nx]) colMinY[nx] = ny
+                        if (ny > colMaxY[nx]) colMaxY[nx] = ny
+                        queue[tail++] = n
+                    }
+                }
+                if (x > 0) grab(idx - 1)
+                if (x < w - 1) grab(idx + 1)
+                if (y > 0) grab(idx - w)
+                if (y < h - 1) grab(idx + w)
+            }
+            waveStart = waveEnd; waveEnd = tail; ring++
+        }
         val boundary = ArrayList<Offset>()
         for (y in 0 until h) if (rowMaxX[y] >= 0) {
             boundary += Offset(rowMinX[y].toFloat(), y.toFloat())
@@ -582,6 +612,14 @@ private fun grow(corners: List<Offset>, fraction: Float): List<Offset> {
 
 private fun matchesSeed(p: Int, sr: Int, sg: Int, sb: Int, tol: Int): Boolean =
     abs(((p shr 16) and 0xFF) - sr) <= tol && abs(((p shr 8) and 0xFF) - sg) <= tol && abs((p and 0xFF) - sb) <= tol
+
+/** A glass-edge highlight vs. the dark bezel: luminance above this (0..255) counts as a bright rim. */
+private const val BRIGHT_RIM_LUM = 110f
+
+private fun isBright(p: Int): Boolean {
+    val r = (p shr 16) and 0xFF; val g = (p shr 8) and 0xFF; val b = p and 0xFF
+    return 0.299f * r + 0.587f * g + 0.114f * b > BRIGHT_RIM_LUM
+}
 
 /**
  * The four circumscribed corners of a rounded screen. Using the [rect]'s axes as a frame, [boundary]
