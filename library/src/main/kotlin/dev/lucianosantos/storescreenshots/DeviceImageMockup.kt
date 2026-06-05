@@ -532,30 +532,51 @@ private fun magicWandScreens(
         }
         // On a real screen/photo the keyed colour is inset behind a glass bevel — specular highlights
         // and reflections that aren't the key colour, so the flood stops short and that rim would draw
-        // over the content as a bright edge. Dilate the knockout (alpha only — NOT the outline above)
-        // across the bevel: any neighbour brighter than the true dark bezel, capped relative to the
-        // screen and stopped by the bezel. Track how far it actually reached so the content quad can be
-        // grown to match and cover it.
+        // over the content. First MEASURE how far the bevel reaches: probe outward into pixels brighter
+        // than the true dark bezel, capped relative to the screen and stopped by the bezel, without
+        // knocking anything (the probe just sizes the grow). The probe follows the uneven bevel, so its
+        // shape is ragged — which is why it only measures, and the knockout below is done smoothly.
+        val greenTail = tail
         val maxDilate = max(2, min(gMaxX - gMinX, gMaxY - gMinY) / 22)
+        val probed = ArrayList<Int>()
         var frontierStart = 0; var frontierEnd = tail; var dilated = 0
         while (dilated < maxDilate && frontierStart < frontierEnd) {
             for (qi in frontierStart until frontierEnd) {
                 val idx = queue[qi]
                 val x = idx % w; val y = idx / w
-                fun grab(n: Int) {
+                fun probe(n: Int) {
                     if (!visited[n] && luma(pixels[n]) > BEZEL_LUM) {
-                        visited[n] = true
-                        pixels[n] = pixels[n] and 0x00FFFFFF
-                        queue[tail++] = n
+                        visited[n] = true; probed += n; queue[tail++] = n
                     }
                 }
-                if (x > 0) grab(idx - 1)
-                if (x < w - 1) grab(idx + 1)
-                if (y > 0) grab(idx - w)
-                if (y < h - 1) grab(idx + w)
+                if (x > 0) probe(idx - 1)
+                if (x < w - 1) probe(idx + 1)
+                if (y > 0) probe(idx - w)
+                if (y < h - 1) probe(idx + w)
             }
             frontierStart = frontierEnd
             if (tail > frontierEnd) { frontierEnd = tail; dilated++ } else break
+        }
+        for (p in probed) visited[p] = false // undo the probe; it only measured `dilated`
+        tail = greenTail
+        // Now knock out a SMOOTH geometric dilation of the screen by `dilated` pixels — a uniform
+        // outward grow (every neighbour, regardless of colour) so the knocked edge stays clean instead
+        // of following the ragged bevel. This covers the bright rim without leaving teeth above the
+        // bezel; the content quad is grown to match (below), and the bezel still crops the overshoot.
+        var ringStart = 0; var ringEnd = tail
+        repeat(dilated) {
+            for (qi in ringStart until ringEnd) {
+                val idx = queue[qi]
+                val x = idx % w; val y = idx / w
+                fun knock(n: Int) {
+                    if (!visited[n]) { visited[n] = true; pixels[n] = pixels[n] and 0x00FFFFFF; queue[tail++] = n }
+                }
+                if (x > 0) knock(idx - 1)
+                if (x < w - 1) knock(idx + 1)
+                if (y > 0) knock(idx - w)
+                if (y < h - 1) knock(idx + w)
+            }
+            ringStart = ringEnd; ringEnd = tail
         }
         val rect = minAreaRect(convexHull(boundary)).second
         // Circumscribed corners: fit a line to each of the four straight sides and intersect adjacent
