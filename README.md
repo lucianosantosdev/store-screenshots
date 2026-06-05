@@ -407,76 +407,64 @@ inside a `customScreenshot { }` layout or a feature graphic too.
 
 ## Device image mockup (use a 3D render / photo)
 
-<img src="example/screenshots/en-US/images/phoneScreenshots/device_image_showcase.jpg" width="320" />
+Drop your live Compose UI into the empty screen of a real device image — a 3D render or a photo —
+with correct perspective. You pass the image plus one composable per screen; the screens are found
+automatically, and your UI fills each one (the device's own bezel does the cropping).
 
-_Every screen above is live Compose UI, auto-detected and perspective-warped into a stock device
-render — white & gray screens, strong tilts, watch + phone, tablet + keyboard, multiple screens per
-image._
+| Three phones | Gray screen | Watch + phone | Tablet |
+| :---: | :---: | :---: | :---: |
+| <img src="example/screenshots/en-US/images/phoneScreenshots/device_image_trio.jpg" width="190" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/device_image_podium.jpg" width="110" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/device_image_watch_phone.jpg" width="110" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/device_image_tablet.jpg" width="190" /> |
 
-The built-in bezels are flat-shaded. For a photoreal device — real lighting, materials, a visible
-charge port and speakers, any angle — render the device once in your 3D tool of choice (or use a
-photo) with an **empty screen**, then let `DeviceImageMockup` warp your live Compose UI onto the
-screen with correct perspective. The screen regions are **detected automatically**, so you just hand
-it one content lambda per screen (left-to-right):
+### Usage
 
 ```kotlin
 @Test fun home() = customScreenshot {
     DeviceImageMockup(
-        frame = ImageBitmap.imageResource(R.drawable.three_phones), // your render, empty screens
-        screens = listOf({ HomeScreen() }, { SettingsScreen() }, { ProfileScreen() }),
+        frame = frame("three_phones.jpg"),
+        screens = listOf({ HomeScreen() }, { SettingsScreen() }, { ProfileScreen() }), // left → right
     )
 }
 ```
 
-The device body, bezel, port and speakers come from your image; only each screen is your live UI.
-Content is laid out at a real-device width (`screenNativeWidth`, default `411.dp`, height derived
-from each screen so it isn't distorted), recorded, and perspective-warped onto the screen quad with
-`Matrix.setPolyToPoly`. Each screen is then selected with a **magic-wand flood-fill** (contiguous
-pixels within `screenColorTolerance` of the screen's colour — the bezel's colour change stops the
-flood), **knocked out of the frame** (those pixels made transparent), and the content drawn *behind*
-it. The device's own bezel does the cropping, so you get the real rounded corners and notch for free,
-content edge-to-edge, no gaps and no approximated rounding. Phones come out portrait by default; wide
-screens (tablets) stay landscape. To override the auto-detected orientation, pass `screenRotations`
-(a `ScreenRotation` per screen — `None` / `Clockwise90` / `Clockwise180` / `Clockwise270`) — the
-content is rotated and re-fit so it still fills:
+`screens` are matched to the detected screens left-to-right (pass one for a single-device render).
+Phones come out portrait and tablets landscape; override a screen's orientation with `screenRotations`:
 
 ```kotlin
-DeviceImageMockup(
-    frame = frame,
-    screens = listOf({ HomeScreen() }, { WatchScreen() }),
-    screenRotations = listOf(ScreenRotation.None, ScreenRotation.Clockwise90), // turn the watch
-)
+screenRotations = listOf(ScreenRotation.None, ScreenRotation.Clockwise90) // None / Clockwise90 / 180 / 270
 ```
 
-### How detection works (and when to override it)
+### Where to put the frame image
 
-`detectScreenRegions(frame)` finds each screen as a region the device's **dark bezel walls off from
-the background** — so it's colour-agnostic: a white *or* gray empty screen both work (the two images
-above). Each region is fit with its minimum-area rotated rectangle: the fill ratio rejects non-screen
-blobs (so on renders it can't handle it returns nothing rather than guessing wrong), and the rect
-gives the four corners at any rotation, pulled back to the true screen quad for correct perspective.
-It assumes a dark-bezel device, fully on-image, not buried in a busy scene. When that doesn't hold —
-a light/silver body, a dark or decorated background, overlapping graphics — pass the four corners
-yourself (fractions `0..1` of the image, `TL, TR, BR, BL`):
+The frame is only needed while generating screenshots, so keep it **out of your app**: put it in the
+`screenshots` source set's `resources` and load it from the classpath — it never ships in your APK.
+
+```
+mobile/src/screenshots/resources/mockups/three_phones.jpg
+```
 
 ```kotlin
-DeviceImageMockup(
-    frame = frame,
-    regions = listOf(ScreenRegion(Offset(0.18f, 0.07f), Offset(0.86f, 0.13f), Offset(0.79f, 0.94f), Offset(0.12f, 0.88f))),
-    screens = listOf { HomeScreen() },
-)
-// or the single-screen shorthand:
-DeviceImageMockup(frame, Offset(0.18f,0.07f), Offset(0.86f,0.13f), Offset(0.79f,0.94f), Offset(0.12f,0.88f)) { HomeScreen() }
+private fun frame(name: String): ImageBitmap =
+    javaClass.classLoader!!.getResourceAsStream("mockups/$name").use {
+        BitmapFactory.decodeStream(it).asImageBitmap()  // android.graphics.BitmapFactory
+    }
 ```
 
-Read the corners off your render once (any image editor shows pixel coordinates; divide by the image
-size). It also works as a `ScreenshotStyle.mockupFrame`, so the standard `screenshot(title = …)`
-banner flow can use a 3D render too.
+(You could instead use `ImageBitmap.imageResource(R.drawable.…)`, but then the image has to live in
+`src/main/res/drawable/` and **does** ship in your app.)
 
-> **Vector sources (`.eps`, `.ai`, `.svg`) must be rasterized to PNG/WebP first** — Compose only
-> loads raster `ImageBitmap`s. Auto-detection is a best-effort convenience for common mockups; for
-> guaranteed results on any render, supply explicit `ScreenRegion`s. (No ML is used — it would be
-> heavy, non-deterministic, and wouldn't run under the headless Robolectric renderer.)
+### When auto-detection can't find the screen
+
+It expects a dark-bezel device on a plain background. For a light/silver body, a dark or busy
+background, or overlapping graphics, give the four screen corners yourself (fractions `0..1` of the
+image, top-left, top-right, bottom-right, bottom-left — read them off the image once in any editor):
+
+```kotlin
+DeviceImageMockup(frame, Offset(0.18f, 0.07f), Offset(0.86f, 0.13f), Offset(0.79f, 0.94f), Offset(0.12f, 0.88f)) {
+    HomeScreen()
+}
+```
+
+Vector files (`.eps`, `.ai`, `.svg`) must be rasterized to PNG/WebP first — Compose only loads raster images.
 
 ## Releasing
 
