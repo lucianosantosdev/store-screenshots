@@ -556,10 +556,13 @@ private fun magicWandScreens(
         if (boundary.size < 8) { refined += region; continue }
         val rect = minAreaRect(convexHull(boundary)).second
         // Circumscribed corners: fit a line to each of the four straight sides and intersect adjacent
-        // lines, so the corners land where the edges meet (past the rounded arcs) and content fills
-        // the whole screen. Falls back to the inscribed extreme points if the fit is unreliable.
-        val corners = circumscribedCorners(boundary, rect)
-            ?: rect.map { rc -> boundary.minByOrNull { sqDist(it, rc) }!! }
+        // lines, so the corners land where the edges meet (past the rounded arcs) and content fills the
+        // whole screen. When that's unreliable — e.g. another device overlaps this one and occludes a
+        // side — fall back to the bounding [rect] corners directly (NOT the nearest visible boundary
+        // point, which would pull an occluded corner inward and shrink the screen). The rect still spans
+        // the full screen as long as the opposite corners are visible, and any overshoot behind the
+        // occluding device is simply painted over by it.
+        val corners = circumscribedCorners(boundary, rect) ?: rect
         // Grow the quad outward a hair — uniformly, in pixels — to cover the keyed outline's
         // anti-aliased rim (where the warped content edge and the knockout edge don't quite meet).
         // Overshoot past the screen lands on the bezel, which crops it; the bezel is never knocked out.
