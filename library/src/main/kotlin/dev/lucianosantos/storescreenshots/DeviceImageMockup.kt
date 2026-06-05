@@ -593,7 +593,7 @@ private fun magicWandScreens(
             Offset(o[2].x / w, o[2].y / h), Offset(o[3].x / w, o[3].y / h),
         )
     }
-    featherKnockoutEdge(pixels, w, h, queue)
+    featherBezelIntoScreen(pixels, w, h, queue)
     bmp.setPixels(pixels, 0, w, 0, 0, w, h)
     return bmp.asImageBitmap() to refined
 }
@@ -602,32 +602,48 @@ private fun magicWandScreens(
 private const val SCREEN_MARGIN_PX = 1f
 
 /**
- * Softens the knockout's edge. The anti-aliased ring where the screen met the bezel in the source
- * render is a muddy screen/bezel blend that the colour-matched wand doesn't knock out, so it draws as
- * a hard sliver over the warped UI. This ramps the alpha of the [radius]-pixel rim just outside the
- * knockout from nearly transparent (touching the screen) up to opaque (solid bezel), so the seam
- * dissolves into the content behind it — the warped UI overshoots under the bezel (see [grow]), so
- * there is real content to show through. A breadth-first distance transform out from the transparent
- * pixels gives each rim pixel its ring index; [scratch] is reused as the BFS queue.
+ * Softens the knockout's edge by merging the BEZEL into the screen (not the other way round). The
+ * [radius]-pixel ring just *inside* the screen is overlaid with the adjacent bezel's own colour at a
+ * ramped alpha — nearly opaque where it touches the bezel, fading to transparent inward — so the dark
+ * bezel dissolves over the screen's edge instead of the screen bleeding out into the bezel. That hides
+ * any bright glass-edge rim under a soft inset rather than smearing it across the seam. A breadth-first
+ * distance transform inward from the bezel boundary gives each ring pixel its index and the bezel
+ * colour to apply; [scratch] is reused as the BFS queue.
  */
-private fun featherKnockoutEdge(pixels: IntArray, w: Int, h: Int, scratch: IntArray) {
+private fun featherBezelIntoScreen(pixels: IntArray, w: Int, h: Int, scratch: IntArray) {
     val radius = max(2, min(w, h) / 960)
     val dist = IntArray(w * h) { -1 }
+    val color = IntArray(w * h)
     var head = 0; var tail = 0
-    for (i in pixels.indices) if ((pixels[i] ushr 24) == 0) { dist[i] = 0; scratch[tail++] = i }
+    // Seed with bezel (opaque) pixels that touch a knocked-out (transparent) screen pixel.
+    for (i in pixels.indices) {
+        if ((pixels[i] ushr 24) == 0) continue
+        val x = i % w; val y = i / w
+        val touchesScreen =
+            (x > 0 && (pixels[i - 1] ushr 24) == 0) ||
+            (x < w - 1 && (pixels[i + 1] ushr 24) == 0) ||
+            (y > 0 && (pixels[i - w] ushr 24) == 0) ||
+            (y < h - 1 && (pixels[i + w] ushr 24) == 0)
+        if (touchesScreen) { dist[i] = 0; color[i] = pixels[i]; scratch[tail++] = i }
+    }
+    // Flood inward across screen (transparent) pixels only, carrying the bezel colour with it.
     while (head < tail) {
         val idx = scratch[head++]
         val d = dist[idx]
         if (d >= radius) continue
         val x = idx % w; val y = idx / w
-        if (x > 0 && dist[idx - 1] < 0) { dist[idx - 1] = d + 1; scratch[tail++] = idx - 1 }
-        if (x < w - 1 && dist[idx + 1] < 0) { dist[idx + 1] = d + 1; scratch[tail++] = idx + 1 }
-        if (y > 0 && dist[idx - w] < 0) { dist[idx - w] = d + 1; scratch[tail++] = idx - w }
-        if (y < h - 1 && dist[idx + w] < 0) { dist[idx + w] = d + 1; scratch[tail++] = idx + w }
+        fun step(n: Int) {
+            if (dist[n] < 0 && (pixels[n] ushr 24) == 0) { dist[n] = d + 1; color[n] = color[idx]; scratch[tail++] = n }
+        }
+        if (x > 0) step(idx - 1)
+        if (x < w - 1) step(idx + 1)
+        if (y > 0) step(idx - w)
+        if (y < h - 1) step(idx + w)
     }
+    // Overlay the bezel colour on the inner ring: strongest at the edge (d=1), fading to clear inward.
     for (i in pixels.indices) {
         val d = dist[i]
-        if (d in 1..radius) pixels[i] = (pixels[i] and 0x00FFFFFF) or ((255 * d / (radius + 1)) shl 24)
+        if (d in 1..radius) pixels[i] = (color[i] and 0x00FFFFFF) or ((255 * (radius + 1 - d) / (radius + 1)) shl 24)
     }
 }
 
