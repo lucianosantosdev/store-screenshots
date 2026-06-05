@@ -1,0 +1,539 @@
+package dev.lucianosantos.storescreenshots
+
+import android.graphics.Bitmap
+import android.graphics.Matrix
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.hypot
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.sin
+
+/**
+ * A manual quarter-turn applied to a screen's content (clockwise), on top of the auto-detected
+ * orientation. Pass via `DeviceImageMockup(..., screenRotations = …)` to override how the UI sits on
+ * a screen — e.g. spin a square watch face or flip a device the detector guessed upside down.
+ */
+enum class ScreenRotation(internal val quarterTurns: Int) {
+    None(0),
+    Clockwise90(1),
+    Clockwise180(2),
+    Clockwise270(3),
+}
+
+/**
+ * The four corners of a device screen inside a frame image, as fractions (0f..1f) of the image:
+ * `(0,0)` is the image's top-left, `(1,1)` its bottom-right. Corners are ordered [topLeft],
+ * [topRight], [bottomRight], [bottomLeft] as seen on the (possibly perspective-tilted) screen.
+ */
+@Immutable
+data class ScreenRegion(
+    val topLeft: Offset,
+    val topRight: Offset,
+    val bottomRight: Offset,
+    val bottomLeft: Offset,
+)
+
+/**
+ * Finds the screen regions in a device [frame] image automatically. A screen is detected as a
+ * region the device's **dark bezel walls off from the background** — independent of the screen's
+ * own colour, so it works for white, gray or reflective empty screens alike. The detector floods
+ * inward from the image border across everything brighter than [bezelDarkness] (the background);
+ * whatever the dark bezel encloses is a screen. Regions smaller than [minAreaFraction] of the image
+ * are discarded as noise. Returns one [ScreenRegion] per screen, ordered left-to-right by center.
+ *
+ * Assumptions: the device has a dark (near-black) bezel that fully surrounds the screen, and the
+ * device isn't cropped by the image edge. When that doesn't hold (e.g. a light-bodied phone with no
+ * dark rim, or a vector source that must be rasterized first), pass explicit [ScreenRegion]s to
+ * [DeviceImageMockup] instead. Use this directly if you want to inspect or tweak the detection.
+ */
+fun detectScreenRegions(
+    frame: ImageBitmap,
+    bezelDarkness: Float = 0.35f,
+    minAreaFraction: Float = 0.01f,
+    minScreenFill: Float = 0.7f,
+): List<ScreenRegion> {
+    val w = frame.width
+    val h = frame.height
+    val pixels = frame.toPixelMap()
+    val stride = max(1, min(w, h) / 360)
+    val gw = w / stride
+    val gh = h / stride
+    val dark = BooleanArray(gw * gh)
+    for (gy in 0 until gh) {
+        for (gx in 0 until gw) {
+            val c = pixels[gx * stride, gy * stride]
+            val lum = 0.299f * c.red + 0.587f * c.green + 0.114f * c.blue
+            dark[gy * gw + gx] = lum < bezelDarkness
+        }
+    }
+
+    // Flood inward from the image border across non-dark pixels: that's the background ("outside").
+    val outside = BooleanArray(gw * gh)
+    val queue = IntArray(gw * gh)
+    var head = 0; var tail = 0
+    for (gx in 0 until gw) {
+        val top = gx; val bot = (gh - 1) * gw + gx
+        if (!dark[top] && !outside[top]) { outside[top] = true; queue[tail++] = top }
+        if (!dark[bot] && !outside[bot]) { outside[bot] = true; queue[tail++] = bot }
+    }
+    for (gy in 0 until gh) {
+        val left = gy * gw; val right = gy * gw + gw - 1
+        if (!dark[left] && !outside[left]) { outside[left] = true; queue[tail++] = left }
+        if (!dark[right] && !outside[right]) { outside[right] = true; queue[tail++] = right }
+    }
+    while (head < tail) {
+        val idx = queue[head++]
+        val x = idx % gw; val y = idx / gw
+        if (x > 0 && !dark[idx - 1] && !outside[idx - 1]) { outside[idx - 1] = true; queue[tail++] = idx - 1 }
+        if (x < gw - 1 && !dark[idx + 1] && !outside[idx + 1]) { outside[idx + 1] = true; queue[tail++] = idx + 1 }
+        if (y > 0 && !dark[idx - gw] && !outside[idx - gw]) { outside[idx - gw] = true; queue[tail++] = idx - gw }
+        if (y < gh - 1 && !dark[idx + gw] && !outside[idx + gw]) { outside[idx + gw] = true; queue[tail++] = idx + gw }
+    }
+
+    // A screen is a non-dark region the bezel walls off from the background. Connected-component it,
+    // then fit each component's minimum-area rotated rectangle — that gives the four screen corners
+    // at any in-plane rotation, and how fully the component fills that rect ("screen fill") cleanly
+    // separates a solid screen from an irregular bright blob (a metallic body ring, merged shapes).
+    val seen = BooleanArray(gw * gh)
+    val minArea = (gw * gh * minAreaFraction).toInt().coerceAtLeast(1)
+    val regions = mutableListOf<ScreenRegion>()
+    fun free(i: Int) = !dark[i] && !outside[i] && !seen[i]
+    for (start in 0 until gw * gh) {
+        if (dark[start] || outside[start] || seen[start]) continue
+        head = 0; tail = 0
+        queue[tail++] = start; seen[start] = true
+        while (head < tail) {
+            val idx = queue[head++]
+            val x = idx % gw; val y = idx / gw
+            if (x > 0 && free(idx - 1)) { seen[idx - 1] = true; queue[tail++] = idx - 1 }
+            if (x < gw - 1 && free(idx + 1)) { seen[idx + 1] = true; queue[tail++] = idx + 1 }
+            if (y > 0 && free(idx - gw)) { seen[idx - gw] = true; queue[tail++] = idx - gw }
+            if (y < gh - 1 && free(idx + gw)) { seen[idx + gw] = true; queue[tail++] = idx + gw }
+        }
+        val count = tail
+        if (count < minArea) continue
+        val pts = ArrayList<Offset>(count)
+        for (k in 0 until count) pts += Offset((queue[k] % gw).toFloat(), (queue[k] / gw).toFloat())
+        val (rectArea, rect) = minAreaRect(convexHull(pts))
+        if (rectArea <= 0f || count / rectArea < minScreenFill) continue
+        // The min-area rect bounds the region (and overshoots into rounded corners); pull each
+        // corner back to the nearest actual screen pixel so the four corners are the real
+        // perspective quad — that's what makes the warp perspective-correct, not just affine.
+        val corners = rect.map { rc -> pts.minByOrNull { sqDist(it, rc) }!! }
+        val oriented = orientCorners(corners)
+        fun frac(o: Offset) = Offset(o.x / gw, o.y / gh)
+        regions += ScreenRegion(frac(oriented[0]), frac(oriented[1]), frac(oriented[2]), frac(oriented[3]))
+    }
+    // Order left-to-right by the region center x.
+    return regions.sortedBy { (it.topLeft.x + it.topRight.x + it.bottomRight.x + it.bottomLeft.x) / 4f }
+}
+
+/**
+ * Labels four quad corners as top-left, top-right, bottom-right, bottom-left in the device's own
+ * upright frame. The device is rotated into a canonical orientation (long edge vertical for a
+ * portrait screen, horizontal for a wide one — split at aspect 0.6 so phones come out portrait even
+ * when the render lies them down at an angle), the corners are labeled there, then mapped back.
+ */
+private fun orientCorners(c: List<Offset>): List<Offset> {
+    val cx = (c[0].x + c[1].x + c[2].x + c[3].x) / 4f
+    val cy = (c[0].y + c[1].y + c[2].y + c[3].y) / 4f
+    val eA = (dist(c[0], c[1]) + dist(c[2], c[3])) / 2f
+    val eB = (dist(c[1], c[2]) + dist(c[3], c[0])) / 2f
+    val dirA = Offset(c[1].x - c[0].x, c[1].y - c[0].y)
+    val dirB = Offset(c[2].x - c[1].x, c[2].y - c[1].y)
+    // Which screen axis becomes the content's vertical ("up"). An elongated screen (phone) always
+    // stands its LONG axis up, so it reads portrait even lying at an angle. A square-ish or wide
+    // screen (watch, tablet) has no meaningful long axis, so pick the axis closest to vertical —
+    // that keeps it upright in the image instead of snapping to a noisy 90° guess.
+    val heightDir = if (min(eA, eB) / max(eA, eB) < 0.6f) {
+        if (eA >= eB) dirA else dirB
+    } else {
+        if (abs(dirA.y) / hypot(dirA.x, dirA.y) >= abs(dirB.y) / hypot(dirB.x, dirB.y)) dirA else dirB
+    }
+    val rot = PI.toFloat() / 2f - atan2(heightDir.y, heightDir.x)
+    val ca = cos(rot); val sa = sin(rot)
+    val rotated = c.map { p -> val dx = p.x - cx; val dy = p.y - cy; Offset(dx * ca - dy * sa, dx * sa + dy * ca) }
+    val idx = listOf(0, 1, 2, 3)
+    val tl = idx.minByOrNull { rotated[it].x + rotated[it].y }!!
+    val tr = idx.maxByOrNull { rotated[it].x - rotated[it].y }!!
+    val br = idx.maxByOrNull { rotated[it].x + rotated[it].y }!!
+    val bl = idx.minByOrNull { rotated[it].x - rotated[it].y }!!
+    var TL = c[tl]; var TR = c[tr]; var BR = c[br]; var BL = c[bl]
+    // If the canonical "up" ended up at the bottom of the image, flip so content isn't upside down.
+    if (TL.y + TR.y > BL.y + BR.y) { val a = TL; val b = TR; TL = BL; TR = BR; BR = b; BL = a }
+    // Enforce a front-facing winding (TR to the right of TL, BL below TL); otherwise the warp would
+    // mirror the content. A left-handed quad (cross < 0) means left/right were swapped — flip them.
+    val cross = (TR.x - TL.x) * (BL.y - TL.y) - (TR.y - TL.y) * (BL.x - TL.x)
+    return if (cross < 0f) listOf(TR, TL, BL, BR) else listOf(TL, TR, BR, BL)
+}
+
+private fun sqDist(a: Offset, b: Offset): Float { val dx = a.x - b.x; val dy = a.y - b.y; return dx * dx + dy * dy }
+
+/** Andrew's monotone-chain convex hull (counter-clockwise, no collinear points). */
+private fun convexHull(points: List<Offset>): List<Offset> {
+    if (points.size < 3) return points
+    val pts = points.sortedWith(compareBy({ it.x }, { it.y }))
+    fun cross(o: Offset, a: Offset, b: Offset) = (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
+    val lower = ArrayList<Offset>()
+    for (p in pts) {
+        while (lower.size >= 2 && cross(lower[lower.size - 2], lower[lower.size - 1], p) <= 0f) lower.removeAt(lower.size - 1)
+        lower += p
+    }
+    val upper = ArrayList<Offset>()
+    for (p in pts.asReversed()) {
+        while (upper.size >= 2 && cross(upper[upper.size - 2], upper[upper.size - 1], p) <= 0f) upper.removeAt(upper.size - 1)
+        upper += p
+    }
+    return lower.dropLast(1) + upper.dropLast(1)
+}
+
+/** Minimum-area enclosing rectangle of a convex [hull] (rotating calipers). Returns area + 4 corners. */
+private fun minAreaRect(hull: List<Offset>): Pair<Float, List<Offset>> {
+    if (hull.size < 3) return 0f to hull
+    var bestArea = Float.MAX_VALUE
+    var bestRect = hull
+    for (i in hull.indices) {
+        val a = hull[i]; val b = hull[(i + 1) % hull.size]
+        val len = hypot(b.x - a.x, b.y - a.y)
+        if (len == 0f) continue
+        val ux = (b.x - a.x) / len; val uy = (b.y - a.y) / len  // edge direction
+        val vx = -uy; val vy = ux                                // perpendicular
+        var minU = Float.MAX_VALUE; var maxU = -Float.MAX_VALUE
+        var minV = Float.MAX_VALUE; var maxV = -Float.MAX_VALUE
+        for (p in hull) {
+            val du = (p.x - a.x) * ux + (p.y - a.y) * uy
+            val dv = (p.x - a.x) * vx + (p.y - a.y) * vy
+            if (du < minU) minU = du; if (du > maxU) maxU = du
+            if (dv < minV) minV = dv; if (dv > maxV) maxV = dv
+        }
+        val area = (maxU - minU) * (maxV - minV)
+        if (area < bestArea) {
+            bestArea = area
+            fun corner(u: Float, v: Float) = Offset(a.x + ux * u + vx * v, a.y + uy * u + vy * v)
+            bestRect = listOf(corner(minU, minV), corner(maxU, minV), corner(maxU, maxV), corner(minU, maxV))
+        }
+    }
+    return bestArea to bestRect
+}
+
+/**
+ * Composites live Compose [screens] into the screen areas of a pre-rendered device [frame] image,
+ * with correct perspective — one composable per screen. The screen regions are detected
+ * automatically (see [detectScreenRegions]), ordered left-to-right, so `screens[0]` lands on the
+ * leftmost device, `screens[1]` on the next, and so on. Use this for a multi-device render (e.g.
+ * three phones at different angles) or a single device — just give one content lambda.
+ *
+ * ```kotlin
+ * DeviceImageMockup(
+ *     frame = ImageBitmap.imageResource(R.drawable.three_phones),
+ *     screens = listOf({ HomeScreen() }, { SettingsScreen() }, { ProfileScreen() }),
+ * )
+ * ```
+ *
+ * Each screen's content is laid out at a real-device width ([screenNativeWidth], height derived
+ * from that screen's detected quad so it isn't distorted), recorded, then perspective-warped onto
+ * the quad. The whole mockup keeps the image's aspect ratio and is sized by [modifier]. Detection
+ * keys off the dark bezel (see [detectScreenRegions]); tune [bezelDarkness] if needed, or pass
+ * explicit [ScreenRegion]s to the other overload when auto-detection can't find the screens.
+ */
+@Composable
+fun DeviceImageMockup(
+    frame: ImageBitmap,
+    screens: List<@Composable () -> Unit>,
+    modifier: Modifier = Modifier,
+    screenNativeWidth: Dp = 411.dp,
+    bezelDarkness: Float = 0.35f,
+    screenColorTolerance: Float = 0.5f,
+    screenRotations: List<ScreenRotation> = emptyList(),
+) {
+    val regions = remember(frame, bezelDarkness) { detectScreenRegions(frame, bezelDarkness) }
+    DeviceImageMockup(frame, regions, screens, modifier, screenNativeWidth, screenColorTolerance, screenRotations)
+}
+
+/**
+ * Like the auto-detecting [DeviceImageMockup], but you supply the screen [regions] yourself (e.g.
+ * from [detectScreenRegions], or measured by hand for renders that don't have near-white screens).
+ * `screens[i]` is warped onto `regions[i]`.
+ */
+@Composable
+fun DeviceImageMockup(
+    frame: ImageBitmap,
+    regions: List<ScreenRegion>,
+    screens: List<@Composable () -> Unit>,
+    modifier: Modifier = Modifier,
+    screenNativeWidth: Dp = 411.dp,
+    screenColorTolerance: Float = 0.5f,
+    screenRotations: List<ScreenRotation> = emptyList(),
+) {
+    val density = LocalDensity.current
+    val fw = frame.width.toFloat()
+    val fh = frame.height.toFloat()
+    val n = min(regions.size, screens.size)
+    val layers = (0 until n).map { rememberGraphicsLayer() }
+
+    // Magic-wand each screen from its center at full resolution: flood the contiguous pixels close
+    // in colour to the seed (the bezel's colour change stops the flood), which selects the EXACT
+    // screen — out to the true edge, rounded corners and all. That mask is knocked out of the frame
+    // (content shows through, bezel crops), and the content corners are recomputed from it so the UI
+    // fills the screen with no inset rim.
+    val (knockedFrame, refined) = remember(frame, regions, screenColorTolerance) {
+        magicWandScreens(frame, regions.take(n), screenColorTolerance)
+    }
+
+    // Optional manual quarter-turn per screen, on top of the auto-detected orientation.
+    fun steps(i: Int) = screenRotations.getOrElse(i) { ScreenRotation.None }.quarterTurns
+
+    // Content size: the screen's aspect, swapped for a quarter-turn so the rotated UI still fills it.
+    fun nativeHeight(r: ScreenRegion, rotSteps: Int): Dp {
+        fun px(o: Offset) = Offset(o.x * fw, o.y * fh)
+        val tl = px(r.topLeft); val tr = px(r.topRight); val br = px(r.bottomRight); val bl = px(r.bottomLeft)
+        val quadW = (dist(tl, tr) + dist(bl, br)) / 2f
+        val quadH = (dist(tl, bl) + dist(tr, br)) / 2f
+        val aspect = (quadH / quadW).coerceIn(0.05f, 20f)
+        return screenNativeWidth * (if (rotSteps % 2 == 1) 1f / aspect else aspect)
+    }
+
+    Box(modifier.aspectRatio(fw / fh)) {
+        // Recorders: compose each screen at native size, record into its layer, draw nothing.
+        for (i in 0 until n) {
+            val nh = nativeHeight(refined[i], steps(i))
+            Box(
+                Modifier
+                    .layout { measurable, _ ->
+                        val placeable = measurable.measure(
+                            Constraints.fixed(screenNativeWidth.roundToPx(), nh.roundToPx())
+                        )
+                        layout(0, 0) { placeable.place(0, 0) }
+                    }
+                    .drawWithContent { layers[i].record { this@drawWithContent.drawContent() } }
+            ) { Box(Modifier.fillMaxSize()) { screens[i]() } }
+        }
+
+        Canvas(Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            // 1) Live content, perspective-warped onto each screen quad — drawn BEHIND the frame.
+            for (i in 0 until n) {
+                val r = refined[i]
+                val s = steps(i)
+                val nw = with(density) { screenNativeWidth.toPx() }
+                val nhp = with(density) { nativeHeight(r, s).toPx() }
+                val src = floatArrayOf(0f, 0f, nw, 0f, nw, nhp, 0f, nhp)
+                // Manual rotation = cyclically shift which screen corner each content corner maps to.
+                val q = listOf(r.topLeft, r.topRight, r.bottomRight, r.bottomLeft)
+                val d = (0 until 4).map { q[(it + s) % 4] }
+                val dst = floatArrayOf(
+                    d[0].x * w, d[0].y * h, d[1].x * w, d[1].y * h,
+                    d[2].x * w, d[2].y * h, d[3].x * w, d[3].y * h,
+                )
+                val m = Matrix().apply { setPolyToPoly(src, 0, dst, 0, 4) }
+                drawIntoCanvas { canvas ->
+                    canvas.nativeCanvas.save()
+                    canvas.nativeCanvas.concat(m)
+                    drawLayer(layers[i])
+                    canvas.nativeCanvas.restore()
+                }
+            }
+            // 2) The frame with its screens knocked out, ON TOP — its bezel crops the content.
+            drawImage(image = knockedFrame, dstSize = IntSize(size.width.toInt(), size.height.toInt()))
+        }
+    }
+}
+
+/**
+ * Magic-wand selection of each screen. For every rough [regions] entry, flood-fills from its center
+ * at full resolution across contiguous pixels whose colour is within [tolerance] (0..1) of the seed
+ * — the bezel's colour change halts the flood, so the selection is the exact screen out to its true
+ * edge (rounded corners included). Those pixels are made transparent in a copy of [frame] (the
+ * knockout), and the four screen corners are recomputed from the selection so content fills it with
+ * no inset. Returns the knocked-out frame and the refined regions, paired by index.
+ */
+private fun magicWandScreens(
+    frame: ImageBitmap,
+    regions: List<ScreenRegion>,
+    tolerance: Float,
+): Pair<ImageBitmap, List<ScreenRegion>> {
+    val bmp = frame.asAndroidBitmap().copy(Bitmap.Config.ARGB_8888, true)
+    bmp.setHasAlpha(true) // a JPEG-backed bitmap is flagged opaque; without this the alpha is ignored
+    val w = bmp.width; val h = bmp.height
+    val pixels = IntArray(w * h)
+    bmp.getPixels(pixels, 0, w, 0, 0, w, h)
+    val tol = (tolerance * 255f).toInt()
+    val visited = BooleanArray(w * h)
+    val queue = IntArray(w * h)
+    val refined = ArrayList<ScreenRegion>(regions.size)
+
+    for (region in regions) {
+        val cx = ((region.topLeft.x + region.topRight.x + region.bottomRight.x + region.bottomLeft.x) / 4f * w).toInt().coerceIn(0, w - 1)
+        val cy = ((region.topLeft.y + region.topRight.y + region.bottomRight.y + region.bottomLeft.y) / 4f * h).toInt().coerceIn(0, h - 1)
+        val seed = cy * w + cx
+        if (visited[seed]) { refined += region; continue }
+        val sp = pixels[seed]
+        val sr = (sp shr 16) and 0xFF; val sg = (sp shr 8) and 0xFF; val sb = sp and 0xFF
+        // Per-row left/right and per-column top/bottom extents → a full outline for the corner fit.
+        val rowMinX = IntArray(h) { Int.MAX_VALUE }
+        val rowMaxX = IntArray(h) { -1 }
+        val colMinY = IntArray(w) { Int.MAX_VALUE }
+        val colMaxY = IntArray(w) { -1 }
+        var head = 0; var tail = 0
+        queue[tail++] = seed; visited[seed] = true
+        while (head < tail) {
+            val idx = queue[head++]
+            val x = idx % w; val y = idx / w
+            pixels[idx] = pixels[idx] and 0x00FFFFFF // alpha → 0 (knock out)
+            if (x < rowMinX[y]) rowMinX[y] = x
+            if (x > rowMaxX[y]) rowMaxX[y] = x
+            if (y < colMinY[x]) colMinY[x] = y
+            if (y > colMaxY[x]) colMaxY[x] = y
+            if (x > 0 && !visited[idx - 1] && matchesSeed(pixels[idx - 1], sr, sg, sb, tol)) { visited[idx - 1] = true; queue[tail++] = idx - 1 }
+            if (x < w - 1 && !visited[idx + 1] && matchesSeed(pixels[idx + 1], sr, sg, sb, tol)) { visited[idx + 1] = true; queue[tail++] = idx + 1 }
+            if (y > 0 && !visited[idx - w] && matchesSeed(pixels[idx - w], sr, sg, sb, tol)) { visited[idx - w] = true; queue[tail++] = idx - w }
+            if (y < h - 1 && !visited[idx + w] && matchesSeed(pixels[idx + w], sr, sg, sb, tol)) { visited[idx + w] = true; queue[tail++] = idx + w }
+        }
+        val boundary = ArrayList<Offset>()
+        for (y in 0 until h) if (rowMaxX[y] >= 0) {
+            boundary += Offset(rowMinX[y].toFloat(), y.toFloat())
+            boundary += Offset(rowMaxX[y].toFloat(), y.toFloat())
+        }
+        for (x in 0 until w) if (colMaxY[x] >= 0) {
+            boundary += Offset(x.toFloat(), colMinY[x].toFloat())
+            boundary += Offset(x.toFloat(), colMaxY[x].toFloat())
+        }
+        if (boundary.size < 8) { refined += region; continue }
+        val rect = minAreaRect(convexHull(boundary)).second
+        // Circumscribed corners: fit a line to each of the four straight sides and intersect adjacent
+        // lines, so the corners land where the edges meet (past the rounded arcs) and content fills
+        // the whole screen. Falls back to the inscribed extreme points if the fit is unreliable.
+        val corners = circumscribedCorners(boundary, rect)
+            ?: rect.map { rc -> boundary.minByOrNull { sqDist(it, rc) }!! }
+        // Grow the quad a hair outward (overshoot lands on the bezel, which crops it) so the content
+        // covers the whole selection — otherwise a 1–2px rim of bare screen can peek at the edges.
+        val o = grow(orientCorners(corners), SCREEN_MARGIN)
+        refined += ScreenRegion(
+            Offset(o[0].x / w, o[0].y / h), Offset(o[1].x / w, o[1].y / h),
+            Offset(o[2].x / w, o[2].y / h), Offset(o[3].x / w, o[3].y / h),
+        )
+    }
+    bmp.setPixels(pixels, 0, w, 0, 0, w, h)
+    return bmp.asImageBitmap() to refined
+}
+
+/** How far to grow the detected screen quad outward, as a fraction of each corner's reach from center. */
+private const val SCREEN_MARGIN = 0.012f
+
+/** Pushes each corner outward from the quad centroid by [fraction] of its distance, enlarging it slightly. */
+private fun grow(corners: List<Offset>, fraction: Float): List<Offset> {
+    val cx = (corners[0].x + corners[1].x + corners[2].x + corners[3].x) / 4f
+    val cy = (corners[0].y + corners[1].y + corners[2].y + corners[3].y) / 4f
+    return corners.map { Offset(cx + (it.x - cx) * (1f + fraction), cy + (it.y - cy) * (1f + fraction)) }
+}
+
+private fun matchesSeed(p: Int, sr: Int, sg: Int, sb: Int, tol: Int): Boolean =
+    abs(((p shr 16) and 0xFF) - sr) <= tol && abs(((p shr 8) and 0xFF) - sg) <= tol && abs((p and 0xFF) - sb) <= tol
+
+/**
+ * The four circumscribed corners of a rounded screen. Using the [rect]'s axes as a frame, [boundary]
+ * points are split into the four straight sides (corner/arc points excluded); a line is fit to each
+ * side (which averages out pixel staircasing on tilted edges and extrapolates past the rounding),
+ * and adjacent side-lines are intersected. Corners land where the straight edges meet — outside the
+ * arcs — so content fills the whole screen. Returns null if a side has too few points (caller falls
+ * back to the inscribed extreme points).
+ */
+private fun circumscribedCorners(boundary: List<Offset>, rect: List<Offset>): List<Offset>? {
+    val o = rect[0]
+    val uLen = dist(rect[0], rect[1]); val vLen = dist(rect[0], rect[3])
+    if (uLen < 1f || vLen < 1f) return null
+    val ux = (rect[1].x - rect[0].x) / uLen; val uy = (rect[1].y - rect[0].y) / uLen
+    val vx = (rect[3].x - rect[0].x) / vLen; val vy = (rect[3].y - rect[0].y) / vLen
+    val left = ArrayList<Offset>(); val right = ArrayList<Offset>()
+    val top = ArrayList<Offset>(); val bottom = ArrayList<Offset>()
+    for (p in boundary) {
+        val du = ((p.x - o.x) * ux + (p.y - o.y) * uy) / uLen // 0..1 across the rect
+        val dv = ((p.x - o.x) * vx + (p.y - o.y) * vy) / vLen
+        if (dv in 0.18f..0.82f) { if (du < 0.12f) left += p else if (du > 0.88f) right += p }
+        if (du in 0.18f..0.82f) { if (dv < 0.12f) top += p else if (dv > 0.88f) bottom += p }
+    }
+    if (left.size < 5 || right.size < 5 || top.size < 5 || bottom.size < 5) return null
+    val lL = fitLine(left); val lR = fitLine(right); val lT = fitLine(top); val lB = fitLine(bottom)
+    val tl = lineIntersect(lL, lT) ?: return null
+    val tr = lineIntersect(lT, lR) ?: return null
+    val br = lineIntersect(lR, lB) ?: return null
+    val bl = lineIntersect(lB, lL) ?: return null
+    return listOf(tl, tr, br, bl)
+}
+
+/** Total-least-squares line fit: returns a point on the line and its (unit) direction. */
+private fun fitLine(pts: List<Offset>): Pair<Offset, Offset> {
+    val cx = pts.sumOf { it.x.toDouble() }.toFloat() / pts.size
+    val cy = pts.sumOf { it.y.toDouble() }.toFloat() / pts.size
+    var sxx = 0f; var syy = 0f; var sxy = 0f
+    for (p in pts) { val dx = p.x - cx; val dy = p.y - cy; sxx += dx * dx; syy += dy * dy; sxy += dx * dy }
+    val theta = 0.5f * atan2(2f * sxy, sxx - syy)
+    return Offset(cx, cy) to Offset(cos(theta), sin(theta))
+}
+
+/** Intersection of two lines each given as (point, direction); null if near-parallel. */
+private fun lineIntersect(l1: Pair<Offset, Offset>, l2: Pair<Offset, Offset>): Offset? {
+    val (p1, d1) = l1; val (p2, d2) = l2
+    val denom = d1.x * d2.y - d1.y * d2.x
+    if (abs(denom) < 1e-4f) return null
+    val t = ((p2.x - p1.x) * d2.y - (p2.y - p1.y) * d2.x) / denom
+    return Offset(p1.x + d1.x * t, p1.y + d1.y * t)
+}
+
+/**
+ * Single-screen convenience: warp [content] onto one screen quad given by its four corners (as
+ * fractions of [frame]). See the multi-screen [DeviceImageMockup] for details.
+ */
+@Composable
+fun DeviceImageMockup(
+    frame: ImageBitmap,
+    screenTopLeft: Offset,
+    screenTopRight: Offset,
+    screenBottomRight: Offset,
+    screenBottomLeft: Offset,
+    modifier: Modifier = Modifier,
+    screenNativeWidth: Dp = 411.dp,
+    screenColorTolerance: Float = 0.5f,
+    rotation: ScreenRotation = ScreenRotation.None,
+    content: @Composable () -> Unit,
+) {
+    DeviceImageMockup(
+        frame = frame,
+        regions = listOf(ScreenRegion(screenTopLeft, screenTopRight, screenBottomRight, screenBottomLeft)),
+        screens = listOf(content),
+        modifier = modifier,
+        screenNativeWidth = screenNativeWidth,
+        screenColorTolerance = screenColorTolerance,
+        screenRotations = listOf(rotation),
+    )
+}
+
+private fun dist(a: Offset, b: Offset): Float = hypot(a.x - b.x, a.y - b.y)

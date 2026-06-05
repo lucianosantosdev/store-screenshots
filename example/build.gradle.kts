@@ -36,6 +36,9 @@ storeScreenshots {
     destDir = layout.projectDirectory.dir("screenshots")
 }
 
+// The full-resolution PNGs the screenshot run produces are git-ignored; the small JPEGs committed
+// for the README are produced by the root `compressScreenshots` task (run after `storeScreenshots`).
+
 dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)

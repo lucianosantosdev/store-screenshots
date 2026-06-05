@@ -2,16 +2,20 @@ package dev.lucianosantos.storescreenshots.example
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import dev.lucianosantos.storescreenshots.AppleIPhone67ScreenshotPreview
+import dev.lucianosantos.storescreenshots.DeviceImageMockup
 import dev.lucianosantos.storescreenshots.DeviceMockup
 import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.GooglePlayFeatureGraphicScreenshotPreview
@@ -102,3 +106,20 @@ fun PerspectivePreview() = ScreenshotPreview(
     description = "Perspective XYZ rotation — just mockupRotationX / Y / Z on ScreenshotStyle",
     style = perspectiveScreenshotStyle,
 ) { CounterScreen(count = 42) }
+
+@Preview(name = "Device image mockup — 3 screens", widthDp = 411, heightDp = 288)
+@Composable
+fun DeviceImagePreview() {
+    val frame = androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.phone_mockup_trio)
+    Box(Modifier.fillMaxSize().background(Color(0xFFEFEFEF)), contentAlignment = Alignment.Center) {
+        DeviceImageMockup(
+            frame = frame,
+            screens = listOf(
+                { CounterScreen(count = 7) },
+                { CounterScreen(count = 42) },
+                { CounterScreen(count = 99) },
+            ),
+            modifier = Modifier.fillMaxSize().padding(8.dp),
+        )
+    }
+}

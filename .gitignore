@@ -6,3 +6,8 @@ local.properties
 .DS_Store
 .kotlin/
 captures/
+plugin/bin/
+
+# PNGs are never versioned — screenshot runs write full-resolution PNGs, but only the small JPEGs
+# (produced by the root `compressScreenshots` task) are committed for the README.
+*.png

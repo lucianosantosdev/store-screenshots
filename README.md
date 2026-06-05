@@ -7,7 +7,7 @@
 
 | | | | |
 | :---: | :---: | :---: | :---: |
-| <img src="example/screenshots/en-US/images/phoneScreenshots/counter.png" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/custom_layout.png" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/counter_styled.png" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/custom_frame.png" width="200" /> |
+| <img src="example/screenshots/en-US/images/phoneScreenshots/counter.jpg" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/custom_layout.jpg" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/counter_styled.jpg" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/custom_frame.jpg" width="200" /> |
 | Phone | Custom layout | Styled | Custom frame |
 
 Gradle plugin + Compose library for generating framed Play Store / App Store screenshots from Compose UI under Robolectric.
@@ -136,7 +136,7 @@ storeScreenshots {
 
 ### Feature graphic
 
-<img src="example/screenshots/en-US/images/featureGraphic/feature_graphic.png" width="512" />
+<img src="example/screenshots/en-US/images/featureGraphic/feature_graphic.jpg" width="512" />
 
 `GooglePlayFeatureGraphic` is the landscape 1024 x 500 banner shown at the top of a Play Store
 listing. Unlike the other form factors it has no built-in title/description frame — a feature
@@ -222,7 +222,7 @@ Pass a `ScreenshotStyle` to `StoreScreenshotsTest` (class-level default) or to `
 
 Replace the built-in device bezel with your own composable via `mockupFrame`. Title/description/positioning still work — only the device shape changes:
 
-<img src="example/screenshots/en-US/images/phoneScreenshots/custom_frame.png" width="280" />
+<img src="example/screenshots/en-US/images/phoneScreenshots/custom_frame.jpg" width="280" />
 
 ```kotlin
 @Test fun home() = screenshot(
@@ -245,7 +245,7 @@ Replace the built-in device bezel with your own composable via `mockupFrame`. Ti
 
 For complete control, use `customScreenshot {}`. You get a `ScreenshotScope` with a `Mockup {}` composable that renders just the device bezel — everything else is yours:
 
-<img src="example/screenshots/en-US/images/phoneScreenshots/custom_layout.png" width="280" />
+<img src="example/screenshots/en-US/images/phoneScreenshots/custom_layout.jpg" width="280" />
 
 ```kotlin
 // Shared layout in src/main/ (used by both test and preview)
@@ -323,25 +323,25 @@ The [`example/`](example) module generates screenshots from the same `CounterScr
 
 | Top | Middle | Bottom (default) |
 | :---: | :---: | :---: |
-| <img src="example/screenshots/en-US/images/phoneScreenshots/phone_top.png" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/phone_middle.png" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/phone_bottom.png" width="200" /> |
+| <img src="example/screenshots/en-US/images/phoneScreenshots/phone_top.jpg" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/phone_middle.jpg" width="200" /> | <img src="example/screenshots/en-US/images/phoneScreenshots/phone_bottom.jpg" width="200" /> |
 
 #### 7-inch tablet
 
 | Top | Middle | Bottom (default) |
 | :---: | :---: | :---: |
-| <img src="example/screenshots/en-US/images/sevenInchScreenshots/tablet7_top.png" width="220" /> | <img src="example/screenshots/en-US/images/sevenInchScreenshots/tablet7_middle.png" width="220" /> | <img src="example/screenshots/en-US/images/sevenInchScreenshots/tablet7_bottom.png" width="220" /> |
+| <img src="example/screenshots/en-US/images/sevenInchScreenshots/tablet7_top.jpg" width="220" /> | <img src="example/screenshots/en-US/images/sevenInchScreenshots/tablet7_middle.jpg" width="220" /> | <img src="example/screenshots/en-US/images/sevenInchScreenshots/tablet7_bottom.jpg" width="220" /> |
 
 #### 10-inch tablet
 
 | Top | Middle | Bottom (default) |
 | :---: | :---: | :---: |
-| <img src="example/screenshots/en-US/images/tenInchScreenshots/tablet10_top.png" width="240" /> | <img src="example/screenshots/en-US/images/tenInchScreenshots/tablet10_middle.png" width="240" /> | <img src="example/screenshots/en-US/images/tenInchScreenshots/tablet10_bottom.png" width="240" /> |
+| <img src="example/screenshots/en-US/images/tenInchScreenshots/tablet10_top.jpg" width="240" /> | <img src="example/screenshots/en-US/images/tenInchScreenshots/tablet10_middle.jpg" width="240" /> | <img src="example/screenshots/en-US/images/tenInchScreenshots/tablet10_bottom.jpg" width="240" /> |
 
 #### Apple iPhone 6.7"
 
 | Top | Middle | Bottom (default) |
 | :---: | :---: | :---: |
-| <img src="example/screenshots/en-US/iphone67/apple_top.png" width="180" /> | <img src="example/screenshots/en-US/iphone67/apple_middle.png" width="180" /> | <img src="example/screenshots/en-US/iphone67/apple_bottom.png" width="180" /> |
+| <img src="example/screenshots/en-US/iphone67/apple_top.jpg" width="180" /> | <img src="example/screenshots/en-US/iphone67/apple_middle.jpg" width="180" /> | <img src="example/screenshots/en-US/iphone67/apple_bottom.jpg" width="180" /> |
 
 ```kotlin
 // One line to change the position:
@@ -354,13 +354,13 @@ The [`example/`](example) module generates screenshots from the same `CounterScr
 
 ### Wear OS
 
-<img src="example/screenshots/en-US/images/wearScreenshots/counter.png" width="240" />
+<img src="example/screenshots/en-US/images/wearScreenshots/counter.jpg" width="240" />
 
 Wear screenshots have no title/description banner, so `mockupPosition` doesn't apply.
 
 ### Custom style (composable background + title + description)
 
-<img src="example/screenshots/en-US/images/phoneScreenshots/counter_styled.png" width="280" />
+<img src="example/screenshots/en-US/images/phoneScreenshots/counter_styled.jpg" width="280" />
 
 ```kotlin
 @Test fun counter_styled() = screenshot(
@@ -379,7 +379,7 @@ Wear screenshots have no title/description banner, so `mockupPosition` doesn't a
 
 ### 3D perspective
 
-<img src="example/screenshots/en-US/images/phoneScreenshots/counter_perspective.png" width="280" />
+<img src="example/screenshots/en-US/images/phoneScreenshots/counter_perspective.jpg" width="280" />
 
 Tilt the device in 3D for a marketing hero shot. `mockupRotationX` tips it toward or away from
 the viewer, `mockupRotationY` turns it left/right, and `mockupRotation` spins it in-plane (Z).
@@ -404,6 +404,79 @@ into the PNG exactly as it previews. Tune `mockupCameraDistance` if a steep angl
 The same `rotationX` / `rotationY` / `rotationZ` / `cameraDistance` parameters exist on
 `DeviceMockup`, `WatchMockup`, and the `Mockup { }` composable, so you can tilt individual devices
 inside a `customScreenshot { }` layout or a feature graphic too.
+
+## Device image mockup (use a 3D render / photo)
+
+<img src="example/screenshots/en-US/images/phoneScreenshots/device_image_showcase.jpg" width="320" />
+
+_Every screen above is live Compose UI, auto-detected and perspective-warped into a stock device
+render — white & gray screens, strong tilts, watch + phone, tablet + keyboard, multiple screens per
+image._
+
+The built-in bezels are flat-shaded. For a photoreal device — real lighting, materials, a visible
+charge port and speakers, any angle — render the device once in your 3D tool of choice (or use a
+photo) with an **empty screen**, then let `DeviceImageMockup` warp your live Compose UI onto the
+screen with correct perspective. The screen regions are **detected automatically**, so you just hand
+it one content lambda per screen (left-to-right):
+
+```kotlin
+@Test fun home() = customScreenshot {
+    DeviceImageMockup(
+        frame = ImageBitmap.imageResource(R.drawable.three_phones), // your render, empty screens
+        screens = listOf({ HomeScreen() }, { SettingsScreen() }, { ProfileScreen() }),
+    )
+}
+```
+
+The device body, bezel, port and speakers come from your image; only each screen is your live UI.
+Content is laid out at a real-device width (`screenNativeWidth`, default `411.dp`, height derived
+from each screen so it isn't distorted), recorded, and perspective-warped onto the screen quad with
+`Matrix.setPolyToPoly`. Each screen is then selected with a **magic-wand flood-fill** (contiguous
+pixels within `screenColorTolerance` of the screen's colour — the bezel's colour change stops the
+flood), **knocked out of the frame** (those pixels made transparent), and the content drawn *behind*
+it. The device's own bezel does the cropping, so you get the real rounded corners and notch for free,
+content edge-to-edge, no gaps and no approximated rounding. Phones come out portrait by default; wide
+screens (tablets) stay landscape. To override the auto-detected orientation, pass `screenRotations`
+(a `ScreenRotation` per screen — `None` / `Clockwise90` / `Clockwise180` / `Clockwise270`) — the
+content is rotated and re-fit so it still fills:
+
+```kotlin
+DeviceImageMockup(
+    frame = frame,
+    screens = listOf({ HomeScreen() }, { WatchScreen() }),
+    screenRotations = listOf(ScreenRotation.None, ScreenRotation.Clockwise90), // turn the watch
+)
+```
+
+### How detection works (and when to override it)
+
+`detectScreenRegions(frame)` finds each screen as a region the device's **dark bezel walls off from
+the background** — so it's colour-agnostic: a white *or* gray empty screen both work (the two images
+above). Each region is fit with its minimum-area rotated rectangle: the fill ratio rejects non-screen
+blobs (so on renders it can't handle it returns nothing rather than guessing wrong), and the rect
+gives the four corners at any rotation, pulled back to the true screen quad for correct perspective.
+It assumes a dark-bezel device, fully on-image, not buried in a busy scene. When that doesn't hold —
+a light/silver body, a dark or decorated background, overlapping graphics — pass the four corners
+yourself (fractions `0..1` of the image, `TL, TR, BR, BL`):
+
+```kotlin
+DeviceImageMockup(
+    frame = frame,
+    regions = listOf(ScreenRegion(Offset(0.18f, 0.07f), Offset(0.86f, 0.13f), Offset(0.79f, 0.94f), Offset(0.12f, 0.88f))),
+    screens = listOf { HomeScreen() },
+)
+// or the single-screen shorthand:
+DeviceImageMockup(frame, Offset(0.18f,0.07f), Offset(0.86f,0.13f), Offset(0.79f,0.94f), Offset(0.12f,0.88f)) { HomeScreen() }
+```
+
+Read the corners off your render once (any image editor shows pixel coordinates; divide by the image
+size). It also works as a `ScreenshotStyle.mockupFrame`, so the standard `screenshot(title = …)`
+banner flow can use a 3D render too.
+
+> **Vector sources (`.eps`, `.ai`, `.svg`) must be rasterized to PNG/WebP first** — Compose only
+> loads raster `ImageBitmap`s. Auto-detection is a best-effort convenience for common mockups; for
+> guaranteed results on any render, supply explicit `ScreenRegion`s. (No ML is used — it would be
+> heavy, non-deterministic, and wouldn't run under the headless Robolectric renderer.)
 
 ## Releasing
 
