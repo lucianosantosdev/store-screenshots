@@ -415,6 +415,7 @@ automatically, and your UI fills each one (the device's own bezel does the cropp
 | :---: | :---: |
 | <img src="example/screenshots/en-US/images/featureGraphic/device_image_trio.jpg" width="380" /><br>Three phones | <img src="example/screenshots/en-US/images/featureGraphic/device_image_podium.jpg" width="380" /><br>Gray screen |
 | <img src="example/screenshots/en-US/images/featureGraphic/device_image_watch_phone.jpg" width="380" /><br>Watch + phone | <img src="example/screenshots/en-US/images/featureGraphic/device_image_tablet.jpg" width="380" /><br>Tablet |
+| <img src="example/screenshots/en-US/images/featureGraphic/device_image_chroma.jpg" width="380" /><br>Chroma-keyed screen | |
 
 ### Usage
 
@@ -456,11 +457,29 @@ private fun frame(name: String): ImageBitmap =
 (You could instead use `ImageBitmap.imageResource(R.drawable.…)`, but then the image has to live in
 `src/main/res/drawable/` and **does** ship in your app.)
 
+### Chroma-key the screen (most robust)
+
+Auto-detection expects a dark bezel to wall the screen off from the background, which fails for a
+white screen on a white backdrop or a bezel-less render. If you control the render, the easiest fix
+is to **paint each empty screen a flat, distinctive colour** — a green or magenta that appears
+nowhere else — and pass it as `screenColor`. Detection then locks onto that colour and ignores the
+bezel, body and background entirely (each connected blob of the colour becomes one screen):
+
+```kotlin
+DeviceImageMockup(
+    frame = frame("phone_green_screen.jpg"),
+    screens = listOf { HomeScreen() },
+    screenColor = Color(0xFF00C85A),   // the colour you painted the screen
+    screenColorTolerance = 0.22f,      // widen if JPEG softened the colour, tighten if it leaks
+)
+```
+
 ### When auto-detection can't find the screen
 
-It expects a dark-bezel device on a plain background. For a light/silver body, a dark or busy
-background, or overlapping graphics, give the four screen corners yourself (fractions `0..1` of the
-image, top-left, top-right, bottom-right, bottom-left — read them off the image once in any editor):
+Without a chroma colour it expects a dark-bezel device on a plain background. For a light/silver
+body, a dark or busy background, or overlapping graphics, give the four screen corners yourself
+(fractions `0..1` of the image, top-left, top-right, bottom-right, bottom-left — read them off the
+image once in any editor):
 
 ```kotlin
 DeviceImageMockup(frame, Offset(0.18f, 0.07f), Offset(0.86f, 0.13f), Offset(0.79f, 0.94f), Offset(0.12f, 0.88f)) {

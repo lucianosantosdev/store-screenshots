@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -156,6 +157,70 @@ fun detectScreenRegions(
 }
 
 /**
+ * Finds screen regions by **chroma key**. Render your device with each empty screen painted a flat,
+ * distinctive [screenColor] (a green or magenta that appears nowhere else in the image); every
+ * connected blob of pixels within [tolerance] (0f..1f, per RGB channel) of that colour is taken as a
+ * screen. This needs no dark bezel and ignores the device body and background entirely, so it's the
+ * robust choice when [detectScreenRegions] can't separate the screen from its surroundings (a
+ * white screen on a white background, a bezel-less render, a busy backdrop). Blobs smaller than
+ * [minAreaFraction] of the image are discarded as noise; [minScreenFill] rejects blobs that don't
+ * fill their bounding rectangle (stray colour splatters). Returns one [ScreenRegion] per screen,
+ * ordered left-to-right.
+ */
+fun detectScreenRegionsByColor(
+    frame: ImageBitmap,
+    screenColor: Color,
+    tolerance: Float = 0.18f,
+    minAreaFraction: Float = 0.01f,
+    minScreenFill: Float = 0.7f,
+): List<ScreenRegion> {
+    val w = frame.width
+    val h = frame.height
+    val pixels = frame.toPixelMap()
+    val stride = max(1, min(w, h) / 360)
+    val gw = w / stride
+    val gh = h / stride
+    val tr = screenColor.red; val tg = screenColor.green; val tb = screenColor.blue
+    val match = BooleanArray(gw * gh)
+    for (gy in 0 until gh) {
+        for (gx in 0 until gw) {
+            val c = pixels[gx * stride, gy * stride]
+            match[gy * gw + gx] =
+                abs(c.red - tr) <= tolerance && abs(c.green - tg) <= tolerance && abs(c.blue - tb) <= tolerance
+        }
+    }
+    // Each connected blob of the keyed colour is a screen — same corner extraction as the bezel detector.
+    val seen = BooleanArray(gw * gh)
+    val queue = IntArray(gw * gh)
+    val minArea = (gw * gh * minAreaFraction).toInt().coerceAtLeast(1)
+    val regions = mutableListOf<ScreenRegion>()
+    for (start in 0 until gw * gh) {
+        if (!match[start] || seen[start]) continue
+        var head = 0; var tail = 0
+        queue[tail++] = start; seen[start] = true
+        while (head < tail) {
+            val idx = queue[head++]
+            val x = idx % gw; val y = idx / gw
+            if (x > 0 && match[idx - 1] && !seen[idx - 1]) { seen[idx - 1] = true; queue[tail++] = idx - 1 }
+            if (x < gw - 1 && match[idx + 1] && !seen[idx + 1]) { seen[idx + 1] = true; queue[tail++] = idx + 1 }
+            if (y > 0 && match[idx - gw] && !seen[idx - gw]) { seen[idx - gw] = true; queue[tail++] = idx - gw }
+            if (y < gh - 1 && match[idx + gw] && !seen[idx + gw]) { seen[idx + gw] = true; queue[tail++] = idx + gw }
+        }
+        val count = tail
+        if (count < minArea) continue
+        val pts = ArrayList<Offset>(count)
+        for (k in 0 until count) pts += Offset((queue[k] % gw).toFloat(), (queue[k] / gw).toFloat())
+        val (rectArea, rect) = minAreaRect(convexHull(pts))
+        if (rectArea <= 0f || count / rectArea < minScreenFill) continue
+        val corners = rect.map { rc -> pts.minByOrNull { sqDist(it, rc) }!! }
+        val oriented = orientCorners(corners)
+        fun frac(o: Offset) = Offset(o.x / gw, o.y / gh)
+        regions += ScreenRegion(frac(oriented[0]), frac(oriented[1]), frac(oriented[2]), frac(oriented[3]))
+    }
+    return regions.sortedBy { (it.topLeft.x + it.topRight.x + it.bottomRight.x + it.bottomLeft.x) / 4f }
+}
+
+/**
  * Labels four quad corners as top-left, top-right, bottom-right, bottom-left in the device's own
  * upright frame. The device is rotated into a canonical orientation (long edge vertical for a
  * portrait screen, horizontal for a wide one — split at aspect 0.6 so phones come out portrait even
@@ -259,9 +324,14 @@ private fun minAreaRect(hull: List<Offset>): Pair<Float, List<Offset>> {
  *
  * Each screen's content is laid out at a real-device width ([screenNativeWidth], height derived
  * from that screen's detected quad so it isn't distorted), recorded, then perspective-warped onto
- * the quad. The whole mockup keeps the image's aspect ratio and is sized by [modifier]. Detection
- * keys off the dark bezel (see [detectScreenRegions]); tune [bezelDarkness] if needed, or pass
- * explicit [ScreenRegion]s to the other overload when auto-detection can't find the screens.
+ * the quad. The whole mockup keeps the image's aspect ratio and is sized by [modifier].
+ *
+ * Screens are located one of two ways. By default detection keys off the dark bezel (see
+ * [detectScreenRegions]); tune [bezelDarkness] if needed. Alternatively, pass a [screenColor] to use
+ * **chroma keying** (see [detectScreenRegionsByColor]): paint each empty screen a flat distinctive
+ * colour in your render and detection locks onto that colour, ignoring bezel, body and background —
+ * the robust choice for white-on-white or bezel-less renders. Either way, pass explicit
+ * [ScreenRegion]s to the other overload to bypass detection entirely.
  */
 @Composable
 fun DeviceImageMockup(
@@ -269,11 +339,15 @@ fun DeviceImageMockup(
     screens: List<@Composable () -> Unit>,
     modifier: Modifier = Modifier,
     screenNativeWidth: Dp = 411.dp,
+    screenColor: Color? = null,
     bezelDarkness: Float = 0.35f,
     screenColorTolerance: Float = 0.5f,
     screenRotations: List<ScreenRotation> = emptyList(),
 ) {
-    val regions = remember(frame, bezelDarkness) { detectScreenRegions(frame, bezelDarkness) }
+    val regions = remember(frame, screenColor, bezelDarkness, screenColorTolerance) {
+        if (screenColor != null) detectScreenRegionsByColor(frame, screenColor, screenColorTolerance)
+        else detectScreenRegions(frame, bezelDarkness)
+    }
     DeviceImageMockup(frame, regions, screens, modifier, screenNativeWidth, screenColorTolerance, screenRotations)
 }
 
@@ -474,19 +548,47 @@ private fun circumscribedCorners(boundary: List<Offset>, rect: List<Offset>): Li
     val vx = (rect[3].x - rect[0].x) / vLen; val vy = (rect[3].y - rect[0].y) / vLen
     val left = ArrayList<Offset>(); val right = ArrayList<Offset>()
     val top = ArrayList<Offset>(); val bottom = ArrayList<Offset>()
+    // Fit each side from its OUTER thirds only, skipping the middle of the edge. That dodges a centered
+    // cutout (a notch or pill that dips into the screen) — its boundary would otherwise drag the line
+    // fit inward — while still giving each side plenty of straight-edge points to fit.
+    fun outer(t: Float) = t in 0.15f..0.40f || t in 0.60f..0.85f
     for (p in boundary) {
         val du = ((p.x - o.x) * ux + (p.y - o.y) * uy) / uLen // 0..1 across the rect
         val dv = ((p.x - o.x) * vx + (p.y - o.y) * vy) / vLen
-        if (dv in 0.18f..0.82f) { if (du < 0.12f) left += p else if (du > 0.88f) right += p }
-        if (du in 0.18f..0.82f) { if (dv < 0.12f) top += p else if (dv > 0.88f) bottom += p }
+        if (outer(dv)) { if (du < 0.12f) left += p else if (du > 0.88f) right += p }
+        if (outer(du)) { if (dv < 0.12f) top += p else if (dv > 0.88f) bottom += p }
     }
     if (left.size < 5 || right.size < 5 || top.size < 5 || bottom.size < 5) return null
-    val lL = fitLine(left); val lR = fitLine(right); val lT = fitLine(top); val lB = fitLine(bottom)
+    // Each side's *slope* comes from a total-least-squares fit of its outer thirds (robust to the
+    // notch and to pixel staircasing). Its *position*, though, is pinned to the outermost boundary
+    // point along that side's outward normal — so the four lines circumscribe the WHOLE selection,
+    // including green that bulges past the average edge (the horns either side of a notch). Pinning
+    // to the extreme only translates the line (keeps the fitted slope), so it can't over-grow a
+    // straight edge but guarantees the quad contains every knocked-out pixel.
+    val lL = pinToExtreme(fitLine(left), boundary, -ux, -uy)
+    val lR = pinToExtreme(fitLine(right), boundary, ux, uy)
+    val lT = pinToExtreme(fitLine(top), boundary, -vx, -vy)
+    val lB = pinToExtreme(fitLine(bottom), boundary, vx, vy)
     val tl = lineIntersect(lL, lT) ?: return null
     val tr = lineIntersect(lT, lR) ?: return null
     val br = lineIntersect(lR, lB) ?: return null
     val bl = lineIntersect(lB, lL) ?: return null
     return listOf(tl, tr, br, bl)
+}
+
+/**
+ * Translates a fitted [line] (keeping its direction) outward until it touches the [boundary] point
+ * farthest along the outward normal `(nx, ny)`. The line then has the fitted slope but sits at the
+ * outer extreme of the selection, so the side it bounds contains every selected pixel on that side.
+ */
+private fun pinToExtreme(line: Pair<Offset, Offset>, boundary: List<Offset>, nx: Float, ny: Float): Pair<Offset, Offset> {
+    val (p, d) = line
+    var maxDist = -Float.MAX_VALUE
+    for (q in boundary) {
+        val dd = (q.x - p.x) * nx + (q.y - p.y) * ny
+        if (dd > maxDist) maxDist = dd
+    }
+    return Offset(p.x + nx * maxDist, p.y + ny * maxDist) to d
 }
 
 /** Total-least-squares line fit: returns a point on the line and its (unit) direction. */

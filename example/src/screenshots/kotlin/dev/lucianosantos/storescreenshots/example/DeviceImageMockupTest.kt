@@ -60,6 +60,21 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
         }
     }
 
+    // CHROMA KEY: a 3D render whose empty screen is painted flat green. Instead of bezel detection we
+    // pass `screenColor` — detection locks onto the green blob and ignores body, bezel and background.
+    @Test
+    fun device_image_chroma() = customScreenshot {
+        Box(Modifier.fillMaxSize().background(Color(0xFFE8E8E8)), contentAlignment = Alignment.Center) {
+            DeviceImageMockup(
+                frame("phone_chroma.jpg"),
+                screens = listOf { CounterScreen(count = 42) },
+                modifier = Modifier.fillMaxHeight(),
+                screenColor = Color.Green,
+                screenColorTolerance = 0.2f,
+            )
+        }
+    }
+
     // Two devices (watch + phone). Scaled up and nudged down so both fill the banner with the watch in frame.
     @Test
     fun device_image_watch_phone() = customScreenshot {
