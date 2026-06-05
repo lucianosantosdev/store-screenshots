@@ -537,7 +537,7 @@ private fun magicWandScreens(
         // knocking anything (the probe just sizes the grow). The probe follows the uneven bevel, so its
         // shape is ragged — which is why it only measures, and the knockout below is done smoothly.
         val greenTail = tail
-        val maxDilate = max(2, min(gMaxX - gMinX, gMaxY - gMinY) / 22)
+        val maxDilate = max(1, min(gMaxX - gMinX, gMaxY - gMinY) / 34)
         val probed = ArrayList<Int>()
         var frontierStart = 0; var frontierEnd = tail; var dilated = 0
         while (dilated < maxDilate && frontierStart < frontierEnd) {
@@ -599,7 +599,7 @@ private fun magicWandScreens(
 }
 
 /** Extra pixels to grow the quad past the dilation reach, covering the keyed rim and the feather ring. */
-private const val SCREEN_MARGIN_PX = 3f
+private const val SCREEN_MARGIN_PX = 1.5f
 
 /**
  * Softens the knockout's edge. The anti-aliased ring where the screen met the bezel in the source
