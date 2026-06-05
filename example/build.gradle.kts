@@ -24,6 +24,15 @@ android {
     buildFeatures {
         compose = true
     }
+
+    sourceSets {
+        // Make the test-only device-frame images (src/screenshots/resources/mockups) visible to the
+        // debug variant so the DeviceImageMockup @Preview functions can load them. Debug only — the
+        // release build never bundles them, keeping them out of the shipped app.
+        getByName("debug") {
+            resources.srcDir("src/screenshots/resources")
+        }
+    }
 }
 
 kotlin {
