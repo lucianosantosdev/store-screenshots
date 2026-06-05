@@ -37,9 +37,9 @@ private val CardColor = Color(0xFF1F1147)
 private val AccentColor = Color(0xFFFBBF24)
 
 @Composable
-fun CounterScreen(count: Int) {
+fun CounterScreen(count: Int, background: Brush = PageBackground) {
     BoxWithConstraints(
-        modifier = Modifier.fillMaxSize().background(PageBackground),
+        modifier = Modifier.fillMaxSize().background(background),
         contentAlignment = Alignment.Center
     ) {
         if (maxWidth > maxHeight) {

@@ -511,8 +511,39 @@ private fun magicWandScreens(
             if (y > 0 && !visited[idx - w] && matchesSeed(pixels[idx - w], sr, sg, sb, tol)) { visited[idx - w] = true; queue[tail++] = idx - w }
             if (y < h - 1 && !visited[idx + w] && matchesSeed(pixels[idx + w], sr, sg, sb, tol)) { visited[idx + w] = true; queue[tail++] = idx + w }
         }
-        // The corner fit uses the clean keyed-colour outline (built here, before any dilation) so an
-        // uneven bevel can't skew it.
+        // Expand a few pixels into the keyed colour's anti-aliased RIM — the pixels where the screen
+        // colour blends toward the bezel. They don't match the tight flood, but a LOOSER colour match
+        // catches them; because it still matches the KEYED colour it can never eat a bezel of another
+        // colour (a white, grey or coloured bezel is far from the key, so it's left alone). Bounded, and
+        // it updates the extents so the corner fit lands on the softened edge instead of inside the rim.
+        val rimTol = min(255, (tolerance * 255f * 2.5f).toInt())
+        val maxRim = max(2, min(w, h) / 300)
+        var rimStart = 0; var rimEnd = tail; var rim = 0
+        while (rim < maxRim && rimStart < rimEnd) {
+            for (qi in rimStart until rimEnd) {
+                val idx = queue[qi]
+                val x = idx % w; val y = idx / w
+                fun grab(n: Int) {
+                    if (!visited[n] && matchesSeed(pixels[n], sr, sg, sb, rimTol)) {
+                        visited[n] = true
+                        pixels[n] = pixels[n] and 0x00FFFFFF
+                        val nx = n % w; val ny = n / w
+                        if (nx < rowMinX[ny]) rowMinX[ny] = nx
+                        if (nx > rowMaxX[ny]) rowMaxX[ny] = nx
+                        if (ny < colMinY[nx]) colMinY[nx] = ny
+                        if (ny > colMaxY[nx]) colMaxY[nx] = ny
+                        queue[tail++] = n
+                    }
+                }
+                if (x > 0) grab(idx - 1)
+                if (x < w - 1) grab(idx + 1)
+                if (y > 0) grab(idx - w)
+                if (y < h - 1) grab(idx + w)
+            }
+            rimStart = rimEnd
+            if (tail > rimEnd) { rimEnd = tail; rim++ } else break
+        }
+        // The corner fit uses the keyed-colour outline (the flood plus its rim) built here.
         val boundary = ArrayList<Offset>()
         for (y in 0 until h) if (rowMaxX[y] >= 0) {
             boundary += Offset(rowMinX[y].toFloat(), y.toFloat())
@@ -523,71 +554,16 @@ private fun magicWandScreens(
             boundary += Offset(x.toFloat(), colMaxY[x].toFloat())
         }
         if (boundary.size < 8) { refined += region; continue }
-        var gMinX = w; var gMaxX = -1; var gMinY = h; var gMaxY = -1
-        for (yy in 0 until h) if (rowMaxX[yy] >= 0) {
-            if (rowMinX[yy] < gMinX) gMinX = rowMinX[yy]
-            if (rowMaxX[yy] > gMaxX) gMaxX = rowMaxX[yy]
-            if (yy < gMinY) gMinY = yy
-            if (yy > gMaxY) gMaxY = yy
-        }
-        // On a real screen/photo the keyed colour is inset behind a glass bevel — specular highlights
-        // and reflections that aren't the key colour, so the flood stops short and that rim would draw
-        // over the content. First MEASURE how far the bevel reaches: probe outward into pixels brighter
-        // than the true dark bezel, capped relative to the screen and stopped by the bezel, without
-        // knocking anything (the probe just sizes the grow). The probe follows the uneven bevel, so its
-        // shape is ragged — which is why it only measures, and the knockout below is done smoothly.
-        val greenTail = tail
-        val maxDilate = max(1, min(gMaxX - gMinX, gMaxY - gMinY) / 34)
-        val probed = ArrayList<Int>()
-        var frontierStart = 0; var frontierEnd = tail; var dilated = 0
-        while (dilated < maxDilate && frontierStart < frontierEnd) {
-            for (qi in frontierStart until frontierEnd) {
-                val idx = queue[qi]
-                val x = idx % w; val y = idx / w
-                fun probe(n: Int) {
-                    if (!visited[n] && luma(pixels[n]) > BEZEL_LUM) {
-                        visited[n] = true; probed += n; queue[tail++] = n
-                    }
-                }
-                if (x > 0) probe(idx - 1)
-                if (x < w - 1) probe(idx + 1)
-                if (y > 0) probe(idx - w)
-                if (y < h - 1) probe(idx + w)
-            }
-            frontierStart = frontierEnd
-            if (tail > frontierEnd) { frontierEnd = tail; dilated++ } else break
-        }
-        for (p in probed) visited[p] = false // undo the probe; it only measured `dilated`
-        tail = greenTail
-        // Now knock out a SMOOTH geometric dilation of the screen by `dilated` pixels — a uniform
-        // outward grow (every neighbour, regardless of colour) so the knocked edge stays clean instead
-        // of following the ragged bevel. This covers the bright rim without leaving teeth above the
-        // bezel; the content quad is grown to match (below), and the bezel still crops the overshoot.
-        var ringStart = 0; var ringEnd = tail
-        repeat(dilated) {
-            for (qi in ringStart until ringEnd) {
-                val idx = queue[qi]
-                val x = idx % w; val y = idx / w
-                fun knock(n: Int) {
-                    if (!visited[n]) { visited[n] = true; pixels[n] = pixels[n] and 0x00FFFFFF; queue[tail++] = n }
-                }
-                if (x > 0) knock(idx - 1)
-                if (x < w - 1) knock(idx + 1)
-                if (y > 0) knock(idx - w)
-                if (y < h - 1) knock(idx + w)
-            }
-            ringStart = ringEnd; ringEnd = tail
-        }
         val rect = minAreaRect(convexHull(boundary)).second
         // Circumscribed corners: fit a line to each of the four straight sides and intersect adjacent
         // lines, so the corners land where the edges meet (past the rounded arcs) and content fills
         // the whole screen. Falls back to the inscribed extreme points if the fit is unreliable.
         val corners = circumscribedCorners(boundary, rect)
             ?: rect.map { rc -> boundary.minByOrNull { sqDist(it, rc) }!! }
-        // Grow the quad outward — uniformly, in pixels — to cover the keyed outline's anti-aliased rim,
-        // the knocked-out bevel (by however far the dilation reached) and the feather ring, so no bare
-        // or rim pixel peeks. Overshoot past the screen lands on the bezel, which crops it.
-        val o = growPixels(orientCorners(corners), dilated + SCREEN_MARGIN_PX)
+        // Grow the quad outward a hair — uniformly, in pixels — to cover the keyed outline's
+        // anti-aliased rim (where the warped content edge and the knockout edge don't quite meet).
+        // Overshoot past the screen lands on the bezel, which crops it; the bezel is never knocked out.
+        val o = growPixels(orientCorners(corners), SCREEN_MARGIN_PX)
         refined += ScreenRegion(
             Offset(o[0].x / w, o[0].y / h), Offset(o[1].x / w, o[1].y / h),
             Offset(o[2].x / w, o[2].y / h), Offset(o[3].x / w, o[3].y / h),
@@ -614,17 +590,27 @@ private fun featherBezelIntoScreen(pixels: IntArray, w: Int, h: Int, scratch: In
     val radius = max(2, min(w, h) / 960)
     val dist = IntArray(w * h) { -1 }
     val color = IntArray(w * h)
+    val sampleOut = max(2, min(w, h) / 300) // sample the bezel colour this far out, past any thin glass rim
     var head = 0; var tail = 0
-    // Seed with bezel (opaque) pixels that touch a knocked-out (transparent) screen pixel.
+    // Seed with the bezel (opaque) pixels that touch a knocked-out (transparent) screen pixel — but take
+    // the colour from `sampleOut` pixels further OUT along the outward direction, past any thin glass-edge
+    // highlight, so we feather with the real bezel colour whatever it is (dark, light or coloured) and a
+    // bright rim doesn't get smeared back over the screen.
     for (i in pixels.indices) {
         if ((pixels[i] ushr 24) == 0) continue
         val x = i % w; val y = i / w
-        val touchesScreen =
-            (x > 0 && (pixels[i - 1] ushr 24) == 0) ||
-            (x < w - 1 && (pixels[i + 1] ushr 24) == 0) ||
-            (y > 0 && (pixels[i - w] ushr 24) == 0) ||
-            (y < h - 1 && (pixels[i + w] ushr 24) == 0)
-        if (touchesScreen) { dist[i] = 0; color[i] = pixels[i]; scratch[tail++] = i }
+        var sdx = 0; var sdy = 0; var touchesScreen = false
+        if (x > 0 && (pixels[i - 1] ushr 24) == 0) { sdx -= 1; touchesScreen = true }
+        if (x < w - 1 && (pixels[i + 1] ushr 24) == 0) { sdx += 1; touchesScreen = true }
+        if (y > 0 && (pixels[i - w] ushr 24) == 0) { sdy -= 1; touchesScreen = true }
+        if (y < h - 1 && (pixels[i + w] ushr 24) == 0) { sdy += 1; touchesScreen = true }
+        if (!touchesScreen) continue
+        // outward = away from the screen (opposite the transparent neighbours)
+        val ox = if (sdx > 0) -1 else if (sdx < 0) 1 else 0
+        val oy = if (sdy > 0) -1 else if (sdy < 0) 1 else 0
+        val sx = x + ox * sampleOut; val sy = y + oy * sampleOut
+        val si = if (sx in 0 until w && sy in 0 until h && (pixels[sy * w + sx] ushr 24) != 0) sy * w + sx else i
+        dist[i] = 0; color[i] = pixels[si]; scratch[tail++] = i
     }
     // Flood inward across screen (transparent) pixels only, carrying the bezel colour with it.
     while (head < tail) {
@@ -651,7 +637,9 @@ private fun featherBezelIntoScreen(pixels: IntArray, w: Int, h: Int, scratch: In
  * Grows a quad outward by [d] pixels uniformly, keeping its shape: each edge is offset [d] pixels
  * along its outward normal and adjacent offset edges are re-intersected for the new corners. Unlike a
  * centroid-relative scale, the outset is the same width on every side regardless of the quad's size or
- * aspect, so a small screen and a large one both gain exactly [d] pixels of margin.
+ * aspect, so a small screen and a large one both gain exactly [d] pixels of margin. If two offset edges
+ * are near-parallel their intersection shoots off to infinity; in that case the corner falls back to a
+ * straight centroid-direction push so a slightly skewed fit can't explode the quad.
  */
 private fun growPixels(c: List<Offset>, d: Float): List<Offset> {
     val cx = (c[0].x + c[1].x + c[2].x + c[3].x) / 4f
@@ -667,19 +655,18 @@ private fun growPixels(c: List<Offset>, d: Float): List<Offset> {
         if ((mx - cx) * nx + (my - cy) * ny < 0f) { nx = -nx; ny = -ny } // point outward, away from centroid
         lines += Offset(a.x + nx * d, a.y + ny * d) to Offset(ex / len, ey / len)
     }
-    return (0 until 4).map { i -> lineIntersect(lines[(i + 3) % 4], lines[i]) ?: c[i] }
+    val maxReach = 4f * d + 4f // a clean corner lands ~d·√2 out; anything far past that is a degenerate fit
+    return (0 until 4).map { i ->
+        val p = lineIntersect(lines[(i + 3) % 4], lines[i])
+        if (p == null || dist(p, c[i]) > maxReach) {
+            val vx = c[i].x - cx; val vy = c[i].y - cy; val vl = hypot(vx, vy)
+            if (vl < 1e-3f) c[i] else Offset(c[i].x + vx / vl * d, c[i].y + vy / vl * d)
+        } else p
+    }
 }
 
 private fun matchesSeed(p: Int, sr: Int, sg: Int, sb: Int, tol: Int): Boolean =
     abs(((p shr 16) and 0xFF) - sr) <= tol && abs(((p shr 8) and 0xFF) - sg) <= tol && abs((p and 0xFF) - sb) <= tol
-
-/** Luminance below this (0..255) is the true dark bezel, where the bevel dilation stops. */
-private const val BEZEL_LUM = 34f
-
-private fun luma(p: Int): Float {
-    val r = (p shr 16) and 0xFF; val g = (p shr 8) and 0xFF; val b = p and 0xFF
-    return 0.299f * r + 0.587f * g + 0.114f * b
-}
 
 /**
  * The four circumscribed corners of a rounded screen. Using the [rect]'s axes as a frame, [boundary]
@@ -722,6 +709,13 @@ private fun circumscribedCorners(boundary: List<Offset>, rect: List<Offset>): Li
     val tr = lineIntersect(lT, lR) ?: return null
     val br = lineIntersect(lR, lB) ?: return null
     val bl = lineIntersect(lB, lL) ?: return null
+    // Reject a degenerate fit: if a side is occluded (one device overlapping another) its points are
+    // sparse/skewed, the line fit goes off-axis, and two near-parallel side-lines intersect far away —
+    // throwing a corner off to infinity. A real corner sits within a hair of the bounding [rect], so if
+    // any corner lands well outside it the fit is unreliable; fall back (caller uses the rect instead).
+    val rcx = (rect[0].x + rect[2].x) / 2f; val rcy = (rect[0].y + rect[2].y) / 2f
+    val limit = dist(rect[0], rect[2]) // the rect's diagonal: a corner farther than this from centre is bogus
+    for (p in listOf(tl, tr, br, bl)) if (hypot(p.x - rcx, p.y - rcy) > limit) return null
     return listOf(tl, tr, br, bl)
 }
 

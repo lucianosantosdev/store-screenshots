@@ -22,15 +22,14 @@ import androidx.compose.ui.unit.sp
  * canvas rather than forcing its own circle.
  */
 @Composable
-fun WearCounterScreen(count: Int) {
+fun WearCounterScreen(
+    count: Int,
+    background: Brush = Brush.verticalGradient(colors = listOf(Color(0xFF7C3AED), Color(0xFF2E1065))),
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(Color(0xFF7C3AED), Color(0xFF2E1065))
-                )
-            ),
+            .background(background),
         contentAlignment = Alignment.Center
     ) {
         Column(

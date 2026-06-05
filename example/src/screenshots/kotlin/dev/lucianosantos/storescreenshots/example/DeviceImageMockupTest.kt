@@ -45,9 +45,10 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
             DeviceImageMockup(
                 frame = frame("phone_mockup_trio.jpg"),
                 screens = listOf(
-                    { CounterScreen(count = 7) },
+                    // Distinct counts and background colours — three independent screens, not one repeated.
+                    { CounterScreen(count = 7, background = Brush.verticalGradient(listOf(Color(0xFF2563EB), Color(0xFF1E3A8A)))) },
                     { CounterScreen(count = 42) },
-                    { CounterScreen(count = 99) },
+                    { CounterScreen(count = 99, background = Brush.verticalGradient(listOf(Color(0xFFE11D48), Color(0xFF881337)))) },
                 ),
                 modifier = Modifier.fillMaxHeight(),
             )
@@ -153,13 +154,75 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
         }
     }
 
+    // CHROMA KEY across a DEVICE FAMILY: one transparent render of a watch, tablet and phone whose
+    // screens are all painted flat red. A single `screenColor` pass finds all three (ordered
+    // left-to-right) and drops a live UI onto each — the wear face on the watch, the counter elsewhere.
+    @Test
+    fun device_image_trio_chroma() = customScreenshot {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.linearGradient(
+                        listOf(Color(0xFF0F172A), Color(0xFF1E3A8A), Color(0xFF0EA5E9))
+                    )
+                )
+        ) {
+            Box(
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .size(300.dp)
+                    .offset(x = 90.dp, y = (-100).dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.08f))
+            )
+            Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(0.92f).padding(start = 48.dp, end = 8.dp)) {
+                    Text(
+                        text = stringResource(R.string.screenshot_trio_chroma_title),
+                        color = Color.White,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 38.sp,
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    Text(
+                        text = stringResource(R.string.screenshot_trio_chroma_desc),
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 15.sp,
+                        lineHeight = 21.sp,
+                    )
+                }
+                Box(Modifier.weight(1.08f).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                    DeviceImageMockup(
+                        frame("trio_chroma.png"),
+                        screens = listOf(
+                            // Distinct counts AND background colours per device — the composables are
+                            // fully independent, not the same UI repeated.
+                            { WearCounterScreen(count = 3, background = Brush.verticalGradient(listOf(Color(0xFF059669), Color(0xFF064E3B)))) },   // watch
+                            { CounterScreen(count = 128, background = Brush.verticalGradient(listOf(Color(0xFFF97316), Color(0xFF7C2D12)))) },     // tablet
+                            { CounterScreen(count = 42) },                                                                                       // phone (default purple)
+                        ),
+                        modifier = Modifier.fillMaxHeight(0.98f),
+                        screenColor = Color(0xFFEA3323),
+                        screenColorTolerance = 0.2f,
+                    )
+                }
+            }
+        }
+    }
+
     // Two devices (watch + phone). Scaled up and nudged down so both fill the banner with the watch in frame.
     @Test
     fun device_image_watch_phone() = customScreenshot {
         Box(Modifier.fillMaxSize().background(Color(0xFF6B533A)), contentAlignment = Alignment.Center) {
             DeviceImageMockup(
                 frame = frame("watch_phone_mockup.jpg"),
-                screens = listOf({ WearCounterScreen(count = 42) }, { CounterScreen(count = 42) }),
+                // Different count and background per device — the watch and phone run independent UIs.
+                screens = listOf(
+                    { WearCounterScreen(count = 7, background = Brush.verticalGradient(listOf(Color(0xFF059669), Color(0xFF064E3B)))) },
+                    { CounterScreen(count = 42) },
+                ),
                 modifier = Modifier.fillMaxHeight().scale(1.5f).offset(x = 24.dp, y = 36.dp),
             )
         }

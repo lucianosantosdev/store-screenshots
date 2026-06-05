@@ -418,6 +418,7 @@ automatically, and your UI fills each one (the device's own bezel does the cropp
 | <img src="example/screenshots/en-US/images/featureGraphic/device_image_trio.jpg" width="380" /><br>Three phones | <img src="example/screenshots/en-US/images/featureGraphic/device_image_podium.jpg" width="380" /><br>Gray screen |
 | <img src="example/screenshots/en-US/images/featureGraphic/device_image_watch_phone.jpg" width="380" /><br>Watch + phone | <img src="example/screenshots/en-US/images/featureGraphic/device_image_tablet.jpg" width="380" /><br>Tablet |
 | <img src="example/screenshots/en-US/images/featureGraphic/device_image_chroma.jpg" width="380" /><br>Chroma-keyed on a transparent render | <img src="example/screenshots/en-US/images/featureGraphic/device_image_watch_chroma.jpg" width="380" /><br>Chroma-keyed on a real photo |
+| <img src="example/screenshots/en-US/images/featureGraphic/device_image_trio_chroma.jpg" width="380" /><br>Chroma-keyed device family (one colour per screen) | |
 
 ### Usage
 

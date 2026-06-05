@@ -16,4 +16,6 @@
     <string name="screenshot_perspective_desc">Rotação XYZ em perspectiva — só mockupRotationX / Y / Z no ScreenshotStyle</string>
     <string name="screenshot_chroma_title">Coloque sua UI em qualquer render</string>
     <string name="screenshot_chroma_desc">Pinte a tela de uma cor — o chroma key insere sua UI Compose ao vivo no render</string>
+    <string name="screenshot_trio_chroma_title">Um render, todos os dispositivos</string>
+    <string name="screenshot_trio_chroma_desc">Telefone, tablet e relógio — insira sua UI ao vivo em toda a família de uma vez com chroma key</string>
 </resources>

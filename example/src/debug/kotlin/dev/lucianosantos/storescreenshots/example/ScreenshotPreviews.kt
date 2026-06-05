@@ -133,7 +133,11 @@ fun DeviceImageTrioPreview() {
     Box(Modifier.fillMaxSize().background(Color(0xFFEFEFEF)), contentAlignment = Alignment.Center) {
         DeviceImageMockup(
             frame = mockupFrame("phone_mockup_trio.jpg"),
-            screens = listOf({ CounterScreen(count = 7) }, { CounterScreen(count = 42) }, { CounterScreen(count = 99) }),
+            screens = listOf(
+                { CounterScreen(count = 7, background = Brush.verticalGradient(listOf(Color(0xFF2563EB), Color(0xFF1E3A8A)))) },
+                { CounterScreen(count = 42) },
+                { CounterScreen(count = 99, background = Brush.verticalGradient(listOf(Color(0xFFE11D48), Color(0xFF881337)))) },
+            ),
             modifier = Modifier.fillMaxHeight(),
         )
     }
@@ -210,9 +214,44 @@ fun DeviceImageWatchPhonePreview() {
     Box(Modifier.fillMaxSize().background(Color(0xFF6B533A)), contentAlignment = Alignment.Center) {
         DeviceImageMockup(
             frame = mockupFrame("watch_phone_mockup.jpg"),
-            screens = listOf({ WearCounterScreen(count = 42) }, { CounterScreen(count = 42) }),
+            screens = listOf(
+                { WearCounterScreen(count = 7, background = Brush.verticalGradient(listOf(Color(0xFF059669), Color(0xFF064E3B)))) },
+                { CounterScreen(count = 42) },
+            ),
             modifier = Modifier.fillMaxHeight().scale(1.5f).offset(x = 24.dp, y = 36.dp),
         )
+    }
+}
+
+@GooglePlayFeatureGraphicScreenshotPreview
+@Composable
+fun DeviceImageTrioChromaPreview() {
+    Box(
+        Modifier.fillMaxSize().background(
+            Brush.linearGradient(listOf(Color(0xFF0F172A), Color(0xFF1E3A8A), Color(0xFF0EA5E9)))
+        )
+    ) {
+        Box(Modifier.align(Alignment.TopEnd).size(300.dp).offset(x = 90.dp, y = (-100).dp).clip(CircleShape).background(Color.White.copy(alpha = 0.08f)))
+        Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(0.92f).padding(start = 48.dp, end = 8.dp)) {
+                Text(stringResource(R.string.screenshot_trio_chroma_title), color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold, lineHeight = 38.sp)
+                Spacer(Modifier.height(14.dp))
+                Text(stringResource(R.string.screenshot_trio_chroma_desc), color = Color.White.copy(alpha = 0.85f), fontSize = 15.sp, lineHeight = 21.sp)
+            }
+            Box(Modifier.weight(1.08f).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                DeviceImageMockup(
+                    mockupFrame("trio_chroma.png"),
+                    screens = listOf(
+                        { WearCounterScreen(count = 3, background = Brush.verticalGradient(listOf(Color(0xFF059669), Color(0xFF064E3B)))) },
+                        { CounterScreen(count = 128, background = Brush.verticalGradient(listOf(Color(0xFFF97316), Color(0xFF7C2D12)))) },
+                        { CounterScreen(count = 42) },
+                    ),
+                    modifier = Modifier.fillMaxHeight(0.98f),
+                    screenColor = Color(0xFFEA3323),
+                    screenColorTolerance = 0.2f,
+                )
+            }
+        }
     }
 }
 
