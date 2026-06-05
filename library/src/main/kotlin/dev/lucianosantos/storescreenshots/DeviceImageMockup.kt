@@ -511,19 +511,27 @@ private fun magicWandScreens(
             if (y > 0 && !visited[idx - w] && matchesSeed(pixels[idx - w], sr, sg, sb, tol)) { visited[idx - w] = true; queue[tail++] = idx - w }
             if (y < h - 1 && !visited[idx + w] && matchesSeed(pixels[idx + w], sr, sg, sb, tol)) { visited[idx + w] = true; queue[tail++] = idx + w }
         }
-        // On a real screen the keyed colour is rimmed by a bright glass-edge highlight (a specular
-        // reflection on the bevel) that isn't the key colour, so the flood stops just short of it and
-        // it would draw as a bright sliver over the content. Dilate the selection a few pixels into
-        // those bright neighbours — knocking them out and extending the extents so the corner fit
-        // reaches them — and stop at the dark bezel (which crops the content as before).
-        val maxDilate = max(2, min(w, h) / 480)
+        // On a real screen/photo the keyed colour is inset behind a glass bevel — a rim of specular
+        // highlights and reflections that isn't the key colour, so the flood stops short and that rim
+        // would draw over the content as a bright/uneven edge. Dilate the selection across the whole
+        // bevel (any neighbour brighter than the *true* dark bezel), knocking it out and extending the
+        // extents so the corner fit reaches it, and stop at the bezel — which crops content as before.
+        // Reach scales with the screen so a thick bevel is fully crossed; the bezel bounds it anyway.
+        var gMinX = w; var gMaxX = -1; var gMinY = h; var gMaxY = -1
+        for (yy in 0 until h) if (rowMaxX[yy] >= 0) {
+            if (rowMinX[yy] < gMinX) gMinX = rowMinX[yy]
+            if (rowMaxX[yy] > gMaxX) gMaxX = rowMaxX[yy]
+            if (yy < gMinY) gMinY = yy
+            if (yy > gMaxY) gMaxY = yy
+        }
+        val maxDilate = max(2, min(gMaxX - gMinX, gMaxY - gMinY) / 22)
         var waveStart = 0; var waveEnd = tail; var ring = 0
         while (ring < maxDilate && waveStart < waveEnd) {
             for (qi in waveStart until waveEnd) {
                 val idx = queue[qi]
                 val x = idx % w; val y = idx / w
                 fun grab(n: Int) {
-                    if (!visited[n] && isBright(pixels[n])) {
+                    if (!visited[n] && luma(pixels[n]) > BEZEL_LUM) {
                         visited[n] = true
                         pixels[n] = pixels[n] and 0x00FFFFFF
                         val nx = n % w; val ny = n / w
@@ -613,12 +621,12 @@ private fun grow(corners: List<Offset>, fraction: Float): List<Offset> {
 private fun matchesSeed(p: Int, sr: Int, sg: Int, sb: Int, tol: Int): Boolean =
     abs(((p shr 16) and 0xFF) - sr) <= tol && abs(((p shr 8) and 0xFF) - sg) <= tol && abs((p and 0xFF) - sb) <= tol
 
-/** A glass-edge highlight vs. the dark bezel: luminance above this (0..255) counts as a bright rim. */
-private const val BRIGHT_RIM_LUM = 110f
+/** Luminance below this (0..255) is the true dark bezel, where the bevel dilation stops. */
+private const val BEZEL_LUM = 34f
 
-private fun isBright(p: Int): Boolean {
+private fun luma(p: Int): Float {
     val r = (p shr 16) and 0xFF; val g = (p shr 8) and 0xFF; val b = p and 0xFF
-    return 0.299f * r + 0.587f * g + 0.114f * b > BRIGHT_RIM_LUM
+    return 0.299f * r + 0.587f * g + 0.114f * b
 }
 
 /**
