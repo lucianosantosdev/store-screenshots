@@ -3,10 +3,12 @@ package dev.lucianosantos.storescreenshots.example
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -17,6 +19,9 @@ import dev.lucianosantos.storescreenshots.StoreScreenshotsTest
 import org.junit.Test
 
 class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureGraphic) {
+
+    // The mockup fits inside the banner by height; scale/translate it with normal Modifiers
+    // (`Modifier.scale(…)` to zoom, `Modifier.offset(…)` to move) if you want to fill more or reframe.
 
     // Three different screens placed onto the three detected mockups (left → right).
     @Test
@@ -29,7 +34,7 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
                     { CounterScreen(count = 42) },
                     { CounterScreen(count = 99) },
                 ),
-                modifier = Modifier.fillMaxSize().padding(16.dp),
+                modifier = Modifier.fillMaxHeight(),
             )
         }
     }
@@ -38,7 +43,7 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
     @Test
     fun device_image_podium() = customScreenshot {
         Box(Modifier.fillMaxSize().background(Color(0xFFF3DAD2)), contentAlignment = Alignment.Center) {
-            DeviceImageMockup(frame("phone_mockup_podium.jpg"), screens = listOf { CounterScreen(count = 42) }, modifier = Modifier.fillMaxSize())
+            DeviceImageMockup(frame("phone_mockup_podium.jpg"), screens = listOf { CounterScreen(count = 42) }, modifier = Modifier.fillMaxHeight())
         }
     }
 
@@ -49,20 +54,20 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
             DeviceImageMockup(
                 frame("tablet_mockup_keyboard.jpg"),
                 screens = listOf { CounterScreen(count = 42) },
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxHeight(),
                 screenNativeWidth = 760.dp, // lay the UI out at tablet size, not phone size
             )
         }
     }
 
-    // Two devices (watch + phone), each its own screen — watch on the left, phone on the right.
+    // Two devices (watch + phone). Scaled up and nudged down so both fill the banner with the watch in frame.
     @Test
     fun device_image_watch_phone() = customScreenshot {
         Box(Modifier.fillMaxSize().background(Color(0xFF6B533A)), contentAlignment = Alignment.Center) {
             DeviceImageMockup(
                 frame = frame("watch_phone_mockup.jpg"),
                 screens = listOf({ WearCounterScreen(count = 42) }, { CounterScreen(count = 42) }),
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxHeight().scale(1.5f).offset(x = 24.dp, y = 36.dp),
             )
         }
     }

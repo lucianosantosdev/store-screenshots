@@ -428,6 +428,9 @@ automatically, and your UI fills each one (the device's own bezel does the cropp
 ```
 
 `screens` are matched to the detected screens left-to-right (pass one for a single-device render).
+Size and place the mockup with the `modifier` — `Modifier.fillMaxHeight()` fits it inside the canvas,
+and you can zoom or reframe it with ordinary modifiers, e.g. `Modifier.fillMaxHeight().scale(1.5f).offset(x = 24.dp, y = 36.dp)`.
+
 Phones come out portrait and tablets landscape; override a screen's orientation with `screenRotations`:
 
 ```kotlin
