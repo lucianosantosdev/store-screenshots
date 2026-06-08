@@ -48,6 +48,30 @@ enum class ScreenRotation(internal val quarterTurns: Int) {
     Clockwise270(3),
 }
 
+/** How a [DeviceKind] decides which screen edge becomes the content's height. */
+internal enum class KindOrientation { Portrait, Landscape, FromImage }
+
+/**
+ * The kind of device a screen belongs to in a [DeviceImageMockup] frame. Pass one per screen
+ * (left-to-right, matching the detected order) via `deviceKinds` to set each screen's orientation and
+ * the width its UI is composed at — explicitly, instead of leaving it to geometry. That removes the
+ * ambiguity a near-square screen creates: a watch worn at an angle and a small landscape screen look
+ * identical, so only you know which is which. Each kind also picks a sensible native layout width so a
+ * desktop's UI isn't laid out at phone size.
+ */
+enum class DeviceKind(internal val nativeWidth: Dp, internal val orientation: KindOrientation) {
+    /** A smartwatch — portrait (its longer edge is the height, even worn turned), composed small. */
+    Watch(220.dp, KindOrientation.Portrait),
+    /** A phone — portrait. */
+    Phone(411.dp, KindOrientation.Portrait),
+    /** A tablet — orientation follows however it sits in the image (portrait or landscape). */
+    Tablet(640.dp, KindOrientation.FromImage),
+    /** A laptop — landscape, composed at a large width. */
+    Laptop(840.dp, KindOrientation.Landscape),
+    /** A desktop monitor — landscape, composed at the largest width. */
+    Desktop(1000.dp, KindOrientation.Landscape),
+}
+
 /**
  * The four corners of a device screen inside a frame image, as fractions (0f..1f) of the image:
  * `(0,0)` is the image's top-left, `(1,1)` its bottom-right. Corners are ordered [topLeft],
@@ -226,21 +250,26 @@ fun detectScreenRegionsByColor(
  * portrait screen, horizontal for a wide one — split at aspect 0.6 so phones come out portrait even
  * when the render lies them down at an angle), the corners are labeled there, then mapped back.
  */
-private fun orientCorners(c: List<Offset>): List<Offset> {
+private fun orientCorners(c: List<Offset>, orientation: KindOrientation? = null): List<Offset> {
     val cx = (c[0].x + c[1].x + c[2].x + c[3].x) / 4f
     val cy = (c[0].y + c[1].y + c[2].y + c[3].y) / 4f
-    val eA = (dist(c[0], c[1]) + dist(c[2], c[3])) / 2f
-    val eB = (dist(c[1], c[2]) + dist(c[3], c[0])) / 2f
+    val eA = (dist(c[0], c[1]) + dist(c[2], c[3])) / 2f // length of the A edges (dirA)
+    val eB = (dist(c[1], c[2]) + dist(c[3], c[0])) / 2f // length of the B edges (dirB)
     val dirA = Offset(c[1].x - c[0].x, c[1].y - c[0].y)
     val dirB = Offset(c[2].x - c[1].x, c[2].y - c[1].y)
-    // Which screen axis becomes the content's vertical ("up"). An elongated screen (phone) always
-    // stands its LONG axis up, so it reads portrait even lying at an angle. A square-ish or wide
-    // screen (watch, tablet) has no meaningful long axis, so pick the axis closest to vertical —
-    // that keeps it upright in the image instead of snapping to a noisy 90° guess.
-    val heightDir = if (min(eA, eB) / max(eA, eB) < 0.6f) {
-        if (eA >= eB) dirA else dirB
-    } else {
-        if (abs(dirA.y) / hypot(dirA.x, dirA.y) >= abs(dirB.y) / hypot(dirB.x, dirB.y)) dirA else dirB
+    val longEdge = if (eA >= eB) dirA else dirB
+    val shortEdge = if (eA >= eB) dirB else dirA
+    val nearestVertical = if (abs(dirA.y) / hypot(dirA.x, dirA.y) >= abs(dirB.y) / hypot(dirB.x, dirB.y)) dirA else dirB
+    // Which screen axis becomes the content's vertical ("up"). When the screen's device kind is known,
+    // it decides: a portrait device (phone/watch) stands its LONG edge up — a watch is taller than wide
+    // even worn at an angle — a landscape device (laptop/desktop) stands its SHORT edge up, and a tablet
+    // follows the image. With no kind, fall back to geometry: a near-square screen uses its long edge as
+    // height; a clearly elongated one orients to the image so portrait stays portrait and wide stays wide.
+    val heightDir = when (orientation) {
+        KindOrientation.Portrait -> longEdge
+        KindOrientation.Landscape -> shortEdge
+        KindOrientation.FromImage -> nearestVertical
+        null -> if (min(eA, eB) / max(eA, eB) > 0.78f) longEdge else nearestVertical
     }
     val rot = PI.toFloat() / 2f - atan2(heightDir.y, heightDir.x)
     val ca = cos(rot); val sa = sin(rot)
@@ -343,12 +372,13 @@ fun DeviceImageMockup(
     bezelDarkness: Float = 0.35f,
     screenColorTolerance: Float = 0.5f,
     screenRotations: List<ScreenRotation> = emptyList(),
+    deviceKinds: List<DeviceKind> = emptyList(),
 ) {
     val regions = remember(frame, screenColor, bezelDarkness, screenColorTolerance) {
         if (screenColor != null) detectScreenRegionsByColor(frame, screenColor, screenColorTolerance)
         else detectScreenRegions(frame, bezelDarkness)
     }
-    DeviceImageMockup(frame, regions, screens, modifier, screenNativeWidth, screenColorTolerance, screenRotations)
+    DeviceImageMockup(frame, regions, screens, modifier, screenNativeWidth, screenColorTolerance, screenRotations, deviceKinds)
 }
 
 /**
@@ -365,6 +395,7 @@ fun DeviceImageMockup(
     screenNativeWidth: Dp = 411.dp,
     screenColorTolerance: Float = 0.5f,
     screenRotations: List<ScreenRotation> = emptyList(),
+    deviceKinds: List<DeviceKind> = emptyList(),
 ) {
     val density = LocalDensity.current
     val fw = frame.width.toFloat()
@@ -372,13 +403,18 @@ fun DeviceImageMockup(
     val n = min(regions.size, screens.size)
     val layers = (0 until n).map { rememberGraphicsLayer() }
 
+    // Width each screen's content is laid out at (height follows the screen's aspect). A device family
+    // mixes very different sizes, so each screen takes its [DeviceKind]'s native width — a desktop laid
+    // out at phone width gets an oversized UI. Falls back to the single [screenNativeWidth].
+    fun nativeWidth(i: Int): Dp = deviceKinds.getOrNull(i)?.nativeWidth ?: screenNativeWidth
+
     // Magic-wand each screen from its center at full resolution: flood the contiguous pixels close
     // in colour to the seed (the bezel's colour change stops the flood), which selects the EXACT
     // screen — out to the true edge, rounded corners and all. That mask is knocked out of the frame
     // (content shows through, bezel crops), and the content corners are recomputed from it so the UI
     // fills the screen with no inset rim.
-    val (knockedFrame, refined) = remember(frame, regions, screenColorTolerance) {
-        magicWandScreens(frame, regions.take(n), screenColorTolerance)
+    val (knockedFrame, refined, visibleCounts) = remember(frame, regions, screenColorTolerance, deviceKinds) {
+        magicWandScreens(frame, regions.take(n), screenColorTolerance, deviceKinds.map { it.orientation })
     }
 
     // The device silhouette (the original frame's own alpha): content is masked to it so overshoot
@@ -395,29 +431,40 @@ fun DeviceImageMockup(
     fun steps(i: Int) = screenRotations.getOrElse(i) { ScreenRotation.None }.quarterTurns
 
     // Content size: the screen's aspect, swapped for a quarter-turn so the rotated UI still fills it.
-    fun nativeHeight(r: ScreenRegion, rotSteps: Int): Dp {
+    fun nativeHeight(r: ScreenRegion, rotSteps: Int, nw: Dp): Dp {
         fun px(o: Offset) = Offset(o.x * fw, o.y * fh)
         val tl = px(r.topLeft); val tr = px(r.topRight); val br = px(r.bottomRight); val bl = px(r.bottomLeft)
         val quadW = (dist(tl, tr) + dist(bl, br)) / 2f
         val quadH = (dist(tl, bl) + dist(tr, br)) / 2f
         val aspect = (quadH / quadW).coerceIn(0.05f, 20f)
-        return screenNativeWidth * (if (rotSteps % 2 == 1) 1f / aspect else aspect)
+        return nw * (if (rotSteps % 2 == 1) 1f / aspect else aspect)
     }
 
     Box(modifier.aspectRatio(fw / fh)) {
         // Recorders: compose each screen at native size, record into its layer, draw nothing.
         for (i in 0 until n) {
-            val nh = nativeHeight(refined[i], steps(i))
+            val nh = nativeHeight(refined[i], steps(i), nativeWidth(i))
             Box(
                 Modifier
                     .layout { measurable, _ ->
                         val placeable = measurable.measure(
-                            Constraints.fixed(screenNativeWidth.roundToPx(), nh.roundToPx())
+                            Constraints.fixed(nativeWidth(i).roundToPx(), nh.roundToPx())
                         )
                         layout(0, 0) { placeable.place(0, 0) }
                     }
                     .drawWithContent { layers[i].record { this@drawWithContent.drawContent() } }
             ) { Box(Modifier.fillMaxSize()) { screens[i]() } }
+        }
+
+        // Depth order: a screen partly hidden by another device's frame floods fewer pixels than its
+        // full quad, so its occluded fraction (1 − visible/quad) tells us how far back it sits. Draw the
+        // most-occluded (furthest back) first and the least-occluded (front-most) last, so a front
+        // device's content wins inside its own screen hole instead of a device behind it bleeding through.
+        val drawOrder = remember(refined, visibleCounts, fw, fh, n) {
+            (0 until n).sortedByDescending { i ->
+                val quadPx = quadArea(refined[i]) * fw * fh
+                if (quadPx < 1f) 0f else 1f - (visibleCounts[i] / quadPx).coerceIn(0f, 1f)
+            }
         }
 
         Canvas(Modifier.fillMaxSize()) {
@@ -429,11 +476,11 @@ fun DeviceImageMockup(
                 // Group the warped content into a layer so it can be masked as a whole.
                 val layer = nc.saveLayer(null, null)
                 // 1) Live content, perspective-warped onto each screen quad — drawn BEHIND the frame.
-                for (i in 0 until n) {
+                for (i in drawOrder) {
                     val r = refined[i]
                     val s = steps(i)
-                    val nw = with(density) { screenNativeWidth.toPx() }
-                    val nhp = with(density) { nativeHeight(r, s).toPx() }
+                    val nw = with(density) { nativeWidth(i).toPx() }
+                    val nhp = with(density) { nativeHeight(r, s, nativeWidth(i)).toPx() }
                     val src = floatArrayOf(0f, 0f, nw, 0f, nw, nhp, 0f, nhp)
                     // Manual rotation = cyclically shift which screen corner each content corner maps to.
                     val q = listOf(r.topLeft, r.topRight, r.bottomRight, r.bottomLeft)
@@ -473,7 +520,8 @@ private fun magicWandScreens(
     frame: ImageBitmap,
     regions: List<ScreenRegion>,
     tolerance: Float,
-): Pair<ImageBitmap, List<ScreenRegion>> {
+    orientations: List<KindOrientation?>,
+): Triple<ImageBitmap, List<ScreenRegion>, List<Int>> {
     val bmp = frame.asAndroidBitmap().copy(Bitmap.Config.ARGB_8888, true)
     bmp.setHasAlpha(true) // a JPEG-backed bitmap is flagged opaque; without this the alpha is ignored
     val w = bmp.width; val h = bmp.height
@@ -483,12 +531,16 @@ private fun magicWandScreens(
     val visited = BooleanArray(w * h)
     val queue = IntArray(w * h)
     val refined = ArrayList<ScreenRegion>(regions.size)
+    // Visible (un-occluded) pixel count per screen: the flood stops at any device drawn in front of
+    // this one, so a screen that's partly hidden floods fewer pixels than its full quad — the caller
+    // uses this to order draws by depth (a more-occluded screen is further back).
+    val visibleCounts = ArrayList<Int>(regions.size)
 
-    for (region in regions) {
+    for ((index, region) in regions.withIndex()) {
         val cx = ((region.topLeft.x + region.topRight.x + region.bottomRight.x + region.bottomLeft.x) / 4f * w).toInt().coerceIn(0, w - 1)
         val cy = ((region.topLeft.y + region.topRight.y + region.bottomRight.y + region.bottomLeft.y) / 4f * h).toInt().coerceIn(0, h - 1)
         val seed = cy * w + cx
-        if (visited[seed]) { refined += region; continue }
+        if (visited[seed]) { refined += region; visibleCounts += 0; continue }
         val sp = pixels[seed]
         val sr = (sp shr 16) and 0xFF; val sg = (sp shr 8) and 0xFF; val sb = sp and 0xFF
         // Per-row left/right and per-column top/bottom extents → a full outline for the corner fit.
@@ -511,6 +563,7 @@ private fun magicWandScreens(
             if (y > 0 && !visited[idx - w] && matchesSeed(pixels[idx - w], sr, sg, sb, tol)) { visited[idx - w] = true; queue[tail++] = idx - w }
             if (y < h - 1 && !visited[idx + w] && matchesSeed(pixels[idx + w], sr, sg, sb, tol)) { visited[idx + w] = true; queue[tail++] = idx + w }
         }
+        val floodCount = tail // visible (un-occluded) screen area, before the rim dilation grows it
         // Expand a few pixels into the keyed colour's anti-aliased RIM — the pixels where the screen
         // colour blends toward the bezel. They don't match the tight flood, but a LOOSER colour match
         // catches them; because it still matches the KEYED colour it can never eat a bezel of another
@@ -553,7 +606,7 @@ private fun magicWandScreens(
             boundary += Offset(x.toFloat(), colMinY[x].toFloat())
             boundary += Offset(x.toFloat(), colMaxY[x].toFloat())
         }
-        if (boundary.size < 8) { refined += region; continue }
+        if (boundary.size < 8) { refined += region; visibleCounts += floodCount; continue }
         val rect = minAreaRect(convexHull(boundary)).second
         // Circumscribed corners: fit a line to each of the four straight sides and intersect adjacent
         // lines, so the corners land where the edges meet (past the rounded arcs) and content fills the
@@ -566,15 +619,16 @@ private fun magicWandScreens(
         // Grow the quad outward a hair — uniformly, in pixels — to cover the keyed outline's
         // anti-aliased rim (where the warped content edge and the knockout edge don't quite meet).
         // Overshoot past the screen lands on the bezel, which crops it; the bezel is never knocked out.
-        val o = growPixels(orientCorners(corners), SCREEN_MARGIN_PX)
+        val o = growPixels(snapAxisAligned(orientCorners(corners, orientations.getOrNull(index))), SCREEN_MARGIN_PX)
         refined += ScreenRegion(
             Offset(o[0].x / w, o[0].y / h), Offset(o[1].x / w, o[1].y / h),
             Offset(o[2].x / w, o[2].y / h), Offset(o[3].x / w, o[3].y / h),
         )
+        visibleCounts += floodCount
     }
     featherBezelIntoScreen(pixels, w, h, queue)
     bmp.setPixels(pixels, 0, w, 0, 0, w, h)
-    return bmp.asImageBitmap() to refined
+    return Triple(bmp.asImageBitmap(), refined, visibleCounts)
 }
 
 /** Extra pixels to grow the quad past the dilation reach, covering the keyed rim and the feather ring. */
@@ -785,3 +839,29 @@ fun DeviceImageMockup(
 }
 
 private fun dist(a: Offset, b: Offset): Float = hypot(a.x - b.x, a.y - b.y)
+
+/**
+ * If an oriented quad [c] (TL, TR, BR, BL) is within a few degrees of axis-aligned, snap it to its
+ * axis-aligned bounding box. A flat, front-facing screen should warp with no perspective, but when it's
+ * partly occluded by another device the corner fit comes out slightly skewed — enough to tilt the UI.
+ * Genuinely tilted screens (a phone shown at an angle) are well past the tolerance and are left alone.
+ */
+private fun snapAxisAligned(c: List<Offset>): List<Offset> {
+    val tol = 0.105f // ~6°
+    val topAngle = atan2(c[1].y - c[0].y, c[1].x - c[0].x)        // 0 when the top edge is horizontal
+    val leftAngle = atan2(c[3].y - c[0].y, c[3].x - c[0].x)       // PI/2 when the left edge points down
+    if (abs(topAngle) > tol) return c
+    if (abs(abs(leftAngle) - PI.toFloat() / 2f) > tol) return c
+    val minX = minOf(c[0].x, c[1].x, c[2].x, c[3].x); val maxX = maxOf(c[0].x, c[1].x, c[2].x, c[3].x)
+    val minY = minOf(c[0].y, c[1].y, c[2].y, c[3].y); val maxY = maxOf(c[0].y, c[1].y, c[2].y, c[3].y)
+    return listOf(Offset(minX, minY), Offset(maxX, minY), Offset(maxX, maxY), Offset(minX, maxY))
+}
+
+/** Area of a screen's (fractional) corner quad via the shoelace formula — used to order draws by depth. */
+private fun quadArea(r: ScreenRegion): Float {
+    val x = floatArrayOf(r.topLeft.x, r.topRight.x, r.bottomRight.x, r.bottomLeft.x)
+    val y = floatArrayOf(r.topLeft.y, r.topRight.y, r.bottomRight.y, r.bottomLeft.y)
+    var a = 0f
+    for (k in 0 until 4) { val j = (k + 1) % 4; a += x[k] * y[j] - x[j] * y[k] }
+    return abs(a) / 2f
+}

@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.lucianosantos.storescreenshots.DeviceImageMockup
+import dev.lucianosantos.storescreenshots.DeviceKind
 import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.StoreScreenshotsTest
 import org.junit.Test
@@ -147,18 +148,19 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
                 frame("watch_chroma.png"),
                 screens = listOf { WearCounterScreen(count = 42) },
                 modifier = Modifier.fillMaxWidth(),
-                screenNativeWidth = 200.dp,
-                screenColor = Color.Green,
+                screenColor = Color.Red,
                 screenColorTolerance = 0.2f,
+                // It's a watch — orient by the longer edge (taller than wide) even worn at an angle.
+                deviceKinds = listOf(DeviceKind.Watch),
             )
         }
     }
 
-    // CHROMA KEY across a DEVICE FAMILY: one transparent render of a watch, tablet and phone whose
-    // screens are all painted flat red. A single `screenColor` pass finds all three (ordered
-    // left-to-right) and drops a live UI onto each — the wear face on the watch, the counter elsewhere.
+    // CHROMA KEY across a DEVICE FAMILY: one transparent render of a desktop, laptop, phone and tablet
+    // whose screens are all painted flat red. A single `screenColor` pass finds all four (ordered
+    // left-to-right) and drops an independent live UI onto each — distinct counts AND background colours.
     @Test
-    fun device_image_trio_chroma() = customScreenshot {
+    fun device_image_four_devices_chroma() = customScreenshot {
         Box(
             Modifier
                 .fillMaxSize()
@@ -176,39 +178,40 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
                     .clip(CircleShape)
                     .background(Color.White.copy(alpha = 0.08f))
             )
-            Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(0.92f).padding(start = 48.dp, end = 8.dp)) {
-                    Text(
-                        text = stringResource(R.string.screenshot_trio_chroma_title),
-                        color = Color.White,
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Bold,
-                        lineHeight = 38.sp,
-                    )
-                    Spacer(Modifier.height(14.dp))
-                    Text(
-                        text = stringResource(R.string.screenshot_trio_chroma_desc),
-                        color = Color.White.copy(alpha = 0.85f),
-                        fontSize = 15.sp,
-                        lineHeight = 21.sp,
-                    )
-                }
-                Box(Modifier.weight(1.08f).fillMaxHeight(), contentAlignment = Alignment.Center) {
-                    DeviceImageMockup(
-                        frame("trio_chroma.png"),
-                        screens = listOf(
-                            // Distinct counts AND background colours per device — the composables are
-                            // fully independent, not the same UI repeated.
-                            { WearCounterScreen(count = 3, background = Brush.verticalGradient(listOf(Color(0xFF059669), Color(0xFF064E3B)))) },   // watch
-                            { CounterScreen(count = 128, background = Brush.verticalGradient(listOf(Color(0xFFF97316), Color(0xFF7C2D12)))) },     // tablet
-                            { CounterScreen(count = 42) },                                                                                       // phone (default purple)
-                        ),
-                        modifier = Modifier.fillMaxHeight(0.98f),
-                        screenColor = Color(0xFFEA3323),
-                        screenColorTolerance = 0.2f,
-                    )
-                }
+            Column(Modifier.align(Alignment.TopStart).padding(start = 44.dp, top = 24.dp, end = 44.dp)) {
+                Text(
+                    text = stringResource(R.string.screenshot_four_devices_title),
+                    color = Color.White,
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 30.sp,
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.screenshot_four_devices_desc),
+                    color = Color.White.copy(alpha = 0.85f),
+                    fontSize = 13.sp,
+                    lineHeight = 17.sp,
+                    modifier = Modifier.fillMaxWidth(0.5f),
+                )
             }
+            DeviceImageMockup(
+                frame("four_devices_chroma.png"),
+                screens = listOf(
+                    // Four independent screens — different counts AND background colours, laid out
+                    // left-to-right: laptop, desktop, phone, tablet.
+                    { CounterScreen(count = 512, background = Brush.verticalGradient(listOf(Color(0xFF2563EB), Color(0xFF1E3A8A)))) },   // laptop
+                    { CounterScreen(count = 1024, background = Brush.verticalGradient(listOf(Color(0xFF059669), Color(0xFF064E3B)))) }, // desktop
+                    { CounterScreen(count = 7) },                                                                                        // phone (default purple)
+                    { CounterScreen(count = 42, background = Brush.verticalGradient(listOf(Color(0xFFF97316), Color(0xFF7C2D12)))) },    // tablet
+                ),
+                // Tell the library each screen's device kind (left-to-right) — it sets the orientation
+                // (landscape laptop/desktop, portrait phone/tablet) and a fitting native layout width.
+                deviceKinds = listOf(DeviceKind.Laptop, DeviceKind.Desktop, DeviceKind.Phone, DeviceKind.Tablet),
+                modifier = Modifier.align(Alignment.BottomEnd).fillMaxHeight(0.74f),
+                screenColor = Color.Red,
+                screenColorTolerance = 0.25f,
+            )
         }
     }
 

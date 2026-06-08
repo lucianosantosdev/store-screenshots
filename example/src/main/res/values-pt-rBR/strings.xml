@@ -15,7 +15,7 @@
     <string name="screenshot_perspective_title">Incline em 3D</string>
     <string name="screenshot_perspective_desc">Rotação XYZ em perspectiva — só mockupRotationX / Y / Z no ScreenshotStyle</string>
     <string name="screenshot_chroma_title">Coloque sua UI em qualquer render</string>
-    <string name="screenshot_chroma_desc">Pinte a tela de uma cor — o chroma key insere sua UI Compose ao vivo no render</string>
-    <string name="screenshot_trio_chroma_title">Um render, todos os dispositivos</string>
-    <string name="screenshot_trio_chroma_desc">Telefone, tablet e relógio — insira sua UI ao vivo em toda a família de uma vez com chroma key</string>
+    <string name="screenshot_chroma_desc">Pinte a tela de uma cor — o chroma key insere sua UI Compose no render</string>
+    <string name="screenshot_four_devices_title">Um render, todos os dispositivos</string>
+    <string name="screenshot_four_devices_desc">Desktop, laptop, telefone e tablet — insira sua UI Compose em todos dispositivos de uma vez com chroma key</string>
 </resources>
