@@ -90,6 +90,8 @@ fun FeatureGraphicBanner() {
             // the two watches sit at the front-left, the phone in the middle, and the tablet
             // large and mostly unobscured on the right. Each device is sized by height (the other
             // dimension follows its aspect ratio); drawn back-to-front so the tablet stays behind.
+            // Every device runs an INDEPENDENT screen — a different count AND background colour —
+            // to show they are separate composables, not one screen repeated.
             Box(
                 modifier = Modifier
                     .weight(1.45f)
@@ -101,7 +103,12 @@ fun FeatureGraphicBanner() {
                     modifier = Modifier
                         .fillMaxHeight(0.84f)
                         .align(Alignment.BottomEnd),
-                ) { CounterScreen(count = 42) }
+                ) {
+                    CounterScreen(
+                        count = 128,
+                        background = Brush.verticalGradient(listOf(Color(0xFFF97316), Color(0xFF7C2D12))),
+                    )
+                }
 
                 DeviceMockup(
                     formFactor = FormFactor.Phone,
@@ -109,14 +116,24 @@ fun FeatureGraphicBanner() {
                         .fillMaxHeight(0.66f)
                         .align(Alignment.BottomStart)
                         .offset(x = 104.dp),
-                ) { CounterScreen(count = 42) }
+                ) {
+                    CounterScreen(
+                        count = 7,
+                        background = Brush.verticalGradient(listOf(Color(0xFF2563EB), Color(0xFF1E3A8A))),
+                    )
+                }
 
                 WatchMockup(
                     shape = WatchShape.Square,
                     modifier = Modifier
                         .fillMaxHeight(0.5f)
                         .align(Alignment.BottomStart),
-                ) { WearCounterScreen(count = 42) }
+                ) {
+                    WearCounterScreen(
+                        count = 99,
+                        background = Brush.verticalGradient(listOf(Color(0xFF059669), Color(0xFF064E3B))),
+                    )
+                }
 
                 WatchMockup(
                     shape = WatchShape.Round,
@@ -124,7 +141,12 @@ fun FeatureGraphicBanner() {
                         .fillMaxHeight(0.46f)
                         .align(Alignment.BottomStart)
                         .offset(x = 50.dp),
-                ) { WearCounterScreen(count = 42) }
+                ) {
+                    WearCounterScreen(
+                        count = 12,
+                        background = Brush.verticalGradient(listOf(Color(0xFFE11D48), Color(0xFF881337))),
+                    )
+                }
             }
         }
     }
