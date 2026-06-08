@@ -418,7 +418,7 @@ automatically, and your UI fills each one (the device's own bezel does the cropp
 | <img src="example/screenshots/en-US/images/featureGraphic/device_image_trio.jpg" width="380" /><br>Three phones | <img src="example/screenshots/en-US/images/featureGraphic/device_image_podium.jpg" width="380" /><br>Gray screen |
 | <img src="example/screenshots/en-US/images/featureGraphic/device_image_watch_phone.jpg" width="380" /><br>Watch + phone | <img src="example/screenshots/en-US/images/featureGraphic/device_image_tablet.jpg" width="380" /><br>Tablet |
 | <img src="example/screenshots/en-US/images/featureGraphic/device_image_chroma.jpg" width="380" /><br>Chroma-keyed on a transparent render | <img src="example/screenshots/en-US/images/featureGraphic/device_image_watch_chroma.jpg" width="380" /><br>Chroma-keyed on a real photo |
-| <img src="example/screenshots/en-US/images/featureGraphic/device_image_four_devices_chroma.jpg" width="380" /><br>Chroma-keyed device family (desktop, laptop, phone, tablet) | |
+| <img src="example/screenshots/en-US/images/featureGraphic/device_image_four_devices_chroma.jpg" width="380" /><br>Chroma-keyed device family — one render, an independent screen per device | |
 
 ### Usage
 
@@ -486,6 +486,26 @@ DeviceImageMockup(
 Export the render with a **transparent background** (PNG or WebP) and the device drops straight onto
 whatever you compose behind it — a gradient, marketing copy, anything — since only the device pixels
 are drawn. That's how the example above places the phone on a colourful feature-graphic banner.
+
+**One render, the whole family.** A single chroma pass finds every blob of the colour, so one render
+of a desktop, laptop, phone and tablet — every screen painted the *same* flat colour — drops a
+different live UI onto each. Tag each `Screen` with its `DeviceKind` so the landscape laptop/desktop
+and the portrait phone/tablet are each laid out at the right width and orientation, and give each one
+its own content — they are independent composables, not one screen repeated:
+
+```kotlin
+DeviceImageMockup(
+    frame = frame("device_family.png"),
+    screens = listOf(                                       // left → right, as detected
+        Screen(DeviceKind.Laptop)  { CounterScreen(count = 512) },
+        Screen(DeviceKind.Desktop) { CounterScreen(count = 1024) },
+        Screen(DeviceKind.Phone)   { CounterScreen(count = 7) },
+        Screen(DeviceKind.Tablet)  { CounterScreen(count = 42) },
+    ),
+    screenColor = Color.Red,           // all four screens painted the same red
+    screenColorTolerance = 0.25f,
+)
+```
 
 ### When auto-detection can't find the screen
 
