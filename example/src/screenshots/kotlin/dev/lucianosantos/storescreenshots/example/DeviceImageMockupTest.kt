@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.lucianosantos.storescreenshots.DeviceImageMockup
 import dev.lucianosantos.storescreenshots.DeviceKind
+import dev.lucianosantos.storescreenshots.Screen
 import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.StoreScreenshotsTest
 import org.junit.Test
@@ -47,9 +48,9 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
                 frame = frame("phone_mockup_trio.jpg"),
                 screens = listOf(
                     // Distinct counts and background colours — three independent screens, not one repeated.
-                    { CounterScreen(count = 7, background = Brush.verticalGradient(listOf(Color(0xFF2563EB), Color(0xFF1E3A8A)))) },
-                    { CounterScreen(count = 42) },
-                    { CounterScreen(count = 99, background = Brush.verticalGradient(listOf(Color(0xFFE11D48), Color(0xFF881337)))) },
+                    Screen { CounterScreen(count = 7, background = Brush.verticalGradient(listOf(Color(0xFF2563EB), Color(0xFF1E3A8A)))) },
+                    Screen { CounterScreen(count = 42) },
+                    Screen { CounterScreen(count = 99, background = Brush.verticalGradient(listOf(Color(0xFFE11D48), Color(0xFF881337)))) },
                 ),
                 modifier = Modifier.fillMaxHeight(),
             )
@@ -60,7 +61,7 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
     @Test
     fun device_image_podium() = customScreenshot {
         Box(Modifier.fillMaxSize().background(Color(0xFFF3DAD2)), contentAlignment = Alignment.Center) {
-            DeviceImageMockup(frame("phone_mockup_podium.jpg"), screens = listOf { CounterScreen(count = 42) }, modifier = Modifier.fillMaxHeight())
+            DeviceImageMockup(frame("phone_mockup_podium.jpg"), screens = listOf(Screen { CounterScreen(count = 42) }), modifier = Modifier.fillMaxHeight())
         }
     }
 
@@ -70,9 +71,9 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
         Box(Modifier.fillMaxSize().background(Color(0xFF2B2B30)), contentAlignment = Alignment.Center) {
             DeviceImageMockup(
                 frame("tablet_mockup_keyboard.jpg"),
-                screens = listOf { CounterScreen(count = 42) },
+                // kind = Tablet lays the UI out at tablet size (not phone size) and orients to the image.
+                screens = listOf(Screen(DeviceKind.Tablet) { CounterScreen(count = 42) }),
                 modifier = Modifier.fillMaxHeight(),
-                screenNativeWidth = 760.dp, // lay the UI out at tablet size, not phone size
             )
         }
     }
@@ -129,7 +130,7 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
                 Box(Modifier.weight(0.95f).fillMaxHeight(), contentAlignment = Alignment.Center) {
                     DeviceImageMockup(
                         frame("phone_chroma.png"),
-                        screens = listOf { CounterScreen(count = 42) },
+                        screens = listOf(Screen { CounterScreen(count = 42) }),
                         modifier = Modifier.fillMaxHeight(0.96f),
                         screenColor = Color.Green,
                         screenColorTolerance = 0.2f,
@@ -146,12 +147,11 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
         Box(Modifier.fillMaxSize().clipToBounds(), contentAlignment = Alignment.Center) {
             DeviceImageMockup(
                 frame("watch_chroma.png"),
-                screens = listOf { WearCounterScreen(count = 42) },
+                // kind = Watch orients by the longer edge (taller than wide) even worn at an angle.
+                screens = listOf(Screen(DeviceKind.Watch) { WearCounterScreen(count = 42) }),
                 modifier = Modifier.fillMaxWidth(),
                 screenColor = Color.Red,
                 screenColorTolerance = 0.2f,
-                // It's a watch — orient by the longer edge (taller than wide) even worn at an angle.
-                deviceKinds = listOf(DeviceKind.Watch),
             )
         }
     }
@@ -197,17 +197,15 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
             }
             DeviceImageMockup(
                 frame("four_devices_chroma.png"),
+                // Four independent screens (left-to-right) — each tagged with its device kind, which sets
+                // the orientation (landscape laptop/desktop, portrait phone/tablet) and native width —
+                // and given a different count AND background colour.
                 screens = listOf(
-                    // Four independent screens — different counts AND background colours, laid out
-                    // left-to-right: laptop, desktop, phone, tablet.
-                    { CounterScreen(count = 512, background = Brush.verticalGradient(listOf(Color(0xFF2563EB), Color(0xFF1E3A8A)))) },   // laptop
-                    { CounterScreen(count = 1024, background = Brush.verticalGradient(listOf(Color(0xFF059669), Color(0xFF064E3B)))) }, // desktop
-                    { CounterScreen(count = 7) },                                                                                        // phone (default purple)
-                    { CounterScreen(count = 42, background = Brush.verticalGradient(listOf(Color(0xFFF97316), Color(0xFF7C2D12)))) },    // tablet
+                    Screen(DeviceKind.Laptop) { CounterScreen(count = 512, background = Brush.verticalGradient(listOf(Color(0xFF2563EB), Color(0xFF1E3A8A)))) },
+                    Screen(DeviceKind.Desktop) { CounterScreen(count = 1024, background = Brush.verticalGradient(listOf(Color(0xFF059669), Color(0xFF064E3B)))) },
+                    Screen(DeviceKind.Phone) { CounterScreen(count = 7) },
+                    Screen(DeviceKind.Tablet) { CounterScreen(count = 42, background = Brush.verticalGradient(listOf(Color(0xFFF97316), Color(0xFF7C2D12)))) },
                 ),
-                // Tell the library each screen's device kind (left-to-right) — it sets the orientation
-                // (landscape laptop/desktop, portrait phone/tablet) and a fitting native layout width.
-                deviceKinds = listOf(DeviceKind.Laptop, DeviceKind.Desktop, DeviceKind.Phone, DeviceKind.Tablet),
                 modifier = Modifier.align(Alignment.BottomEnd).fillMaxHeight(0.74f),
                 screenColor = Color.Red,
                 screenColorTolerance = 0.25f,
@@ -223,8 +221,8 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
                 frame = frame("watch_phone_mockup.jpg"),
                 // Different count and background per device — the watch and phone run independent UIs.
                 screens = listOf(
-                    { WearCounterScreen(count = 7, background = Brush.verticalGradient(listOf(Color(0xFF059669), Color(0xFF064E3B)))) },
-                    { CounterScreen(count = 42) },
+                    Screen(DeviceKind.Watch) { WearCounterScreen(count = 7, background = Brush.verticalGradient(listOf(Color(0xFF059669), Color(0xFF064E3B)))) },
+                    Screen(DeviceKind.Phone) { CounterScreen(count = 42) },
                 ),
                 modifier = Modifier.fillMaxHeight().scale(1.5f).offset(x = 24.dp, y = 36.dp),
             )

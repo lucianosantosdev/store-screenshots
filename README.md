@@ -426,19 +426,25 @@ automatically, and your UI fills each one (the device's own bezel does the cropp
 @Test fun home() = customScreenshot {
     DeviceImageMockup(
         frame = frame("three_phones.jpg"),
-        screens = listOf({ HomeScreen() }, { SettingsScreen() }, { ProfileScreen() }), // left → right
+        screens = listOf(Screen { HomeScreen() }, Screen { SettingsScreen() }, Screen { ProfileScreen() }), // left → right
     )
 }
 ```
 
-`screens` are matched to the detected screens left-to-right (pass one for a single-device render).
+Each `Screen` is matched to the detected screens left-to-right (pass one for a single-device render).
 Size and place the mockup with the `modifier` — `Modifier.fillMaxHeight()` fits it inside the canvas,
 and you can zoom or reframe it with ordinary modifiers, e.g. `Modifier.fillMaxHeight().scale(1.5f).offset(x = 24.dp, y = 36.dp)`.
 
-Phones come out portrait and tablets landscape; override a screen's orientation with `screenRotations`:
+A `Screen` optionally takes a device `kind` and a manual `rotation`. The `kind` (`Watch`, `Phone`,
+`Tablet`, `Laptop`, `Desktop`) sets the screen's orientation and the width its UI is laid out at — useful
+for a mixed device family where geometry alone can't tell a sideways watch from a small landscape screen.
+The `rotation` adds a manual quarter-turn on top:
 
 ```kotlin
-screenRotations = listOf(ScreenRotation.None, ScreenRotation.Clockwise90) // None / Clockwise90 / 180 / 270
+screens = listOf(
+    Screen(DeviceKind.Desktop) { HomeScreen() },                          // landscape, laid out large
+    Screen(DeviceKind.Watch, rotation = ScreenRotation.Clockwise90) { WatchFace() },
+)
 ```
 
 ### Where to put the frame image
@@ -471,7 +477,7 @@ bezel, body and background entirely (each connected blob of the colour becomes o
 ```kotlin
 DeviceImageMockup(
     frame = frame("phone_green_screen.png"),
-    screens = listOf { HomeScreen() },
+    screens = listOf(Screen { HomeScreen() }),
     screenColor = Color(0xFF00C85A),   // the colour you painted the screen
     screenColorTolerance = 0.22f,      // widen if JPEG softened the colour, tighten if it leaks
 )

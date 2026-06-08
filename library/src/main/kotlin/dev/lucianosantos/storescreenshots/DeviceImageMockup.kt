@@ -37,9 +37,9 @@ import kotlin.math.min
 import kotlin.math.sin
 
 /**
- * A manual quarter-turn applied to a screen's content (clockwise), on top of the auto-detected
- * orientation. Pass via `DeviceImageMockup(..., screenRotations = …)` to override how the UI sits on
- * a screen — e.g. spin a square watch face or flip a device the detector guessed upside down.
+ * A manual quarter-turn applied to a screen's content (clockwise), on top of its [DeviceKind]/auto
+ * orientation. Pass it on a [Screen] (`Screen(kind, rotation = …) { … }`) to override how the UI sits —
+ * e.g. spin a square watch face or flip a device the detector guessed upside down.
  */
 enum class ScreenRotation(internal val quarterTurns: Int) {
     None(0),
@@ -52,9 +52,9 @@ enum class ScreenRotation(internal val quarterTurns: Int) {
 internal enum class KindOrientation { Portrait, Landscape, FromImage }
 
 /**
- * The kind of device a screen belongs to in a [DeviceImageMockup] frame. Pass one per screen
- * (left-to-right, matching the detected order) via `deviceKinds` to set each screen's orientation and
- * the width its UI is composed at — explicitly, instead of leaving it to geometry. That removes the
+ * The kind of device a screen belongs to in a [DeviceImageMockup] frame. Set it on a [Screen]
+ * (`Screen(DeviceKind.Desktop) { … }`) to fix that screen's orientation and the width its UI is
+ * composed at — explicitly, instead of leaving it to geometry. That removes the
  * ambiguity a near-square screen creates: a watch worn at an angle and a small landscape screen look
  * identical, so only you know which is which. Each kind also picks a sensible native layout width so a
  * desktop's UI isn't laid out at phone size.
@@ -71,6 +71,21 @@ enum class DeviceKind(internal val nativeWidth: Dp, internal val orientation: Ki
     /** A desktop monitor — landscape, composed at the largest width. */
     Desktop(1000.dp, KindOrientation.Landscape),
 }
+
+/** Width a screen's UI is laid out at when its [DeviceKind] is unknown (height follows the screen). */
+private val DefaultNativeWidth = 411.dp
+
+/**
+ * One screen to composite into a [DeviceImageMockup] frame. [kind] sets its orientation and the width
+ * its UI is laid out at; leave it `null` to let the library guess from the screen's shape. [rotation]
+ * applies an extra manual quarter-turn on top of that. [content] is the live UI to draw. Pass these
+ * left-to-right, matching the order screens are detected in the frame.
+ */
+class Screen(
+    val kind: DeviceKind? = null,
+    val rotation: ScreenRotation = ScreenRotation.None,
+    val content: @Composable () -> Unit,
+)
 
 /**
  * The four corners of a device screen inside a frame image, as fractions (0f..1f) of the image:
@@ -347,11 +362,11 @@ private fun minAreaRect(hull: List<Offset>): Pair<Float, List<Offset>> {
  * ```kotlin
  * DeviceImageMockup(
  *     frame = ImageBitmap.imageResource(R.drawable.three_phones),
- *     screens = listOf({ HomeScreen() }, { SettingsScreen() }, { ProfileScreen() }),
+ *     screens = listOf(Screen { HomeScreen() }, Screen { SettingsScreen() }, Screen { ProfileScreen() }),
  * )
  * ```
  *
- * Each screen's content is laid out at a real-device width ([screenNativeWidth], height derived
+ * Each [Screen]'s content is laid out at a real-device width (from its [Screen.kind], height derived
  * from that screen's detected quad so it isn't distorted), recorded, then perspective-warped onto
  * the quad. The whole mockup keeps the image's aspect ratio and is sized by [modifier].
  *
@@ -365,20 +380,17 @@ private fun minAreaRect(hull: List<Offset>): Pair<Float, List<Offset>> {
 @Composable
 fun DeviceImageMockup(
     frame: ImageBitmap,
-    screens: List<@Composable () -> Unit>,
+    screens: List<Screen>,
     modifier: Modifier = Modifier,
-    screenNativeWidth: Dp = 411.dp,
     screenColor: Color? = null,
     bezelDarkness: Float = 0.35f,
     screenColorTolerance: Float = 0.5f,
-    screenRotations: List<ScreenRotation> = emptyList(),
-    deviceKinds: List<DeviceKind> = emptyList(),
 ) {
     val regions = remember(frame, screenColor, bezelDarkness, screenColorTolerance) {
         if (screenColor != null) detectScreenRegionsByColor(frame, screenColor, screenColorTolerance)
         else detectScreenRegions(frame, bezelDarkness)
     }
-    DeviceImageMockup(frame, regions, screens, modifier, screenNativeWidth, screenColorTolerance, screenRotations, deviceKinds)
+    DeviceImageMockup(frame, regions, screens, modifier, screenColorTolerance)
 }
 
 /**
@@ -390,12 +402,9 @@ fun DeviceImageMockup(
 fun DeviceImageMockup(
     frame: ImageBitmap,
     regions: List<ScreenRegion>,
-    screens: List<@Composable () -> Unit>,
+    screens: List<Screen>,
     modifier: Modifier = Modifier,
-    screenNativeWidth: Dp = 411.dp,
     screenColorTolerance: Float = 0.5f,
-    screenRotations: List<ScreenRotation> = emptyList(),
-    deviceKinds: List<DeviceKind> = emptyList(),
 ) {
     val density = LocalDensity.current
     val fw = frame.width.toFloat()
@@ -405,16 +414,17 @@ fun DeviceImageMockup(
 
     // Width each screen's content is laid out at (height follows the screen's aspect). A device family
     // mixes very different sizes, so each screen takes its [DeviceKind]'s native width — a desktop laid
-    // out at phone width gets an oversized UI. Falls back to the single [screenNativeWidth].
-    fun nativeWidth(i: Int): Dp = deviceKinds.getOrNull(i)?.nativeWidth ?: screenNativeWidth
+    // out at phone width gets an oversized UI. With no kind, fall back to a default phone-ish width.
+    fun nativeWidth(i: Int): Dp = screens[i].kind?.nativeWidth ?: DefaultNativeWidth
 
     // Magic-wand each screen from its center at full resolution: flood the contiguous pixels close
     // in colour to the seed (the bezel's colour change stops the flood), which selects the EXACT
     // screen — out to the true edge, rounded corners and all. That mask is knocked out of the frame
     // (content shows through, bezel crops), and the content corners are recomputed from it so the UI
     // fills the screen with no inset rim.
-    val (knockedFrame, refined, visibleCounts) = remember(frame, regions, screenColorTolerance, deviceKinds) {
-        magicWandScreens(frame, regions.take(n), screenColorTolerance, deviceKinds.map { it.orientation })
+    val kinds = screens.take(n).map { it.kind }
+    val (knockedFrame, refined, visibleCounts) = remember(frame, regions, screenColorTolerance, kinds) {
+        magicWandScreens(frame, regions.take(n), screenColorTolerance, kinds.map { it?.orientation })
     }
 
     // The device silhouette (the original frame's own alpha): content is masked to it so overshoot
@@ -428,7 +438,7 @@ fun DeviceImageMockup(
     }
 
     // Optional manual quarter-turn per screen, on top of the auto-detected orientation.
-    fun steps(i: Int) = screenRotations.getOrElse(i) { ScreenRotation.None }.quarterTurns
+    fun steps(i: Int) = screens[i].rotation.quarterTurns
 
     // Content size: the screen's aspect, swapped for a quarter-turn so the rotated UI still fills it.
     fun nativeHeight(r: ScreenRegion, rotSteps: Int, nw: Dp): Dp {
@@ -453,7 +463,7 @@ fun DeviceImageMockup(
                         layout(0, 0) { placeable.place(0, 0) }
                     }
                     .drawWithContent { layers[i].record { this@drawWithContent.drawContent() } }
-            ) { Box(Modifier.fillMaxSize()) { screens[i]() } }
+            ) { Box(Modifier.fillMaxSize()) { screens[i].content() } }
         }
 
         // Depth order: a screen partly hidden by another device's frame floods fewer pixels than its
@@ -822,19 +832,17 @@ fun DeviceImageMockup(
     screenBottomRight: Offset,
     screenBottomLeft: Offset,
     modifier: Modifier = Modifier,
-    screenNativeWidth: Dp = 411.dp,
     screenColorTolerance: Float = 0.5f,
+    kind: DeviceKind? = null,
     rotation: ScreenRotation = ScreenRotation.None,
     content: @Composable () -> Unit,
 ) {
     DeviceImageMockup(
         frame = frame,
         regions = listOf(ScreenRegion(screenTopLeft, screenTopRight, screenBottomRight, screenBottomLeft)),
-        screens = listOf(content),
+        screens = listOf(Screen(kind, rotation, content)),
         modifier = modifier,
-        screenNativeWidth = screenNativeWidth,
         screenColorTolerance = screenColorTolerance,
-        screenRotations = listOf(rotation),
     )
 }
 

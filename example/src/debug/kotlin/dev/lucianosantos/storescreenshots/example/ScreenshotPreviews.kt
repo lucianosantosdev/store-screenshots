@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import dev.lucianosantos.storescreenshots.AppleIPhone67ScreenshotPreview
 import dev.lucianosantos.storescreenshots.DeviceImageMockup
 import dev.lucianosantos.storescreenshots.DeviceKind
+import dev.lucianosantos.storescreenshots.Screen
 import dev.lucianosantos.storescreenshots.DeviceMockup
 import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.GooglePlayFeatureGraphicScreenshotPreview
@@ -135,9 +136,9 @@ fun DeviceImageTrioPreview() {
         DeviceImageMockup(
             frame = mockupFrame("phone_mockup_trio.jpg"),
             screens = listOf(
-                { CounterScreen(count = 7, background = Brush.verticalGradient(listOf(Color(0xFF2563EB), Color(0xFF1E3A8A)))) },
-                { CounterScreen(count = 42) },
-                { CounterScreen(count = 99, background = Brush.verticalGradient(listOf(Color(0xFFE11D48), Color(0xFF881337)))) },
+                Screen { CounterScreen(count = 7, background = Brush.verticalGradient(listOf(Color(0xFF2563EB), Color(0xFF1E3A8A)))) },
+                Screen { CounterScreen(count = 42) },
+                Screen { CounterScreen(count = 99, background = Brush.verticalGradient(listOf(Color(0xFFE11D48), Color(0xFF881337)))) },
             ),
             modifier = Modifier.fillMaxHeight(),
         )
@@ -148,7 +149,7 @@ fun DeviceImageTrioPreview() {
 @Composable
 fun DeviceImagePodiumPreview() {
     Box(Modifier.fillMaxSize().background(Color(0xFFF3DAD2)), contentAlignment = Alignment.Center) {
-        DeviceImageMockup(mockupFrame("phone_mockup_podium.jpg"), screens = listOf { CounterScreen(count = 42) }, modifier = Modifier.fillMaxHeight())
+        DeviceImageMockup(mockupFrame("phone_mockup_podium.jpg"), screens = listOf(Screen { CounterScreen(count = 42) }), modifier = Modifier.fillMaxHeight())
     }
 }
 
@@ -158,9 +159,8 @@ fun DeviceImageTabletPreview() {
     Box(Modifier.fillMaxSize().background(Color(0xFF2B2B30)), contentAlignment = Alignment.Center) {
         DeviceImageMockup(
             mockupFrame("tablet_mockup_keyboard.jpg"),
-            screens = listOf { CounterScreen(count = 42) },
+            screens = listOf(Screen(DeviceKind.Tablet) { CounterScreen(count = 42) }),
             modifier = Modifier.fillMaxHeight(),
-            screenNativeWidth = 760.dp,
         )
     }
 }
@@ -184,7 +184,7 @@ fun DeviceImageChromaPreview() {
             Box(Modifier.weight(0.95f).fillMaxHeight(), contentAlignment = Alignment.Center) {
                 DeviceImageMockup(
                     mockupFrame("phone_chroma.png"),
-                    screens = listOf { CounterScreen(count = 42) },
+                    screens = listOf(Screen { CounterScreen(count = 42) }),
                     modifier = Modifier.fillMaxHeight(0.96f),
                     screenColor = Color.Green,
                     screenColorTolerance = 0.2f,
@@ -200,9 +200,8 @@ fun DeviceImageWatchChromaPreview() {
     Box(Modifier.fillMaxSize().clipToBounds(), contentAlignment = Alignment.Center) {
         DeviceImageMockup(
             mockupFrame("watch_chroma.png"),
-            screens = listOf { WearCounterScreen(count = 42) },
+            screens = listOf(Screen(DeviceKind.Watch) { WearCounterScreen(count = 42) }),
             modifier = Modifier.fillMaxWidth(),
-            screenNativeWidth = 200.dp,
             screenColor = Color.Red,
             screenColorTolerance = 0.2f,
         )
@@ -216,8 +215,8 @@ fun DeviceImageWatchPhonePreview() {
         DeviceImageMockup(
             frame = mockupFrame("watch_phone_mockup.jpg"),
             screens = listOf(
-                { WearCounterScreen(count = 7, background = Brush.verticalGradient(listOf(Color(0xFF059669), Color(0xFF064E3B)))) },
-                { CounterScreen(count = 42) },
+                Screen(DeviceKind.Watch) { WearCounterScreen(count = 7, background = Brush.verticalGradient(listOf(Color(0xFF059669), Color(0xFF064E3B)))) },
+                Screen(DeviceKind.Phone) { CounterScreen(count = 42) },
             ),
             modifier = Modifier.fillMaxHeight().scale(1.5f).offset(x = 24.dp, y = 36.dp),
         )
@@ -241,12 +240,11 @@ fun DeviceImageFourDevicesChromaPreview() {
         DeviceImageMockup(
             mockupFrame("four_devices_chroma.png"),
             screens = listOf(
-                { CounterScreen(count = 512, background = Brush.verticalGradient(listOf(Color(0xFF2563EB), Color(0xFF1E3A8A)))) },
-                { CounterScreen(count = 1024, background = Brush.verticalGradient(listOf(Color(0xFF059669), Color(0xFF064E3B)))) },
-                { CounterScreen(count = 7) },
-                { CounterScreen(count = 42, background = Brush.verticalGradient(listOf(Color(0xFFF97316), Color(0xFF7C2D12)))) },
+                Screen(DeviceKind.Laptop) { CounterScreen(count = 512, background = Brush.verticalGradient(listOf(Color(0xFF2563EB), Color(0xFF1E3A8A)))) },
+                Screen(DeviceKind.Desktop) { CounterScreen(count = 1024, background = Brush.verticalGradient(listOf(Color(0xFF059669), Color(0xFF064E3B)))) },
+                Screen(DeviceKind.Phone) { CounterScreen(count = 7) },
+                Screen(DeviceKind.Tablet) { CounterScreen(count = 42, background = Brush.verticalGradient(listOf(Color(0xFFF97316), Color(0xFF7C2D12)))) },
             ),
-            deviceKinds = listOf(DeviceKind.Laptop, DeviceKind.Desktop, DeviceKind.Phone, DeviceKind.Tablet),
             modifier = Modifier.align(Alignment.BottomEnd).fillMaxHeight(0.74f),
             screenColor = Color.Red,
             screenColorTolerance = 0.25f,
