@@ -618,12 +618,12 @@ private fun magicWandScreens(
         }
         if (boundary.size < 8) { refined += region; visibleCounts += floodCount; continue }
         val rect = minAreaRect(convexHull(boundary)).second
-        // When the bounding rect is axis-aligned the screen is flat and front-facing — its full-width
-        // top/side edges align the min-area rect cleanly even under occlusion, so use the rect directly.
-        // The per-edge circumscribed fit would instead skew it into a trapezoid, because an occluded
-        // side is only visible in part (e.g. just its top third) and its slope can't be trusted. A
-        // genuinely tilted screen has a ROTATED rect and falls through to the circumscribed fit, which
-        // lands the corners past the rounded arcs and keeps the real perspective.
+        // Choose the screen quad. A near-axis-aligned rect means a flat, front-facing screen: use the
+        // rect directly — it stays clean even when another device occludes part of it (the dominant
+        // full-width edges still align the min-area rect), whereas a per-edge fit on a side that's half
+        // occlusion-boundary would skew it into a trapezoid. A rotated rect means a genuinely tilted
+        // screen: fit it with the robust per-edge intersection (circumscribedCorners), which keeps the
+        // real perspective while rejecting stray points (e.g. a stylus leaking into the screen flood).
         val rdx = rect[1].x - rect[0].x; val rdy = rect[1].y - rect[0].y
         val rlen = max(1e-3f, hypot(rdx, rdy))
         val rectAxisAligned = abs(rdy) / rlen < 0.13f || abs(rdx) / rlen < 0.13f // first edge near H or V (~7.5°)
@@ -753,76 +753,106 @@ private fun circumscribedCorners(boundary: List<Offset>, rect: List<Offset>): Li
     val vx = (rect[3].x - rect[0].x) / vLen; val vy = (rect[3].y - rect[0].y) / vLen
     val left = ArrayList<Offset>(); val right = ArrayList<Offset>()
     val top = ArrayList<Offset>(); val bottom = ArrayList<Offset>()
-    // Fit each side from its OUTER thirds only, skipping the middle of the edge. That dodges a centered
-    // cutout (a notch or pill that dips into the screen) — its boundary would otherwise drag the line
-    // fit inward — while still giving each side plenty of straight-edge points to fit.
-    fun outer(t: Float) = t in 0.15f..0.40f || t in 0.60f..0.85f
+    // Sample the FULL span of each side (only the very corners, where two edges meet, are excluded). The
+    // centre is kept on purpose: on a heavily rounded screen (a watch) the outermost point of a side is
+    // at its centre, and the robust fit below needs it to pin the edge out to the true screen boundary. A
+    // centred cutout (a notch or pill) is handled not by skipping the centre but by the robust fit, which
+    // treats the cutout's inward dip as an outlier minority and rejects it.
+    fun span(t: Float) = t in 0.12f..0.88f
     for (p in boundary) {
         val du = ((p.x - o.x) * ux + (p.y - o.y) * uy) / uLen // 0..1 across the rect
         val dv = ((p.x - o.x) * vx + (p.y - o.y) * vy) / vLen
-        if (outer(dv)) { if (du < 0.12f) left += p else if (du > 0.88f) right += p }
-        if (outer(du)) { if (dv < 0.12f) top += p else if (dv > 0.88f) bottom += p }
+        if (span(dv)) { if (du < 0.12f) left += p else if (du > 0.88f) right += p }
+        if (span(du)) { if (dv < 0.12f) top += p else if (dv > 0.88f) bottom += p }
     }
     val min = 5
     // Need at least one side of each opposite pair to fit a direction from.
     if ((left.size < min && right.size < min) || (top.size < min && bottom.size < min)) return null
-    // Each side's *slope* is a total-least-squares fit of its outer thirds (robust to a notch and to
-    // pixel staircasing). When BOTH sides of an opposite pair are visible they're fit independently, so
-    // a genuinely tilted screen keeps its converging (perspective) edges. But when one side is occluded
-    // by another device (too few points), it BORROWS its visible opposite's direction — a flat screen's
-    // opposite edges are parallel, so the hidden edge inherits the slope and the quad stays a clean
-    // rectangle instead of skewing toward the diagonal occlusion boundary.
-    fun dirs(a: List<Offset>, b: List<Offset>): Pair<Offset, Offset> = when {
-        a.size >= min && b.size >= min -> fitLine(a).second to fitLine(b).second
-        a.size >= min -> fitLine(a).second.let { it to it }
-        else -> fitLine(b).second.let { it to it }
-    }
-    val (dirL, dirR) = dirs(left, right)
-    val (dirT, dirB) = dirs(top, bottom)
-    // Each line's *position* is pinned to the outermost boundary point along that side's outward normal,
-    // so the four lines circumscribe the whole selection (the occluded side still has its visible extent
-    // to pin to). Pinning only translates the line; it keeps the borrowed/fitted slope.
-    val lL = pinToExtreme(o to dirL, boundary, -ux, -uy)
-    val lR = pinToExtreme(o to dirR, boundary, ux, uy)
-    val lT = pinToExtreme(o to dirT, boundary, -vx, -vy)
-    val lB = pinToExtreme(o to dirB, boundary, vx, vy)
+    // Fit each visible side with a ROBUST line (IRLS / Tukey biweight), seeded from the rect axis, then
+    // PIN it out to the farthest inlier along the side's outward normal. Robust regression is the standard
+    // fix for fitting an edge whose points are contaminated — by an OCCLUSION boundary (another device
+    // covering part of the screen) or by OUTLIERS (a bright blob such as a stylus leaking into the flood):
+    // the inlier majority (the real straight edge) sets the slope and the contamination is down-weighted
+    // to zero. Pinning to the farthest INLIER then makes the four lines circumscribe the screen — covering
+    // the rounded ends so content has no inset — while the excluded outliers can't push an edge past it.
+    // Opposite sides are fit independently, so a genuinely tilted screen keeps its converging (perspective)
+    // edges; a side too sparse to fit borrows its opposite's direction and sits at the rect's edge.
+    val uDir = Offset(ux, uy); val vDir = Offset(vx, vy)
+    val fL = if (left.size >= min) robustFitLine(left, vDir) else null
+    val fR = if (right.size >= min) robustFitLine(right, vDir) else null
+    val fT = if (top.size >= min) robustFitLine(top, uDir) else null
+    val fB = if (bottom.size >= min) robustFitLine(bottom, uDir) else null
+    val lL = pinInlier(fL, left, -ux, -uy) ?: (mid(rect[0], rect[3]) to (fL ?: fR)!!.second)
+    val lR = pinInlier(fR, right, ux, uy) ?: (mid(rect[1], rect[2]) to (fR ?: fL)!!.second)
+    val lT = pinInlier(fT, top, -vx, -vy) ?: (mid(rect[0], rect[1]) to (fT ?: fB)!!.second)
+    val lB = pinInlier(fB, bottom, vx, vy) ?: (mid(rect[3], rect[2]) to (fB ?: fT)!!.second)
     val tl = lineIntersect(lL, lT) ?: return null
     val tr = lineIntersect(lT, lR) ?: return null
     val br = lineIntersect(lR, lB) ?: return null
     val bl = lineIntersect(lB, lL) ?: return null
-    // Reject a degenerate fit: if a side is occluded (one device overlapping another) its points are
-    // sparse/skewed, the line fit goes off-axis, and two near-parallel side-lines intersect far away —
-    // throwing a corner off to infinity. A real corner sits within a hair of the bounding [rect], so if
-    // any corner lands well outside it the fit is unreliable; fall back (caller uses the rect instead).
+    // Reject a degenerate fit: if two near-parallel side-lines intersect far away a corner is thrown off
+    // toward infinity. A real corner sits within a hair of the bounding [rect], so if any corner lands
+    // well outside it the fit is unreliable; fall back (caller uses the rect instead).
     val rcx = (rect[0].x + rect[2].x) / 2f; val rcy = (rect[0].y + rect[2].y) / 2f
     val limit = dist(rect[0], rect[2]) // the rect's diagonal: a corner farther than this from centre is bogus
     for (p in listOf(tl, tr, br, bl)) if (hypot(p.x - rcx, p.y - rcy) > limit) return null
     return listOf(tl, tr, br, bl)
 }
 
+/** Midpoint of two points. */
+private fun mid(a: Offset, b: Offset): Offset = Offset((a.x + b.x) / 2f, (a.y + b.y) / 2f)
+
 /**
- * Translates a fitted [line] (keeping its direction) outward until it touches the [boundary] point
- * farthest along the outward normal `(nx, ny)`. The line then has the fitted slope but sits at the
- * outer extreme of the selection, so the side it bounds contains every selected pixel on that side.
+ * Robust line fit via iteratively-reweighted least squares with the Tukey biweight, seeded with
+ * [initDir] (the screen's rect axis). Across the iterations a point's weight falls with its distance
+ * from the current line and reaches zero past the cutoff, so contamination — an occlusion boundary or
+ * a bright blob leaking into the selection — is rejected and the line follows the inlier majority (the
+ * real straight edge). Deterministic: it replaces RANSAC's random sampling with a robust-seeded
+ * re-weighting, which suits a fixed screenshot pipeline (no RNG). Returns (point on line, unit dir).
  */
-private fun pinToExtreme(line: Pair<Offset, Offset>, boundary: List<Offset>, nx: Float, ny: Float): Pair<Offset, Offset> {
-    val (p, d) = line
-    var maxDist = -Float.MAX_VALUE
-    for (q in boundary) {
-        val dd = (q.x - p.x) * nx + (q.y - p.y) * ny
-        if (dd > maxDist) maxDist = dd
+private fun robustFitLine(pts: List<Offset>, initDir: Offset): Pair<Offset, Offset> {
+    var cx = pts.sumOf { it.x.toDouble() }.toFloat() / pts.size
+    var cy = pts.sumOf { it.y.toDouble() }.toFloat() / pts.size
+    var dx = initDir.x; var dy = initDir.y
+    repeat(8) {
+        val nx = -dy; val ny = dx // unit normal to the current line
+        val res = FloatArray(pts.size) { abs((pts[it].x - cx) * nx + (pts[it].y - cy) * ny) }
+        val mad = res.clone().also { it.sort() }[pts.size / 2].coerceAtLeast(0.5f) // median |residual|
+        val cutoff = 4.685f * 1.4826f * mad // Tukey tuning constant × robust σ estimate
+        val w = FloatArray(pts.size) { i -> val r = res[i] / cutoff; if (r >= 1f) 0f else (1f - r * r).let { it * it } }
+        var wsum = 0f; var wx = 0f; var wy = 0f
+        for (i in pts.indices) { wx += w[i] * pts[i].x; wy += w[i] * pts[i].y; wsum += w[i] }
+        if (wsum < 1e-3f) return Offset(cx, cy) to Offset(dx, dy)
+        cx = wx / wsum; cy = wy / wsum
+        var sxx = 0f; var syy = 0f; var sxy = 0f
+        for (i in pts.indices) { val ax = pts[i].x - cx; val ay = pts[i].y - cy; sxx += w[i] * ax * ax; syy += w[i] * ay * ay; sxy += w[i] * ax * ay }
+        val theta = 0.5f * atan2(2f * sxy, sxx - syy)
+        dx = cos(theta); dy = sin(theta)
     }
-    return Offset(p.x + nx * maxDist, p.y + ny * maxDist) to d
+    return Offset(cx, cy) to Offset(dx, dy)
 }
 
-/** Total-least-squares line fit: returns a point on the line and its (unit) direction. */
-private fun fitLine(pts: List<Offset>): Pair<Offset, Offset> {
-    val cx = pts.sumOf { it.x.toDouble() }.toFloat() / pts.size
-    val cy = pts.sumOf { it.y.toDouble() }.toFloat() / pts.size
-    var sxx = 0f; var syy = 0f; var sxy = 0f
-    for (p in pts) { val dx = p.x - cx; val dy = p.y - cy; sxx += dx * dx; syy += dy * dy; sxy += dx * dy }
-    val theta = 0.5f * atan2(2f * sxy, sxx - syy)
-    return Offset(cx, cy) to Offset(cos(theta), sin(theta))
+/**
+ * Translates the robust [fit] line (keeping its slope) outward along `(nx, ny)` until it passes through
+ * the farthest INLIER of [pts] — the points within a robust band of the line. The line then bounds the
+ * whole visible edge, including its rounded centre, so the circumscribed quad has no inset; outliers (a
+ * stylus leaking in, an occlusion boundary) sit outside the band and are ignored, so they can't push the
+ * edge past the real screen. Returns null when there is no fit to pin (the side was too sparse).
+ */
+private fun pinInlier(fit: Pair<Offset, Offset>?, pts: List<Offset>, nx: Float, ny: Float): Pair<Offset, Offset>? {
+    if (fit == null) return null
+    val (p, d) = fit
+    var lnx = -d.y; var lny = d.x // the line's normal, oriented to agree with the outward (nx, ny)
+    if (lnx * nx + lny * ny < 0f) { lnx = -lnx; lny = -lny }
+    val res = FloatArray(pts.size) { abs((pts[it].x - p.x) * lnx + (pts[it].y - p.y) * lny) }
+    val mad = res.clone().also { it.sort() }[pts.size / 2].coerceAtLeast(0.5f)
+    val tol = 3f * 1.4826f * mad // inlier band (3σ): excludes the contamination, keeps the real edge
+    val pProj = p.x * lnx + p.y * lny
+    var maxProj = -Float.MAX_VALUE
+    for (i in pts.indices) if (res[i] <= tol) { val pr = pts[i].x * lnx + pts[i].y * lny; if (pr > maxProj) maxProj = pr }
+    if (maxProj == -Float.MAX_VALUE) return p to d
+    val shift = maxProj - pProj
+    return Offset(p.x + lnx * shift, p.y + lny * shift) to d
 }
 
 /** Intersection of two lines each given as (point, direction); null if near-parallel. */
