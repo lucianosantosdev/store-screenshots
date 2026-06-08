@@ -618,18 +618,20 @@ private fun magicWandScreens(
         }
         if (boundary.size < 8) { refined += region; visibleCounts += floodCount; continue }
         val rect = minAreaRect(convexHull(boundary)).second
-        // Circumscribed corners: fit a line to each of the four straight sides and intersect adjacent
-        // lines, so the corners land where the edges meet (past the rounded arcs) and content fills the
-        // whole screen. When that's unreliable — e.g. another device overlaps this one and occludes a
-        // side — fall back to the bounding [rect] corners directly (NOT the nearest visible boundary
-        // point, which would pull an occluded corner inward and shrink the screen). The rect still spans
-        // the full screen as long as the opposite corners are visible, and any overshoot behind the
-        // occluding device is simply painted over by it.
-        val corners = circumscribedCorners(boundary, rect) ?: rect
+        // When the bounding rect is axis-aligned the screen is flat and front-facing — its full-width
+        // top/side edges align the min-area rect cleanly even under occlusion, so use the rect directly.
+        // The per-edge circumscribed fit would instead skew it into a trapezoid, because an occluded
+        // side is only visible in part (e.g. just its top third) and its slope can't be trusted. A
+        // genuinely tilted screen has a ROTATED rect and falls through to the circumscribed fit, which
+        // lands the corners past the rounded arcs and keeps the real perspective.
+        val rdx = rect[1].x - rect[0].x; val rdy = rect[1].y - rect[0].y
+        val rlen = max(1e-3f, hypot(rdx, rdy))
+        val rectAxisAligned = abs(rdy) / rlen < 0.13f || abs(rdx) / rlen < 0.13f // first edge near H or V (~7.5°)
+        val corners = if (rectAxisAligned) rect else (circumscribedCorners(boundary, rect) ?: rect)
         // Grow the quad outward a hair — uniformly, in pixels — to cover the keyed outline's
         // anti-aliased rim (where the warped content edge and the knockout edge don't quite meet).
         // Overshoot past the screen lands on the bezel, which crops it; the bezel is never knocked out.
-        val o = growPixels(snapAxisAligned(orientCorners(corners, orientations.getOrNull(index))), SCREEN_MARGIN_PX)
+        val o = growPixels(orientCorners(corners, orientations.getOrNull(index)), SCREEN_MARGIN_PX)
         refined += ScreenRegion(
             Offset(o[0].x / w, o[0].y / h), Offset(o[1].x / w, o[1].y / h),
             Offset(o[2].x / w, o[2].y / h), Offset(o[3].x / w, o[3].y / h),
@@ -761,17 +763,29 @@ private fun circumscribedCorners(boundary: List<Offset>, rect: List<Offset>): Li
         if (outer(dv)) { if (du < 0.12f) left += p else if (du > 0.88f) right += p }
         if (outer(du)) { if (dv < 0.12f) top += p else if (dv > 0.88f) bottom += p }
     }
-    if (left.size < 5 || right.size < 5 || top.size < 5 || bottom.size < 5) return null
-    // Each side's *slope* comes from a total-least-squares fit of its outer thirds (robust to the
-    // notch and to pixel staircasing). Its *position*, though, is pinned to the outermost boundary
-    // point along that side's outward normal — so the four lines circumscribe the WHOLE selection,
-    // including green that bulges past the average edge (the horns either side of a notch). Pinning
-    // to the extreme only translates the line (keeps the fitted slope), so it can't over-grow a
-    // straight edge but guarantees the quad contains every knocked-out pixel.
-    val lL = pinToExtreme(fitLine(left), boundary, -ux, -uy)
-    val lR = pinToExtreme(fitLine(right), boundary, ux, uy)
-    val lT = pinToExtreme(fitLine(top), boundary, -vx, -vy)
-    val lB = pinToExtreme(fitLine(bottom), boundary, vx, vy)
+    val min = 5
+    // Need at least one side of each opposite pair to fit a direction from.
+    if ((left.size < min && right.size < min) || (top.size < min && bottom.size < min)) return null
+    // Each side's *slope* is a total-least-squares fit of its outer thirds (robust to a notch and to
+    // pixel staircasing). When BOTH sides of an opposite pair are visible they're fit independently, so
+    // a genuinely tilted screen keeps its converging (perspective) edges. But when one side is occluded
+    // by another device (too few points), it BORROWS its visible opposite's direction — a flat screen's
+    // opposite edges are parallel, so the hidden edge inherits the slope and the quad stays a clean
+    // rectangle instead of skewing toward the diagonal occlusion boundary.
+    fun dirs(a: List<Offset>, b: List<Offset>): Pair<Offset, Offset> = when {
+        a.size >= min && b.size >= min -> fitLine(a).second to fitLine(b).second
+        a.size >= min -> fitLine(a).second.let { it to it }
+        else -> fitLine(b).second.let { it to it }
+    }
+    val (dirL, dirR) = dirs(left, right)
+    val (dirT, dirB) = dirs(top, bottom)
+    // Each line's *position* is pinned to the outermost boundary point along that side's outward normal,
+    // so the four lines circumscribe the whole selection (the occluded side still has its visible extent
+    // to pin to). Pinning only translates the line; it keeps the borrowed/fitted slope.
+    val lL = pinToExtreme(o to dirL, boundary, -ux, -uy)
+    val lR = pinToExtreme(o to dirR, boundary, ux, uy)
+    val lT = pinToExtreme(o to dirT, boundary, -vx, -vy)
+    val lB = pinToExtreme(o to dirB, boundary, vx, vy)
     val tl = lineIntersect(lL, lT) ?: return null
     val tr = lineIntersect(lT, lR) ?: return null
     val br = lineIntersect(lR, lB) ?: return null
@@ -847,23 +861,6 @@ fun DeviceImageMockup(
 }
 
 private fun dist(a: Offset, b: Offset): Float = hypot(a.x - b.x, a.y - b.y)
-
-/**
- * If an oriented quad [c] (TL, TR, BR, BL) is within a few degrees of axis-aligned, snap it to its
- * axis-aligned bounding box. A flat, front-facing screen should warp with no perspective, but when it's
- * partly occluded by another device the corner fit comes out slightly skewed — enough to tilt the UI.
- * Genuinely tilted screens (a phone shown at an angle) are well past the tolerance and are left alone.
- */
-private fun snapAxisAligned(c: List<Offset>): List<Offset> {
-    val tol = 0.105f // ~6°
-    val topAngle = atan2(c[1].y - c[0].y, c[1].x - c[0].x)        // 0 when the top edge is horizontal
-    val leftAngle = atan2(c[3].y - c[0].y, c[3].x - c[0].x)       // PI/2 when the left edge points down
-    if (abs(topAngle) > tol) return c
-    if (abs(abs(leftAngle) - PI.toFloat() / 2f) > tol) return c
-    val minX = minOf(c[0].x, c[1].x, c[2].x, c[3].x); val maxX = maxOf(c[0].x, c[1].x, c[2].x, c[3].x)
-    val minY = minOf(c[0].y, c[1].y, c[2].y, c[3].y); val maxY = maxOf(c[0].y, c[1].y, c[2].y, c[3].y)
-    return listOf(Offset(minX, minY), Offset(maxX, minY), Offset(maxX, maxY), Offset(minX, maxY))
-}
 
 /** Area of a screen's (fractional) corner quad via the shoelace formula — used to order draws by depth. */
 private fun quadArea(r: ScreenRegion): Float {
