@@ -37,9 +37,14 @@ import dev.lucianosantos.storescreenshots.DeviceKind
 import dev.lucianosantos.storescreenshots.Screen
 import dev.lucianosantos.storescreenshots.DeviceMockup
 import dev.lucianosantos.storescreenshots.FormFactor
+import dev.lucianosantos.storescreenshots.GlassReflexStyle
+import dev.lucianosantos.storescreenshots.GlassShadow
 import dev.lucianosantos.storescreenshots.GooglePlayFeatureGraphicScreenshotPreview
 import dev.lucianosantos.storescreenshots.PhoneScreenshotPreview
 import dev.lucianosantos.storescreenshots.ScreenshotPreview
+import dev.lucianosantos.storescreenshots.ScreenshotStyle
+import dev.lucianosantos.storescreenshots.GlassEffect
+import dev.lucianosantos.storescreenshots.screenGlass
 import dev.lucianosantos.storescreenshots.Tablet10ScreenshotPreview
 import dev.lucianosantos.storescreenshots.Tablet7ScreenshotPreview
 import dev.lucianosantos.storescreenshots.WatchMockup
@@ -125,6 +130,108 @@ fun PerspectivePreview() = ScreenshotPreview(
     description = "Perspective XYZ rotation — just mockupRotationX / Y / Z on ScreenshotStyle",
     style = perspectiveScreenshotStyle,
 ) { CounterScreen(count = 42) }
+
+// --- Glass effect previews (mirror PhoneGlassExampleTest). These render the same framed output as
+// the generated PNGs, so the reflex + shadow read identically in the IDE preview pane. ---
+
+@PhoneScreenshotPreview
+@Composable
+fun GlassDefaultPreview() = ScreenshotPreview(
+    formFactor = FormFactor.Phone,
+    title = "Behind the glass",
+    description = "A default reflex + bottom-right shadow — just Modifier.screenGlass()",
+) { CounterScreen(count = 42, modifier = Modifier.screenGlass()) }
+
+@PhoneScreenshotPreview
+@Composable
+fun GlassCustomPreview() = ScreenshotPreview(
+    formFactor = FormFactor.Phone,
+    title = "Tune the reflex",
+    description = "Steeper reflex near the top, shadow anchored to the left edge",
+) {
+    CounterScreen(
+        count = 42,
+        modifier = Modifier.screenGlass(
+            reflexAngle = 40f,
+            reflexPosition = 0.2f,
+            reflexWidth = 0.22f,
+            reflexAlpha = 0.24f,
+            shadow = GlassShadow.Left,
+            shadowAlpha = 0.18f,
+        ),
+    )
+}
+
+@PhoneScreenshotPreview
+@Composable
+fun GlassViaStylePreview() = ScreenshotPreview(
+    formFactor = FormFactor.Phone,
+    title = "Glass for the whole run",
+    description = "Set ScreenshotStyle.screenGlass once — every mockup gets it",
+    style = ScreenshotStyle(screenGlass = GlassEffect()),
+) { CounterScreen(count = 42) }
+
+@PhoneScreenshotPreview
+@Composable
+fun GlassWedgeAPreview() = ScreenshotPreview(
+    formFactor = FormFactor.Phone,
+    title = "Wedge reflex",
+    description = "A glossy diagonal filling from the center out to the border",
+) {
+    CounterScreen(
+        count = 42,
+        modifier = Modifier.screenGlass(
+            reflexAngle = -32f,
+            reflexPosition = 0.55f,
+            reflexWidth = 0.5f,
+            reflexStyle = GlassReflexStyle.Wedge,
+            reflexAlpha = 0.20f,
+            shadow = GlassShadow.BottomLeft,
+            shadowAlpha = 0.20f,
+        ),
+    )
+}
+
+@PhoneScreenshotPreview
+@Composable
+fun GlassWedgeBPreview() = ScreenshotPreview(
+    formFactor = FormFactor.Phone,
+    title = "Wedge — sharper",
+    description = "A crisp diagonal split through the center, no shadow",
+) {
+    CounterScreen(
+        count = 42,
+        modifier = Modifier.screenGlass(
+            reflexAngle = -60f,
+            reflexPosition = 0.5f,
+            reflexWidth = 0.01f,
+            reflexStyle = GlassReflexStyle.Wedge,
+            reflexAlpha = 0.30f,
+            shadow = GlassShadow.None,
+        ),
+    )
+}
+
+@PhoneScreenshotPreview
+@Composable
+fun GlassWedgeCPreview() = ScreenshotPreview(
+    formFactor = FormFactor.Phone,
+    title = "Wedge — softer",
+    description = "A broader, gentler sheen from a steeper diagonal",
+) {
+    CounterScreen(
+        count = 42,
+        modifier = Modifier.screenGlass(
+            reflexAngle = 40f,
+            reflexPosition = 0.6f,
+            reflexWidth = 0.5f,
+            reflexStyle = GlassReflexStyle.Wedge,
+            reflexAlpha = 0.50f,
+            shadow = GlassShadow.BottomLeft,
+            shadowAlpha = 0.16f,
+        ),
+    )
+}
 
 // --- DeviceImageMockup previews (mirror DeviceImageMockupTest). Debug-only: the device-frame images
 // live in the screenshots source set and are exposed to debug via a resources srcDir in build.gradle. ---

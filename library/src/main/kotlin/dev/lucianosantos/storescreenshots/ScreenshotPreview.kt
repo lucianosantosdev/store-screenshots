@@ -48,6 +48,8 @@ fun ScreenshotPreview(
             "Preview a feature graphic by annotating your own banner composable with " +
             "@GooglePlayFeatureGraphicScreenshotPreview."
     }
+    // Apply the style-level glass here too so the preview matches the captured PNG (see renderFrame).
+    val content = glassWrap(style.screenGlass, content)
     val customFrame = style.mockupFrame
     if (customFrame != null) {
         FramedLayout(
