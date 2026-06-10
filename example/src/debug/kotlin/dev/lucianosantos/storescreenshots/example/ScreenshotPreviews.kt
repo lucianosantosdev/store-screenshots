@@ -229,7 +229,7 @@ fun GlassWedgeCPreview() = ScreenshotPreview(
             reflexAlpha = 0.50f,
             shadow = GlassShadow.BottomLeft,
             shadowAlpha = 0.16f,
-        ),
+        )
     )
 }
 
