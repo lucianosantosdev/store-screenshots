@@ -240,13 +240,13 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
                     Screen(DeviceKind.Phone) {
                         Box(
                             Modifier.fillMaxSize().screenGlass(
-                                reflexAngle = 30f,
-                                reflexPosition = 0.42f,
+                                reflexAngle = 40f,
+                                reflexPosition = 0.6f,
                                 reflexWidth = 0.5f,
                                 reflexStyle = GlassReflexStyle.Wedge,
-                                reflexAlpha = 0.34f,
-                                shadow = GlassShadow.BottomRight,
-                                shadowAlpha = 0.22f,
+                                reflexAlpha = 0.50f,
+                                shadow = GlassShadow.BottomLeft,
+                                shadowAlpha = 0.16f,
                             )
                         ) { CounterScreen(count = 42) }
                     },
