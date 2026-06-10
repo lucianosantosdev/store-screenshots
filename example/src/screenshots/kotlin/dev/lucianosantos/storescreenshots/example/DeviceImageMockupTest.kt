@@ -30,9 +30,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.lucianosantos.storescreenshots.DeviceImageMockup
 import dev.lucianosantos.storescreenshots.DeviceKind
+import dev.lucianosantos.storescreenshots.GlassReflexStyle
+import dev.lucianosantos.storescreenshots.GlassShadow
 import dev.lucianosantos.storescreenshots.Screen
 import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.StoreScreenshotsTest
+import dev.lucianosantos.storescreenshots.screenGlass
 import org.junit.Test
 
 class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureGraphic) {
@@ -220,9 +223,33 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
             DeviceImageMockup(
                 frame = frame("watch_phone_mockup.jpg"),
                 // Different count and background per device — the watch and phone run independent UIs.
+                // A glass sheen sits in front of each screen; it is warped into the device plane with
+                // the rest of the content, so the reflex rakes across the glass at the device's angle.
                 screens = listOf(
-                    Screen(DeviceKind.Watch) { WearCounterScreen(count = 7, background = Brush.verticalGradient(listOf(Color(0xFF059669), Color(0xFF064E3B)))) },
-                    Screen(DeviceKind.Phone) { CounterScreen(count = 42) },
+                    Screen(DeviceKind.Watch) {
+                        Box(
+                            Modifier.fillMaxSize().screenGlass(
+                                reflexAngle = 30f,
+                                reflexPosition = 0.34f,
+                                reflexWidth = 0.32f,
+                                reflexAlpha = 0.22f,
+                                shadow = GlassShadow.None,
+                            )
+                        ) { WearCounterScreen(count = 7, background = Brush.verticalGradient(listOf(Color(0xFF059669), Color(0xFF064E3B)))) }
+                    },
+                    Screen(DeviceKind.Phone) {
+                        Box(
+                            Modifier.fillMaxSize().screenGlass(
+                                reflexAngle = 30f,
+                                reflexPosition = 0.42f,
+                                reflexWidth = 0.5f,
+                                reflexStyle = GlassReflexStyle.Wedge,
+                                reflexAlpha = 0.34f,
+                                shadow = GlassShadow.BottomRight,
+                                shadowAlpha = 0.22f,
+                            )
+                        ) { CounterScreen(count = 42) }
+                    },
                 ),
                 modifier = Modifier.fillMaxHeight().scale(1.5f).offset(x = 24.dp, y = 36.dp),
             )
