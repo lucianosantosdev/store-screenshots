@@ -35,6 +35,7 @@ class ScreenshotScope internal constructor(
         cameraDistance: Float = DefaultMockupCameraDistance,
         content: @Composable () -> Unit,
     ) {
+        val content = glassWrap(style.screenGlass, content)
         val customFrame = style.mockupFrame
         if (customFrame != null) {
             androidx.compose.foundation.layout.Box(

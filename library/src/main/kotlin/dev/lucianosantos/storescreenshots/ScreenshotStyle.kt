@@ -25,6 +25,9 @@ import androidx.compose.ui.unit.dp
  *   `backgroundColor` from [Screenshot] is ignored.
  * - [title] / [description] — replace the default Text composables. The current text string
  *   (resolved per-locale from the annotation) is passed in.
+ * - [screenGlass] — when set, a glass sheen ([GlassEffect]) is drawn in front of the screen
+ *   inside every mockup bezel, so you get the reflex + shadow look without placing the
+ *   `Modifier.screenGlass` on each screen by hand.
  *
  * Defaults preserve the look of every form factor in the library before this API existed.
  */
@@ -42,6 +45,7 @@ data class ScreenshotStyle(
     val showStatusBar: Boolean = true,
     val statusBarClock: String = "12:00",
     val mockupFrame: (@Composable (content: @Composable () -> Unit) -> Unit)? = null,
+    val screenGlass: GlassEffect? = null,
     val background: (@Composable () -> Unit)? = null,
     val title: (@Composable (text: String) -> Unit)? = null,
     val description: (@Composable (text: String) -> Unit)? = null,

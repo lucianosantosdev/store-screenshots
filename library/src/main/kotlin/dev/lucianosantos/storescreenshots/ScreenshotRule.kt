@@ -160,6 +160,8 @@ class ScreenshotRule(
         style: ScreenshotStyle,
         content: @Composable () -> Unit,
     ) {
+        // Apply the style-level glass to the screen drawn inside the bezel, once for every frame.
+        val content = glassWrap(style.screenGlass, content)
         val customFrame = style.mockupFrame
         if (customFrame != null) {
             // User-defined frame replaces the built-in bezel but keeps FramedLayout
