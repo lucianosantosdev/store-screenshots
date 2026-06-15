@@ -29,8 +29,13 @@ android {
         // Make the test-only device-frame images (src/screenshots/resources/mockups) visible to the
         // debug variant so the DeviceImageMockup @Preview functions can load them. Debug only — the
         // release build never bundles them, keeping them out of the shipped app.
+        //
+        // As assets (not just classpath resources): the Studio preview renderer (LayoutLib) resolves
+        // images through the Context's AssetManager, but does not expose the variant's Java resources,
+        // so the previews load the frames from assets/mockups/ via LocalContext.
         getByName("debug") {
             resources.srcDir("src/screenshots/resources")
+            assets.srcDir("src/screenshots/resources")
         }
     }
 }

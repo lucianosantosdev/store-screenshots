@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,6 +27,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -42,6 +44,7 @@ import dev.lucianosantos.storescreenshots.GlassShadow
 import dev.lucianosantos.storescreenshots.GooglePlayFeatureGraphicScreenshotPreview
 import dev.lucianosantos.storescreenshots.PhoneScreenshotPreview
 import dev.lucianosantos.storescreenshots.ScreenshotPreview
+import dev.lucianosantos.storescreenshots.SplitSeams
 import dev.lucianosantos.storescreenshots.ScreenshotStyle
 import dev.lucianosantos.storescreenshots.GlassEffect
 import dev.lucianosantos.storescreenshots.screenGlass
@@ -233,13 +236,28 @@ fun GlassWedgeCPreview() = ScreenshotPreview(
     )
 }
 
+// Split screenshot example, end-to-end in the IDE: one canvas three phone-screenshots wide
+// (3 × 411dp) carrying a free-form mix of devices — a phone and a watch via DeviceMockup, plus a
+// chroma-keyed phone via DeviceImageMockup — and per-panel captions. The guide lines mark the
+// seams: the devices straddle them freely while each caption stays inside its own screenshot.
+@Preview(name = "Split story (mixed devices)", widthDp = 1233, heightDp = 914)
+@Composable
+fun SplitStoryPreview() {
+    Box(Modifier.fillMaxSize()) {
+        // Same composition the screenshot test renders; only the frame source differs (assets here).
+        SplitStory(chromaFrame = mockupFrame("phone_chroma.png"))
+        // Preview-only guides showing where the canvas is cut into the three screenshots.
+        SplitSeams(count = 3)
+    }
+}
+
 // --- DeviceImageMockup previews (mirror DeviceImageMockupTest). Debug-only: the device-frame images
-// live in the screenshots source set and are exposed to debug via a resources srcDir in build.gradle. ---
+// live in the screenshots source set and are exposed to the debug variant as assets in build.gradle,
+// so the preview can load them from the inspection Context (the classpath is not visible to LayoutLib). ---
 
 @GooglePlayFeatureGraphicScreenshotPreview
 @Composable
-fun DeviceImageTrioPreview() {
-    Box(Modifier.fillMaxSize().background(Color(0xFFEFEFEF)), contentAlignment = Alignment.Center) {
+fun DeviceImageTrioPreview() {    Box(Modifier.fillMaxSize().background(Color(0xFFEFEFEF)), contentAlignment = Alignment.Center) {
         DeviceImageMockup(
             frame = mockupFrame("phone_mockup_trio.jpg"),
             screens = listOf(
@@ -254,16 +272,14 @@ fun DeviceImageTrioPreview() {
 
 @GooglePlayFeatureGraphicScreenshotPreview
 @Composable
-fun DeviceImagePodiumPreview() {
-    Box(Modifier.fillMaxSize().background(Color(0xFFF3DAD2)), contentAlignment = Alignment.Center) {
+fun DeviceImagePodiumPreview() {    Box(Modifier.fillMaxSize().background(Color(0xFFF3DAD2)), contentAlignment = Alignment.Center) {
         DeviceImageMockup(mockupFrame("phone_mockup_podium.jpg"), screens = listOf(Screen { CounterScreen(count = 42) }), modifier = Modifier.fillMaxHeight())
     }
 }
 
 @GooglePlayFeatureGraphicScreenshotPreview
 @Composable
-fun DeviceImageTabletPreview() {
-    Box(Modifier.fillMaxSize().background(Color(0xFF2B2B30)), contentAlignment = Alignment.Center) {
+fun DeviceImageTabletPreview() {    Box(Modifier.fillMaxSize().background(Color(0xFF2B2B30)), contentAlignment = Alignment.Center) {
         DeviceImageMockup(
             mockupFrame("tablet_mockup_keyboard.jpg"),
             screens = listOf(Screen(DeviceKind.Tablet) { CounterScreen(count = 42) }),
@@ -274,8 +290,7 @@ fun DeviceImageTabletPreview() {
 
 @GooglePlayFeatureGraphicScreenshotPreview
 @Composable
-fun DeviceImageChromaPreview() {
-    Box(
+fun DeviceImageChromaPreview() {    Box(
         Modifier.fillMaxSize().background(
             Brush.linearGradient(listOf(Color(0xFF4338CA), Color(0xFF7C3AED), Color(0xFFDB2777)))
         )
@@ -303,8 +318,7 @@ fun DeviceImageChromaPreview() {
 
 @GooglePlayFeatureGraphicScreenshotPreview
 @Composable
-fun DeviceImageWatchChromaPreview() {
-    Box(Modifier.fillMaxSize().clipToBounds(), contentAlignment = Alignment.Center) {
+fun DeviceImageWatchChromaPreview() {    Box(Modifier.fillMaxSize().clipToBounds(), contentAlignment = Alignment.Center) {
         DeviceImageMockup(
             mockupFrame("watch_chroma.png"),
             screens = listOf(Screen(DeviceKind.Watch) { WearCounterScreen(count = 42) }),
@@ -317,8 +331,7 @@ fun DeviceImageWatchChromaPreview() {
 
 @GooglePlayFeatureGraphicScreenshotPreview
 @Composable
-fun DeviceImageWatchPhonePreview() {
-    Box(Modifier.fillMaxSize().background(Color(0xFF6B533A)), contentAlignment = Alignment.Center) {
+fun DeviceImageWatchPhonePreview() {    Box(Modifier.fillMaxSize().background(Color(0xFF6B533A)), contentAlignment = Alignment.Center) {
         DeviceImageMockup(
             frame = mockupFrame("watch_phone_mockup.jpg"),
             screens = listOf(
@@ -332,8 +345,7 @@ fun DeviceImageWatchPhonePreview() {
 
 @GooglePlayFeatureGraphicScreenshotPreview
 @Composable
-fun DeviceImageFourDevicesChromaPreview() {
-    Box(
+fun DeviceImageFourDevicesChromaPreview() {    Box(
         Modifier.fillMaxSize().background(
             Brush.linearGradient(listOf(Color(0xFF0F172A), Color(0xFF1E3A8A), Color(0xFF0EA5E9)))
         )
@@ -359,8 +371,15 @@ fun DeviceImageFourDevicesChromaPreview() {
     }
 }
 
-/** Loads a device-frame image from the debug classpath (src/screenshots/resources/mockups). */
-private fun mockupFrame(name: String): ImageBitmap =
-    object {}.javaClass.classLoader!!.getResourceAsStream("mockups/$name").use {
-        BitmapFactory.decodeStream(it).asImageBitmap()
+/**
+ * Loads a device-frame image for previews from the debug variant's assets (mockups/…), resolved
+ * through the inspection [LocalContext]. Assets are visible to the Studio preview renderer
+ * (LayoutLib), unlike the classpath the screenshot tests load from.
+ */
+@Composable
+private fun mockupFrame(name: String): ImageBitmap {
+    val assets = LocalContext.current.assets
+    return remember(name) {
+        assets.open("mockups/$name").use { BitmapFactory.decodeStream(it).asImageBitmap() }
     }
+}

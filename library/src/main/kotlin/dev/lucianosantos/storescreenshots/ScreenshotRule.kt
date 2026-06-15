@@ -1,6 +1,8 @@
 package dev.lucianosantos.storescreenshots
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -151,6 +153,84 @@ class ScreenshotRule(
         }
     }
 
+    /**
+     * Renders one continuous layout [panels] screenshots wide, then slices it into [panels]
+     * equal-width PNGs that sit side by side in the store and read as one design — text, devices,
+     * or a background can flow across the seams between screenshots.
+     *
+     * The [content] runs in a [ScreenshotScope] (same `Mockup { }` as [customScreenshot]) over a
+     * canvas that is `panels ×` the form factor's normal width and its normal height. Lay out a
+     * single wide composition; panel 1 is the leftmost slice. Each slice is written next to the
+     * others as `{name}_01.png`, `{name}_02.png`, … so they sort into order in the store.
+     *
+     * ```kotlin
+     * @Test fun story() = splitScreenshot(panels = 3) {
+     *     Row(Modifier.fillMaxSize().background(brand)) {
+     *         repeat(3) { Box(Modifier.weight(1f)) { /* one panel */ } }
+     *     }
+     *     // …or place Mockup { } / Text freely so they straddle the seams.
+     * }
+     * ```
+     *
+     * @param panels How many screenshots to split the canvas into (must be >= 2).
+     * @param fileName Base name for the slices (without the `_NN` suffix or `.png`). Defaults to
+     *   the test method name.
+     */
+    fun splitScreenshot(
+        panels: Int,
+        locales: List<String> = listOf("en-US"),
+        fileName: String? = null,
+        content: @Composable ScreenshotScope.() -> Unit,
+    ) {
+        require(panels >= 2) {
+            "splitScreenshot needs panels >= 2 (got $panels); use customScreenshot for a single image."
+        }
+        val scope = ScreenshotScope(formFactor, style)
+        val wideQualifiers = widenQualifiers(formFactor.qualifiers, panels)
+        for (locale in locales) {
+            RuntimeEnvironment.setQualifiers(wideQualifiers)
+            RuntimeEnvironment.setQualifiers("+${locale.toAndroidResourceQualifier()}")
+
+            val composeRule = createComposeRule()
+            composeRule.apply(
+                object : Statement() {
+                    override fun evaluate() {
+                        composeRule.setContent { scope.content() }
+                        composeRule.waitForIdle()
+                        // Capture the whole wide canvas with Roborazzi (the path that works under
+                        // Robolectric — captureToImage()/PixelCopy does not), then slice it.
+                        val temp = File.createTempFile("storescreenshots-split", ".png")
+                        try {
+                            composeRule.onRoot().captureRoboImage(
+                                filePath = temp.absolutePath,
+                                roborazziOptions = RoborazziOptions(),
+                            )
+                            val full = BitmapFactory.decodeFile(temp.absolutePath)
+                                ?: error("Could not decode the captured split canvas at ${temp.absolutePath}")
+                            writeSlices(full, panels, locale, fileName ?: testMethodName)
+                        } finally {
+                            temp.delete()
+                        }
+                    }
+                },
+                junitDescription,
+            ).evaluate()
+        }
+    }
+
+    /** Cuts [full] into [panels] equal-width PNGs, written as `{base}_01.png`, `{base}_02.png`, … */
+    private fun writeSlices(full: Bitmap, panels: Int, locale: String, base: String) {
+        val panelWidth = full.width / panels
+        for (i in 0 until panels) {
+            val x = i * panelWidth
+            // The last panel takes any remainder so no column of pixels is dropped.
+            val width = if (i == panels - 1) full.width - x else panelWidth
+            val slice = Bitmap.createBitmap(full, x, 0, width, full.height)
+            val name = "${base}_${(i + 1).toString().padStart(2, '0')}"
+            outputPath(locale, name).outputStream().use { slice.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        }
+    }
+
     @Composable
     private fun renderFrame(
         title: String,
@@ -214,3 +294,13 @@ private fun String.toAndroidResourceQualifier(): String {
     val parts = split("-")
     return if (parts.size == 2) "${parts[0]}-r${parts[1]}" else this
 }
+
+/**
+ * Multiplies the `wNNNdp` width in a Robolectric [qualifiers] string by [panels], leaving the
+ * height and density buckets untouched — so the canvas is [panels] screenshots wide at the form
+ * factor's normal height and pixel density. e.g. `w411dp-h914dp-xxhdpi` × 3 → `w1233dp-h914dp-xxhdpi`.
+ */
+private fun widenQualifiers(qualifiers: String, panels: Int): String =
+    Regex("""w(\d+)dp""").replace(qualifiers) { match ->
+        "w${match.groupValues[1].toInt() * panels}dp"
+    }
