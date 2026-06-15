@@ -14,19 +14,19 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Overlays the [count] − 1 vertical guide lines that mark where [ScreenshotRule.splitScreenshot]
- * cuts a [count]-wide canvas into separate screenshots. Drop it on top of a split layout **inside
- * a `@Preview`** to see the seams while you design — so you can tell which content stays inside a
- * screenshot and which spans the boundaries.
+ * Overlays where [ScreenshotRule.splitScreenshot] cuts a [count]-wide canvas into separate
+ * screenshots. With no [gap] it draws the [count] − 1 seam lines; with a [gap] it shades the
+ * gap strips that get discarded — the bands of the design that won't appear in any screenshot.
+ * Drop it on top of a split layout **inside a `@Preview`** to see where the cuts land.
  *
- * It's a preview aid: leave it out of the `splitScreenshot { … }` body itself, or the lines would
- * be baked into the exported PNGs.
+ * It's a preview aid: leave it out of the `splitScreenshot { … }` body itself, or the marks would
+ * be baked into the exported PNGs. Pass the same [count] and [gap] you give `splitScreenshot`.
  *
  * ```kotlin
- * @Preview(widthDp = 1233, heightDp = 914)
+ * @Preview(widthDp = 1281, heightDp = 914)
  * @Composable fun StoryPreview() = Box(Modifier.fillMaxSize()) {
  *     StoryBanner()
- *     SplitSeams(count = 3)   // two guide lines at the seams
+ *     SplitSeams(count = 3, gap = 24.dp)   // shades the two discarded gap strips
  * }
  * ```
  */
@@ -36,20 +36,21 @@ fun SplitSeams(
     modifier: Modifier = Modifier,
     color: Color = Color.White.copy(alpha = 0.45f),
     thickness: Dp = 2.dp,
+    gap: Dp = 0.dp,
 ) {
     Row(modifier = modifier.fillMaxSize()) {
         for (index in 0 until count) {
+            // Equal-weight cells are the panel widths; the explicit gap bars sit between them, so
+            // this lines up with the slices exactly.
             Box(Modifier.weight(1f).fillMaxHeight()) {
-                // A line on the trailing edge of every cell except the last marks each seam.
-                if (index < count - 1) {
-                    Box(
-                        Modifier
-                            .align(Alignment.CenterEnd)
-                            .fillMaxHeight()
-                            .width(thickness)
-                            .background(color)
-                    )
+                if (gap <= 0.dp && index < count - 1) {
+                    // No gap — a thin line on the trailing edge marks the seam.
+                    Box(Modifier.align(Alignment.CenterEnd).fillMaxHeight().width(thickness).background(color))
                 }
+            }
+            if (gap > 0.dp && index < count - 1) {
+                // The discarded gap strip, shaded so you can see what gets cut out.
+                Box(Modifier.width(gap).fillMaxHeight().background(color))
             }
         }
     }

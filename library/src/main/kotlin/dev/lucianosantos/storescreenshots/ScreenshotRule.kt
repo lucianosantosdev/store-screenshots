@@ -10,7 +10,9 @@ import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.RoborazziOptions
 import com.github.takahirom.roborazzi.captureRoboImage
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 import dev.lucianosantos.storescreenshots.frames.AppleFrame
 import dev.lucianosantos.storescreenshots.frames.FramedLayout
 import dev.lucianosantos.storescreenshots.frames.PhoneFrame
@@ -172,7 +174,15 @@ class ScreenshotRule(
      * }
      * ```
      *
+     * [gap] inserts that many dp of canvas between the slices and then drops it: each output
+     * screenshot stays the form factor's normal width, but a [gap]-wide strip is rendered between
+     * them and never written. So the design is *not* continuous across the seams — whatever fell in
+     * the gap (part of a device, a slice of the background) is cut out, the way a row of store
+     * screenshots reads with a margin between each. Default `0.dp` = continuous. When you use a gap,
+     * pass the same value to [SplitPanels] so per-panel captions stay aligned to the slices.
+     *
      * @param panels How many screenshots to split the canvas into (must be >= 2).
+     * @param gap dp of canvas rendered and discarded between slices (>= 0). Default `0.dp`.
      * @param fileName Base name for the slices (without the `_NN` suffix or `.png`). Defaults to
      *   the test method name.
      */
@@ -180,13 +190,17 @@ class ScreenshotRule(
         panels: Int,
         locales: List<String> = listOf("en-US"),
         fileName: String? = null,
+        gap: Dp = 0.dp,
         content: @Composable ScreenshotScope.() -> Unit,
     ) {
         require(panels >= 2) {
             "splitScreenshot needs panels >= 2 (got $panels); use customScreenshot for a single image."
         }
+        require(gap.value >= 0f) { "splitScreenshot gap must be >= 0 (got $gap)." }
         val scope = ScreenshotScope(formFactor, style)
-        val wideQualifiers = widenQualifiers(formFactor.qualifiers, panels)
+        val panelDp = panelWidthDp(formFactor.qualifiers)
+        val gapDp = gap.value.roundToInt()
+        val wideQualifiers = widenQualifiers(formFactor.qualifiers, panels, gapDp)
         for (locale in locales) {
             RuntimeEnvironment.setQualifiers(wideQualifiers)
             RuntimeEnvironment.setQualifiers("+${locale.toAndroidResourceQualifier()}")
@@ -207,7 +221,7 @@ class ScreenshotRule(
                             )
                             val full = BitmapFactory.decodeFile(temp.absolutePath)
                                 ?: error("Could not decode the captured split canvas at ${temp.absolutePath}")
-                            writeSlices(full, panels, locale, fileName ?: testMethodName)
+                            writeSlices(full, panels, panelDp, gapDp, locale, fileName ?: testMethodName)
                         } finally {
                             temp.delete()
                         }
@@ -218,13 +232,19 @@ class ScreenshotRule(
         }
     }
 
-    /** Cuts [full] into [panels] equal-width PNGs, written as `{base}_01.png`, `{base}_02.png`, … */
-    private fun writeSlices(full: Bitmap, panels: Int, locale: String, base: String) {
-        val panelWidth = full.width / panels
+    /**
+     * Cuts [full] into [panels] PNGs of the panel width, skipping the [gapDp]-wide strip between
+     * them, written as `{base}_01.png`, `{base}_02.png`, … The pixel geometry is derived from the
+     * captured width so it matches whatever density Robolectric rendered at.
+     */
+    private fun writeSlices(full: Bitmap, panels: Int, panelDp: Int, gapDp: Int, locale: String, base: String) {
+        val totalDp = panelDp * panels + gapDp * (panels - 1)
+        val density = full.width.toFloat() / totalDp
+        val panelWidth = (panelDp * density).roundToInt()
         for (i in 0 until panels) {
-            val x = i * panelWidth
-            // The last panel takes any remainder so no column of pixels is dropped.
-            val width = if (i == panels - 1) full.width - x else panelWidth
+            // Each slice starts one panel + one gap further along; the gap strip is never written.
+            val x = (i * (panelDp + gapDp) * density).roundToInt().coerceIn(0, full.width)
+            val width = minOf(panelWidth, full.width - x)
             val slice = Bitmap.createBitmap(full, x, 0, width, full.height)
             val name = "${base}_${(i + 1).toString().padStart(2, '0')}"
             outputPath(locale, name).outputStream().use { slice.compress(Bitmap.CompressFormat.PNG, 100, it) }
@@ -295,12 +315,19 @@ private fun String.toAndroidResourceQualifier(): String {
     return if (parts.size == 2) "${parts[0]}-r${parts[1]}" else this
 }
 
+/** The `wNNNdp` width in a Robolectric [qualifiers] string — one panel's width in dp. */
+private fun panelWidthDp(qualifiers: String): Int =
+    Regex("""w(\d+)dp""").find(qualifiers)?.groupValues?.get(1)?.toInt()
+        ?: error("Form factor qualifiers '$qualifiers' have no wNNNdp width to split.")
+
 /**
- * Multiplies the `wNNNdp` width in a Robolectric [qualifiers] string by [panels], leaving the
- * height and density buckets untouched — so the canvas is [panels] screenshots wide at the form
- * factor's normal height and pixel density. e.g. `w411dp-h914dp-xxhdpi` × 3 → `w1233dp-h914dp-xxhdpi`.
+ * Widens the `wNNNdp` width in a Robolectric [qualifiers] string to hold [panels] panels plus
+ * [gapDp] dp between each, leaving the height and density buckets untouched — so the canvas is the
+ * full split width at the form factor's normal height and pixel density.
+ * e.g. `w411dp-h914dp-xxhdpi`, 3 panels, 24dp gap → `w1281dp-h914dp-xxhdpi` (411×3 + 24×2).
  */
-private fun widenQualifiers(qualifiers: String, panels: Int): String =
+private fun widenQualifiers(qualifiers: String, panels: Int, gapDp: Int): String =
     Regex("""w(\d+)dp""").replace(qualifiers) { match ->
-        "w${match.groupValues[1].toInt() * panels}dp"
+        val panelDp = match.groupValues[1].toInt()
+        "w${panelDp * panels + gapDp * (panels - 1)}dp"
     }

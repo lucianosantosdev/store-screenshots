@@ -616,12 +616,21 @@ seams, while each screenshot keeps its own headline.
 The content is the same `customScreenshot` scope, so you compose freely; only two helpers are
 split-aware:
 
-- **`SplitPanels(count = N) { index -> … }`** — lays out `N` equal-width cells aligned to the slice
-  boundaries and **clipped**, so per-screenshot text/badges never bleed into the next screenshot.
-- **`SplitSeams(count = N)`** — preview-only guide lines at the seams (leave it out of the capture).
+- **`SplitPanels(count = N, gap = …) { index -> … }`** — lays out `N` equal-width cells aligned to
+  the slice boundaries and **clipped**, so per-screenshot text/badges never bleed into the next
+  screenshot.
+- **`SplitSeams(count = N, gap = …)`** — preview-only marks at the seams (leave it out of the
+  capture).
+
+**`gap`** controls whether the design is continuous. With `gap = 0.dp` (default) the slices butt
+together seamlessly. With a non-zero `gap`, that many dp is rendered *between* the panels and then
+**dropped** — each screenshot stays the form factor's width, but the strip in the gap (part of a
+device, a slice of the background) is cut out, so the screenshots complement each other with a
+margin between them rather than lining up perfectly. Pass the same `gap` to `splitScreenshot`,
+`SplitPanels`, and `SplitSeams`.
 
 ```kotlin
-@Test fun story() = splitScreenshot(panels = 3, locales = listOf("en-US", "pt-BR")) {
+@Test fun story() = splitScreenshot(panels = 3, locales = listOf("en-US", "pt-BR"), gap = 24.dp) {
     Box(Modifier.fillMaxSize()) {
         // Spanning layers flow across the seams — a shared background…
         Box(Modifier.fillMaxSize().background(brandGradient))
@@ -631,22 +640,22 @@ split-aware:
         DeviceMockup(FormFactor.Wear, Modifier.align(Alignment.BottomEnd).fillMaxHeight(0.35f)) { WatchScreen() }
 
         // Per-screenshot captions stay inside their own panel:
-        SplitPanels(count = 3) { index ->
+        SplitPanels(count = 3, gap = 24.dp) { index ->
             Text(headlines[index], Modifier.align(Alignment.TopStart).padding(40.dp))
         }
     }
 }
 ```
 
-To preview the whole un-sliced banner in Android Studio, render it at `widthDp = N × formFactorDp`
-with the seam guides on top:
+To preview the whole un-sliced banner in Android Studio, render it at
+`widthDp = N × formFactorDp + (N − 1) × gap` with the seam marks on top:
 
 ```kotlin
-@Preview(widthDp = 1233, heightDp = 914) // 3 × 411dp
+@Preview(widthDp = 1281, heightDp = 914) // 3 × 411dp + 2 × 24dp gap
 @Composable
 fun StoryPreview() = Box(Modifier.fillMaxSize()) {
     StoryBanner()
-    SplitSeams(count = 3)
+    SplitSeams(count = 3, gap = 24.dp)
 }
 ```
 

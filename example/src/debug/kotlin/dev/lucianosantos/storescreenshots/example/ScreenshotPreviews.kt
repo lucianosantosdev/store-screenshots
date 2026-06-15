@@ -240,14 +240,14 @@ fun GlassWedgeCPreview() = ScreenshotPreview(
 // (3 × 411dp) carrying a free-form mix of devices — a phone and a watch via DeviceMockup, plus a
 // chroma-keyed phone via DeviceImageMockup — and per-panel captions. The guide lines mark the
 // seams: the devices straddle them freely while each caption stays inside its own screenshot.
-@Preview(name = "Split story (mixed devices)", widthDp = 1233, heightDp = 914)
+@Preview(name = "Split story (mixed devices)", widthDp = 1281, heightDp = 914) // 3 × 411dp + 2 × 24dp gap
 @Composable
 fun SplitStoryPreview() {
     Box(Modifier.fillMaxSize()) {
         // Same composition the screenshot test renders; only the frame source differs (assets here).
         SplitStory(chromaFrame = mockupFrame("phone_chroma.png"))
-        // Preview-only guides showing where the canvas is cut into the three screenshots.
-        SplitSeams(count = 3)
+        // Preview-only guides shading the gap strips that get cut out between screenshots.
+        SplitSeams(count = 3, gap = SplitStoryGap)
     }
 }
 

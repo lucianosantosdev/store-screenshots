@@ -2,6 +2,8 @@ package dev.lucianosantos.storescreenshots
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import org.junit.Rule
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -101,6 +103,7 @@ abstract class StoreScreenshotsTest(
         panels: Int,
         locales: List<String> = listOf("en-US"),
         fileName: String? = null,
+        gap: Dp = 0.dp,
         content: @Composable ScreenshotScope.() -> Unit,
-    ) = screenshot.splitScreenshot(panels, locales, fileName, content)
+    ) = screenshot.splitScreenshot(panels, locales, fileName, gap, content)
 }

@@ -21,6 +21,7 @@ class PhoneSplitExampleTest : StoreScreenshotsTest(FormFactor.Phone) {
         panels = 3,
         locales = listOf("en-US", "pt-BR"),
         fileName = "story",
+        gap = SplitStoryGap,
     ) {
         SplitStory(chromaFrame = frame("phone_chroma.png"))
     }

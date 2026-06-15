@@ -47,10 +47,14 @@ import dev.lucianosantos.storescreenshots.screenGlass
  *   [panels]. It is *not* one mockup per panel.
  * - [caption] is the only per-screenshot layer, laid out with [SplitPanels] so each caption stays
  *   inside its own screenshot.
+ *
+ * [gap] is the dp gap between screenshots — it must match the `gap` passed to `splitScreenshot` so
+ * the captions line up with the gapped slices.
  */
 @Composable
 fun SplitStoryBanner(
     panels: Int = 3,
+    gap: Dp = SplitStoryGap,
     devices: @Composable BoxScope.() -> Unit,
     caption: @Composable BoxScope.(index: Int) -> Unit,
 ) {
@@ -72,10 +76,15 @@ fun SplitStoryBanner(
         // Free-form device layer — the caller decides how many mockups and where they sit.
         devices()
 
-        // Per-screenshot layer — each panel's own caption, clipped to its panel.
-        SplitPanels(count = panels) { index -> caption(index) }
+        // Per-screenshot layer — each panel's own caption, clipped to its panel and aligned to the
+        // gapped slices.
+        SplitPanels(count = panels, gap = gap) { index -> caption(index) }
     }
 }
+
+/** The gap (in dp) the split example renders between its screenshots. Non-zero, so the example
+ *  shows a slice cut out between panels rather than a perfectly continuous design. */
+val SplitStoryGap: Dp = 24.dp
 
 /**
  * The split-screenshot example composition — the single source of truth shared by the screenshot
@@ -85,11 +94,13 @@ fun SplitStoryBanner(
  *
  * [chromaFrame] is passed in because the test and the preview load images from different places
  * (the test from the classpath, the preview from the debug assets via the inspection Context).
+ * [gap] is the dp gap cut between screenshots; pass the same value to `splitScreenshot`.
  */
 @Composable
-fun SplitStory(chromaFrame: ImageBitmap) {
+fun SplitStory(chromaFrame: ImageBitmap, gap: Dp = SplitStoryGap) {
     SplitStoryBanner(
         panels = 3,
+        gap = gap,
         devices = {
             // A phone (DeviceMockup) scaled up as the hero, glass on its screen.
             SplitDevice(x = 200.dp, y = 220.dp, height = 720.dp, rotation = 60f) {
