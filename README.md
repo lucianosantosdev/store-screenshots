@@ -44,7 +44,7 @@ pluginManagement {
         mavenCentral()
     }
     plugins {
-        id("io.github.lucianosantosdev.storescreenshots") version "1.4.0"
+        id("io.github.lucianosantosdev.storescreenshots") version "1.4.1"
     }
 }
 
@@ -415,6 +415,20 @@ into the PNG exactly as it previews. Tune `mockupCameraDistance` if a steep angl
 The same `rotationX` / `rotationY` / `rotationZ` / `cameraDistance` parameters exist on
 `DeviceMockup`, `WatchMockup`, and the `Mockup { }` composable, so you can tilt individual devices
 inside a `customScreenshot { }` layout or a feature graphic too.
+
+### Landscape mockups
+
+`DeviceMockup` draws portrait by default; pass `orientation = MockupOrientation.Landscape` to draw
+the device a quarter turn. This swaps the frame's native width/height, so your screen is laid out —
+and **measured** — in landscape. That matters when a screen only switches to a wide layout in
+landscape (a tablet two- or three-pane, a split view): a portrait frame measures tall and never
+triggers it, so the mockup would show the phone-style layout. Landscape fixes that with no rotation
+tricks — the app just sees a landscape window.
+
+```kotlin
+// A landscape tablet that renders the app's real tablet (multi-pane) UI.
+DeviceMockup(FormFactor.Tablet10, orientation = MockupOrientation.Landscape) { HomeScreen() }
+```
 
 ### Glass effect
 

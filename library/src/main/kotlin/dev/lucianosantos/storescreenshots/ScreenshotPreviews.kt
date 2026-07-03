@@ -12,6 +12,11 @@ import androidx.compose.ui.tooling.preview.Preview
  * @Composable
  * fun HomePreview() = ScreenshotPreview(FormFactor.Phone, title = "…") { HomeScreen() }
  * ```
+ *
+ * Exception: [GooglePlayFeatureGraphicScreenshotPreview] renders at 1.5× its 1024×500 output rather
+ * than pixel-for-pixel. At native size the short banner looks tiny next to the phone/tablet previews
+ * in a shared preview panel; the feature graphic is resolution-independent (proportional layout), so
+ * scaling it up keeps it legible and comparable without changing the exported PNG.
  */
 
 @Preview(name = "Phone (1080×1920)", widthDp = 411, heightDp = 914)
@@ -29,7 +34,9 @@ annotation class Tablet10ScreenshotPreview
 @Preview(name = "iPhone 6.7\" (1290×2796)", widthDp = 430, heightDp = 932)
 annotation class AppleIPhone67ScreenshotPreview
 
-@Preview(name = "Feature Graphic (1024×500)", widthDp = 512, heightDp = 250)
+// Rendered at 1.5× the 1024×500 output so the short banner isn't dwarfed by the phone/tablet
+// previews beside it — see the note above. The exported PNG is unaffected (that comes from the test).
+@Preview(name = "Feature Graphic (1024×500)", widthDp = 1536, heightDp = 750)
 annotation class GooglePlayFeatureGraphicScreenshotPreview
 
 /**

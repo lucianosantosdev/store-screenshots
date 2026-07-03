@@ -65,6 +65,18 @@ internal fun Modifier.mockup3dRotation(
     }
 
 /**
+ * Orientation of a [DeviceMockup]. [Landscape] swaps the device's native width/height so its
+ * [content] is laid out — and, crucially, *measured* — in landscape. Use it to capture a screen
+ * whose UI only appears in landscape (e.g. a tablet two-/three-pane layout), which a portrait frame
+ * can never trigger because the content would still measure taller-than-wide. The status bar/notch
+ * stay along the top edge, so the frame reads as a device rotated a quarter turn.
+ */
+enum class MockupOrientation { Portrait, Landscape }
+
+private fun orientSize(portraitWidth: Dp, portraitHeight: Dp, orientation: MockupOrientation): Pair<Dp, Dp> =
+    if (orientation == MockupOrientation.Landscape) portraitHeight to portraitWidth else portraitWidth to portraitHeight
+
+/**
  * Renders just the device bezel/frame for the given [formFactor] — no title, no description,
  * no background banner. Use inside a fully custom layout via `customScreenshot { … }`.
  *
@@ -86,6 +98,11 @@ internal fun Modifier.mockup3dRotation(
  * proportions no matter how small you draw the device. [FormFactor.Wear] renders a round watch;
  * use [WatchMockup] directly to pick [WatchShape.Round] or [WatchShape.Square].
  *
+ * [orientation] draws the device portrait (default) or landscape. [MockupOrientation.Landscape]
+ * swaps the frame's native width/height, so [content] is laid out — and measured — in landscape;
+ * use it to capture a screen whose UI only appears in landscape (e.g. a tablet two-/three-pane
+ * layout), which a portrait frame can't trigger. Ignored by [FormFactor.Wear] (square).
+ *
  * [rotationX], [rotationY], and [rotationZ] tilt the whole device in 3D for a perspective mockup
  * (degrees): X tips it toward/away from the viewer, Y turns it left/right, Z spins it in-plane.
  * [cameraDistance] controls the perspective strength — see [DefaultMockupCameraDistance].
@@ -97,6 +114,7 @@ internal fun Modifier.mockup3dRotation(
 fun DeviceMockup(
     formFactor: FormFactor,
     modifier: Modifier = Modifier,
+    orientation: MockupOrientation = MockupOrientation.Portrait,
     showStatusBar: Boolean = true,
     statusBarClock: String = "12:00",
     rotationX: Float = 0f,
@@ -107,16 +125,27 @@ fun DeviceMockup(
 ) {
     val rotated = modifier.mockup3dRotation(rotationX, rotationY, rotationZ, cameraDistance)
     when (formFactor) {
-        FormFactor.Phone ->
-            ScaledMockup(411.dp, 822.dp, rotated) { PhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, content) }
+        FormFactor.Phone -> {
+            val (w, h) = orientSize(411.dp, 822.dp, orientation)
+            ScaledMockup(w, h, rotated) { PhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, content) }
+        }
         FormFactor.Wear ->
             WatchMockup(WatchShape.Round, rotated, content = content)
-        FormFactor.Tablet7 ->
-            ScaledMockup(600.dp, 800.dp, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, content) }
-        FormFactor.Tablet10 ->
-            ScaledMockup(800.dp, 1067.dp, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, content) }
-        FormFactor.AppleIPhone67 ->
-            ScaledMockup(430.dp, 932.dp, rotated) { AppleBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, content) }
+        FormFactor.Tablet7 -> {
+            // Native size matches the form factor's own 16:10 qualifier (w600dp-h960dp) so the frame
+            // and the content it measures reflect a real Android tablet, not a 4:3 iPad.
+            val (w, h) = orientSize(600.dp, 960.dp, orientation)
+            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, content) }
+        }
+        FormFactor.Tablet10 -> {
+            // 16:10 to match the w800dp-h1280dp qualifier (Pixel Tablet, Galaxy Tab, …).
+            val (w, h) = orientSize(800.dp, 1280.dp, orientation)
+            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, content) }
+        }
+        FormFactor.AppleIPhone67 -> {
+            val (w, h) = orientSize(430.dp, 932.dp, orientation)
+            ScaledMockup(w, h, rotated) { AppleBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, content) }
+        }
         FormFactor.GooglePlayFeatureGraphic -> error(
             "FormFactor.GooglePlayFeatureGraphic is a banner canvas, not a device. " +
                 "Compose real devices with DeviceMockup(formFactor = FormFactor.Phone / Tablet10 / …) " +
