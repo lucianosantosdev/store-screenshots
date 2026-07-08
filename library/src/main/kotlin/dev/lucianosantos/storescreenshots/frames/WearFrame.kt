@@ -16,7 +16,9 @@ import androidx.compose.ui.unit.dp
  * black background and renders [content] inside.
  *
  * Title/description are intentionally omitted — Wear Play Store screenshots are square and
- * do not have room for the marketing banner that the phone/tablet frames use.
+ * do not have room for the marketing banner that the phone/tablet frames use. The watch time
+ * (TimeText) is deliberately not drawn here — it belongs to the app's own UI, so the app
+ * supplies it in [content].
  */
 @Composable
 fun WearFrame(

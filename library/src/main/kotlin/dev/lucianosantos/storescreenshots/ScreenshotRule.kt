@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.RoborazziOptions
@@ -68,6 +69,11 @@ class ScreenshotRule(
      * @param fileName Output PNG name (without locale path). Defaults to the test method name.
      *   A `.png` extension is added automatically if omitted.
      * @param style Override the class-level style for just this screenshot.
+     * @param beforeCapture Optional interaction run after the content is idle and before the PNG
+     *   is captured — e.g. scroll a list to its end so a reveal-on-scroll control (a Wear
+     *   `EdgeButton`, an expandable app bar) is in its final state. Receives the live
+     *   [ComposeContentTestRule]; the frame settles again ([ComposeContentTestRule.waitForIdle])
+     *   afterwards.
      */
     fun screenshot(
         locales: List<String> = listOf("en-US"),
@@ -79,6 +85,7 @@ class ScreenshotRule(
         contentColor: Color = Color.White,
         fileName: String? = null,
         style: ScreenshotStyle = this.style,
+        beforeCapture: (ComposeContentTestRule) -> Unit = {},
         content: @Composable () -> Unit,
     ) {
         check(formFactor != FormFactor.GooglePlayFeatureGraphic) {
@@ -101,6 +108,8 @@ class ScreenshotRule(
                         composeRule.setContent {
                             renderFrame(resolvedTitle, resolvedDescription, backgroundColor, contentColor, style, content)
                         }
+                        composeRule.waitForIdle()
+                        beforeCapture(composeRule)
                         composeRule.waitForIdle()
 
                         val outputFile = outputPath(locale, fileName ?: testMethodName)
@@ -131,6 +140,7 @@ class ScreenshotRule(
     fun customScreenshot(
         locales: List<String> = listOf("en-US"),
         fileName: String? = null,
+        beforeCapture: (ComposeContentTestRule) -> Unit = {},
         content: @Composable ScreenshotScope.() -> Unit,
     ) {
         val scope = ScreenshotScope(formFactor, style)
@@ -143,6 +153,8 @@ class ScreenshotRule(
                 object : Statement() {
                     override fun evaluate() {
                         composeRule.setContent { scope.content() }
+                        composeRule.waitForIdle()
+                        beforeCapture(composeRule)
                         composeRule.waitForIdle()
                         composeRule.onRoot().captureRoboImage(
                             filePath = outputPath(locale, fileName ?: testMethodName).absolutePath,
@@ -191,6 +203,7 @@ class ScreenshotRule(
         locales: List<String> = listOf("en-US"),
         fileName: String? = null,
         gap: Dp = 0.dp,
+        beforeCapture: (ComposeContentTestRule) -> Unit = {},
         content: @Composable ScreenshotScope.() -> Unit,
     ) {
         require(panels >= 2) {
@@ -210,6 +223,8 @@ class ScreenshotRule(
                 object : Statement() {
                     override fun evaluate() {
                         composeRule.setContent { scope.content() }
+                        composeRule.waitForIdle()
+                        beforeCapture(composeRule)
                         composeRule.waitForIdle()
                         // Capture the whole wide canvas with Roborazzi (the path that works under
                         // Robolectric — captureToImage()/PixelCopy does not), then slice it.

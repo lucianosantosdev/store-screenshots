@@ -22,15 +22,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
+/** Height of the decorative [StatusBar]; also the top inset a non-edge-to-edge frame reserves. */
+internal val StatusBarHeight: Dp = 38.dp
 
 @Composable
 internal fun StatusBar(clock: String, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(38.dp)
+            .height(StatusBarHeight)
             .padding(horizontal = 22.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically

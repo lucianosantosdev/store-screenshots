@@ -46,7 +46,7 @@ fun PhoneFrame(
         style = style,
         horizontalPadding = 28.dp,
         verticalPadding = 48.dp,
-        mockup = { externalModifier -> PhoneMockup(externalModifier, style.showStatusBar, style.statusBarClock, content) }
+        mockup = { externalModifier -> PhoneMockup(externalModifier, style.showStatusBar, style.statusBarClock, style.edgeToEdge, content) }
     )
 }
 
@@ -55,6 +55,7 @@ private fun ColumnScope.PhoneMockup(
     externalModifier: Modifier,
     showStatusBar: Boolean,
     clock: String,
+    edgeToEdge: Boolean,
     content: @Composable () -> Unit,
 ) {
     Box(
@@ -89,7 +90,14 @@ private fun ColumnScope.PhoneMockup(
                 .padding(7.dp)
                 .clip(RoundedCornerShape(32.dp))
         ) {
-            Box(modifier = Modifier.fillMaxSize()) { content() }
+            // Non-edge-to-edge: reserve the status bar height so top content isn't drawn
+            // under the status bar / notch (the standalone-screen equivalent of the app's
+            // window insets).
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = if (edgeToEdge) 0.dp else StatusBarHeight)
+            ) { content() }
             if (showStatusBar) StatusBar(clock = clock, modifier = Modifier.align(Alignment.TopCenter))
             CameraNotch(modifier = Modifier.align(Alignment.TopCenter))
         }

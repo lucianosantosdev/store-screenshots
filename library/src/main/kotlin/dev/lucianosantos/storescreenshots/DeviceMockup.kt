@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.lucianosantos.storescreenshots.frames.StatusBar
+import dev.lucianosantos.storescreenshots.frames.StatusBarHeight
 
 /**
  * Default perspective strength for 3D mockup rotation. It is the camera-to-plane distance in
@@ -117,6 +118,7 @@ fun DeviceMockup(
     orientation: MockupOrientation = MockupOrientation.Portrait,
     showStatusBar: Boolean = true,
     statusBarClock: String = "12:00",
+    edgeToEdge: Boolean = true,
     rotationX: Float = 0f,
     rotationY: Float = 0f,
     rotationZ: Float = 0f,
@@ -127,7 +129,7 @@ fun DeviceMockup(
     when (formFactor) {
         FormFactor.Phone -> {
             val (w, h) = orientSize(411.dp, 822.dp, orientation)
-            ScaledMockup(w, h, rotated) { PhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, content) }
+            ScaledMockup(w, h, rotated) { PhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, edgeToEdge, content) }
         }
         FormFactor.Wear ->
             WatchMockup(WatchShape.Round, rotated, content = content)
@@ -135,16 +137,16 @@ fun DeviceMockup(
             // Native size matches the form factor's own 16:10 qualifier (w600dp-h960dp) so the frame
             // and the content it measures reflect a real Android tablet, not a 4:3 iPad.
             val (w, h) = orientSize(600.dp, 960.dp, orientation)
-            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, content) }
+            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, edgeToEdge, content) }
         }
         FormFactor.Tablet10 -> {
             // 16:10 to match the w800dp-h1280dp qualifier (Pixel Tablet, Galaxy Tab, …).
             val (w, h) = orientSize(800.dp, 1280.dp, orientation)
-            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, content) }
+            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, edgeToEdge, content) }
         }
         FormFactor.AppleIPhone67 -> {
             val (w, h) = orientSize(430.dp, 932.dp, orientation)
-            ScaledMockup(w, h, rotated) { AppleBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, content) }
+            ScaledMockup(w, h, rotated) { AppleBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, edgeToEdge, content) }
         }
         FormFactor.GooglePlayFeatureGraphic -> error(
             "FormFactor.GooglePlayFeatureGraphic is a banner canvas, not a device. " +
@@ -269,6 +271,7 @@ private fun PhoneBezel(
     modifier: Modifier,
     showStatusBar: Boolean,
     clock: String,
+    edgeToEdge: Boolean,
     content: @Composable () -> Unit,
 ) {
     Box(modifier = modifier) {
@@ -288,7 +291,7 @@ private fun PhoneBezel(
                 .padding(7.dp)
                 .clip(RoundedCornerShape(32.dp))
         ) {
-            Box(Modifier.fillMaxSize()) { content() }
+            Box(Modifier.fillMaxSize().padding(top = if (edgeToEdge) 0.dp else StatusBarHeight)) { content() }
             if (showStatusBar) StatusBar(clock, Modifier.align(Alignment.TopCenter))
             CameraNotch(Modifier.align(Alignment.TopCenter))
         }
@@ -381,6 +384,7 @@ private fun TabletBezel(
     modifier: Modifier,
     showStatusBar: Boolean,
     clock: String,
+    edgeToEdge: Boolean,
     content: @Composable () -> Unit,
 ) {
     Box(
@@ -393,7 +397,7 @@ private fun TabletBezel(
             .padding(8.dp)
             .clip(RoundedCornerShape(20.dp))
     ) {
-        Box(Modifier.fillMaxSize()) { content() }
+        Box(Modifier.fillMaxSize().padding(top = if (edgeToEdge) 0.dp else StatusBarHeight)) { content() }
         if (showStatusBar) StatusBar(clock, Modifier.align(Alignment.TopCenter))
     }
 }
@@ -403,6 +407,7 @@ private fun AppleBezel(
     modifier: Modifier,
     showStatusBar: Boolean,
     clock: String,
+    edgeToEdge: Boolean,
     content: @Composable () -> Unit,
 ) {
     Box(modifier = modifier) {
@@ -417,7 +422,7 @@ private fun AppleBezel(
                 .padding(6.dp)
                 .clip(RoundedCornerShape(50.dp))
         ) {
-            Box(Modifier.fillMaxSize()) { content() }
+            Box(Modifier.fillMaxSize().padding(top = if (edgeToEdge) 0.dp else StatusBarHeight)) { content() }
             if (showStatusBar) StatusBar(clock, Modifier.align(Alignment.TopCenter))
             DynamicIsland(Modifier.align(Alignment.TopCenter))
         }

@@ -2,6 +2,7 @@ package dev.lucianosantos.storescreenshots
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.junit.Rule
@@ -65,8 +66,9 @@ abstract class StoreScreenshotsTest(
         contentColor: Color = Color.White,
         fileName: String? = null,
         style: ScreenshotStyle = screenshot.style,
+        beforeCapture: (ComposeContentTestRule) -> Unit = {},
         content: @Composable () -> Unit,
-    ) = screenshot.screenshot(locales, title, description, titleRes, descriptionRes, backgroundColor, contentColor, fileName, style, content)
+    ) = screenshot.screenshot(locales, title, description, titleRes, descriptionRes, backgroundColor, contentColor, fileName, style, beforeCapture, content)
 
     /**
      * Fully custom layout — you control everything. [ScreenshotScope] provides a `Mockup`
@@ -84,8 +86,9 @@ abstract class StoreScreenshotsTest(
     fun customScreenshot(
         locales: List<String> = listOf("en-US"),
         fileName: String? = null,
+        beforeCapture: (ComposeContentTestRule) -> Unit = {},
         content: @Composable ScreenshotScope.() -> Unit,
-    ) = screenshot.customScreenshot(locales, fileName, content)
+    ) = screenshot.customScreenshot(locales, fileName, beforeCapture, content)
 
     /**
      * Render one continuous layout [panels] screenshots wide and slice it into that many PNGs that
@@ -104,6 +107,7 @@ abstract class StoreScreenshotsTest(
         locales: List<String> = listOf("en-US"),
         fileName: String? = null,
         gap: Dp = 0.dp,
+        beforeCapture: (ComposeContentTestRule) -> Unit = {},
         content: @Composable ScreenshotScope.() -> Unit,
-    ) = screenshot.splitScreenshot(panels, locales, fileName, gap, content)
+    ) = screenshot.splitScreenshot(panels, locales, fileName, gap, beforeCapture, content)
 }

@@ -44,7 +44,7 @@ pluginManagement {
         mavenCentral()
     }
     plugins {
-        id("io.github.lucianosantosdev.storescreenshots") version "1.4.1"
+        id("io.github.lucianosantosdev.storescreenshots") version "1.4.2"
     }
 }
 
@@ -109,6 +109,7 @@ Everything is driven by the `screenshot()` function — no annotations needed be
     contentColor = Color.White,           // banner text color
     fileName = "01_home",                 // PNG name (default: test method name)
     style = ScreenshotStyle(...),         // advanced styling (optional)
+    beforeCapture = { rule -> /* scroll, expand… */ },  // interaction before capture (optional)
 ) { HomeScreen() }
 ```
 
@@ -121,6 +122,7 @@ Everything is driven by the `screenshot()` function — no annotations needed be
 | `contentColor` | Banner text color. Default white. |
 | `fileName` | Output PNG name (without the locale path). Defaults to the test method name. `.png` is appended if omitted. Useful to control ordering in the store (e.g. `"01_home"`). |
 | `style` | `ScreenshotStyle` for advanced customization. |
+| `beforeCapture` | Interaction run on the `ComposeContentTestRule` after the content is idle and before the PNG is captured — e.g. scroll a list to its end so a reveal-on-scroll control is in its final state. The frame settles again afterwards. Also available on `customScreenshot`/`splitScreenshot`. |
 
 ## Custom output directory
 
@@ -205,6 +207,7 @@ Pass a `ScreenshotStyle` to `StoreScreenshotsTest` (class-level default) or to `
         mockupOffset = DpOffset(x = 24.dp, y = 32.dp),
         showStatusBar = true,
         statusBarClock = "9:41",
+        edgeToEdge = false,   // reserve the status-bar height for standalone screens
         titleFontFamily = FontFamily.Serif,
         descriptionFontFamily = FontFamily.Monospace,
         background = { MyGradientBackground() },
@@ -223,6 +226,7 @@ Pass a `ScreenshotStyle` to `StoreScreenshotsTest` (class-level default) or to `
 | `mockupCameraDistance` | Perspective strength for the 3D tilt. Higher = flatter, lower = more dramatic. Default `12`. |
 | `showStatusBar` | Show/hide the status bar on phone, tablet, and Apple mockups. Default `true`. |
 | `statusBarClock` | Clock text in the status bar. Default `"12:00"`. |
+| `edgeToEdge` | When `true` (default) the screen content is drawn full-bleed under the frame's status bar / notch, like a real edge-to-edge app. Set it to `false` to reserve the status bar's height so a standalone screen (rendered without the app's own window insets) doesn't have its top content — tabs, a top app bar — drawn under the status bar. Applies to phone and tablet frames and to `DeviceMockup(edgeToEdge = …)`; the Wear frame has no status bar strip. |
 | `titleFontFamily` / `descriptionFontFamily` | Font for the default title/description Text composables. |
 | `background` | Composable rendered behind everything. Overrides `backgroundColor`. |
 | `mockupFrame` | Composable that replaces the built-in device bezel entirely. Receives app content as a parameter. |

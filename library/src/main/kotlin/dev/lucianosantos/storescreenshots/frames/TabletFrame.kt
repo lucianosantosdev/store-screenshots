@@ -42,7 +42,7 @@ fun TabletFrame(
         verticalPadding = 56.dp,
         titleFontSize = 36.sp,
         descriptionFontSize = 18.sp,
-        mockup = { externalModifier -> TabletMockup(externalModifier, style.showStatusBar, style.statusBarClock, aspectRatio, content) }
+        mockup = { externalModifier -> TabletMockup(externalModifier, style.showStatusBar, style.statusBarClock, style.edgeToEdge, aspectRatio, content) }
     )
 }
 
@@ -51,6 +51,7 @@ private fun ColumnScope.TabletMockup(
     externalModifier: Modifier,
     showStatusBar: Boolean,
     clock: String,
+    edgeToEdge: Boolean,
     aspectRatio: Float,
     content: @Composable () -> Unit,
 ) {
@@ -66,7 +67,12 @@ private fun ColumnScope.TabletMockup(
             .padding(8.dp)
             .clip(RoundedCornerShape(20.dp))
     ) {
-        Box(Modifier.fillMaxSize()) { content() }
+        // Non-edge-to-edge reserves the status bar height so top content isn't occluded.
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = if (edgeToEdge) 0.dp else StatusBarHeight)
+        ) { content() }
         if (showStatusBar) StatusBar(clock = clock, modifier = Modifier.align(Alignment.TopCenter))
     }
 }

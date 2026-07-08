@@ -28,6 +28,11 @@ import androidx.compose.ui.unit.dp
  * - [screenGlass] — when set, a glass sheen ([GlassEffect]) is drawn in front of the screen
  *   inside every mockup bezel, so you get the reflex + shadow look without placing the
  *   `Modifier.screenGlass` on each screen by hand.
+ * - [edgeToEdge] — when true (default) the screen content is drawn full-bleed under the frame's
+ *   status bar / notch, matching a real edge-to-edge app. Set it to false to reserve the status
+ *   bar's height at the top so a standalone screen (rendered without the app's own window insets)
+ *   doesn't have its top content — tabs, a top app bar — drawn under the status bar. Phone and
+ *   tablet only; the Wear frame has no status bar strip.
  *
  * Defaults preserve the look of every form factor in the library before this API existed.
  */
@@ -44,6 +49,7 @@ data class ScreenshotStyle(
     val descriptionFontFamily: FontFamily = FontFamily.Default,
     val showStatusBar: Boolean = true,
     val statusBarClock: String = "12:00",
+    val edgeToEdge: Boolean = true,
     val mockupFrame: (@Composable (content: @Composable () -> Unit) -> Unit)? = null,
     val screenGlass: GlassEffect? = null,
     val background: (@Composable () -> Unit)? = null,
