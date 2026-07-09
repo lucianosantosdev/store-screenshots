@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -16,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,7 +27,9 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.lucianosantos.storescreenshots.frames.StatusBar
@@ -190,6 +194,15 @@ private class WatchSpec(
     val caseShape: Shape,
     val screenShape: Shape,
     /**
+     * The real device's logical screen width in dp. The bezel's physical screen area (derived from
+     * [caseWidth]) is larger than a real watch's dp resolution, so the screen content is rendered at
+     * this reference width and scaled to fill — otherwise app content sized in `sp`/`dp` (built for a
+     * real ~227dp watch) would appear far too small relative to the case. Keep it aligned with the
+     * matching Play Store form factor (round Wear = 227dp) so mockups and standalone Wear screenshots
+     * render content at the same proportions.
+     */
+    val screenReferenceWidth: Dp,
+    /**
      * How far the strap tucks under the case. Round cases need a deeper tuck so the flared base
      * stays behind the part of the circle that is wide enough to hide it, rather than poking out
      * near the narrow top of the circle.
@@ -213,6 +226,9 @@ private fun watchSpec(shape: WatchShape): WatchSpec = when (shape) {
         caseHeight = 440.dp,
         caseShape = CircleShape,
         screenShape = CircleShape,
+        // Matches FormFactor.Wear (w227dp), so a round mockup and a standalone Wear screenshot
+        // render app content at identical proportions.
+        screenReferenceWidth = 227.dp,
         bandOverlap = 72.dp,
     )
     // Apple Watch: 374x446 screen inside a squircle case (case = screen + 26dp rim each side).
@@ -221,6 +237,8 @@ private fun watchSpec(shape: WatchShape): WatchSpec = when (shape) {
         caseHeight = 498.dp,
         caseShape = RoundedCornerShape(108.dp),
         screenShape = RoundedCornerShape(84.dp),
+        // Real Apple Watch logical width (~198pt for the 45mm/Ultra screens).
+        screenReferenceWidth = 198.dp,
         bandOverlap = 24.dp,
     )
 }
@@ -340,8 +358,29 @@ private fun WatchBezel(shape: WatchShape, content: @Composable () -> Unit) {
                 .padding(20.dp)
                 .clip(spec.screenShape)
         ) {
-            Box(Modifier.fillMaxSize().clip(spec.screenShape)) { content() }
+            Box(Modifier.fillMaxSize().clip(spec.screenShape)) {
+                WatchScreenContent(spec.screenReferenceWidth, content)
+            }
         }
+    }
+}
+
+/**
+ * Renders watch [content] as if the screen were [referenceWidth] dp wide, scaling it to fill the
+ * (larger) physical mockup screen. Real Wear/Apple Watch screens are ~200–227dp, but the mockup
+ * case is drawn much bigger for visual weight; without this remap, app content sized in `sp`/`dp`
+ * would render at a fraction of its real on-watch size. Overriding [LocalDensity] keeps every `dp`
+ * and `sp` in proportion (unlike scaling only fonts) and matches the standalone Wear screenshot.
+ */
+@Composable
+private fun WatchScreenContent(referenceWidth: Dp, content: @Composable () -> Unit) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val outer = LocalDensity.current
+        val scaledDensity = constraints.maxWidth / referenceWidth.value
+        CompositionLocalProvider(
+            LocalDensity provides Density(scaledDensity, outer.fontScale),
+            content = content,
+        )
     }
 }
 
