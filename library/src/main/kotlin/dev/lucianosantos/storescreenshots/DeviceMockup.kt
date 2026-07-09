@@ -1,5 +1,6 @@
 package dev.lucianosantos.storescreenshots
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +19,7 @@ import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,11 +29,13 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 import dev.lucianosantos.storescreenshots.frames.StatusBar
 import dev.lucianosantos.storescreenshots.frames.StatusBarHeight
 
@@ -133,7 +137,7 @@ fun DeviceMockup(
     when (formFactor) {
         FormFactor.Phone -> {
             val (w, h) = orientSize(411.dp, 822.dp, orientation)
-            ScaledMockup(w, h, rotated) { PhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, edgeToEdge, content) }
+            ScaledMockup(w, h, rotated) { PhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, edgeToEdge) { ProvideDeviceConfiguration(w, h, content) } }
         }
         FormFactor.Wear ->
             WatchMockup(WatchShape.Round, rotated, content = content)
@@ -141,16 +145,16 @@ fun DeviceMockup(
             // Native size matches the form factor's own 16:10 qualifier (w600dp-h960dp) so the frame
             // and the content it measures reflect a real Android tablet, not a 4:3 iPad.
             val (w, h) = orientSize(600.dp, 960.dp, orientation)
-            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, edgeToEdge, content) }
+            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, edgeToEdge) { ProvideDeviceConfiguration(w, h, content) } }
         }
         FormFactor.Tablet10 -> {
             // 16:10 to match the w800dp-h1280dp qualifier (Pixel Tablet, Galaxy Tab, …).
             val (w, h) = orientSize(800.dp, 1280.dp, orientation)
-            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, edgeToEdge, content) }
+            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, edgeToEdge) { ProvideDeviceConfiguration(w, h, content) } }
         }
         FormFactor.AppleIPhone67 -> {
             val (w, h) = orientSize(430.dp, 932.dp, orientation)
-            ScaledMockup(w, h, rotated) { AppleBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, edgeToEdge, content) }
+            ScaledMockup(w, h, rotated) { AppleBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, edgeToEdge) { ProvideDeviceConfiguration(w, h, content) } }
         }
         FormFactor.GooglePlayFeatureGraphic -> error(
             "FormFactor.GooglePlayFeatureGraphic is a banner canvas, not a device. " +
@@ -241,6 +245,35 @@ private fun watchSpec(shape: WatchShape): WatchSpec = when (shape) {
         screenReferenceWidth = 198.dp,
         bandOverlap = 24.dp,
     )
+}
+
+/**
+ * Makes [content] see a [Configuration] that describes the device this mockup renders — its screen
+ * size in dp and its orientation — instead of inheriting the surrounding canvas's config. Without
+ * it, content placed in a portrait phone mockup on a landscape banner (e.g. a feature graphic)
+ * reads `orientation == LANDSCAPE` and picks a landscape layout. Orientation is derived from the
+ * (already orientation-adjusted) [widthDp] / [heightDp] the mockup lays the device out at, so
+ * `MockupOrientation.Landscape` content also reads landscape.
+ */
+@Composable
+private fun ProvideDeviceConfiguration(
+    widthDp: Dp,
+    heightDp: Dp,
+    content: @Composable () -> Unit,
+) {
+    val base = LocalConfiguration.current
+    val deviceConfig = remember(base, widthDp, heightDp) {
+        Configuration(base).apply {
+            screenWidthDp = widthDp.value.roundToInt()
+            screenHeightDp = heightDp.value.roundToInt()
+            orientation = if (widthDp >= heightDp) {
+                Configuration.ORIENTATION_LANDSCAPE
+            } else {
+                Configuration.ORIENTATION_PORTRAIT
+            }
+        }
+    }
+    CompositionLocalProvider(LocalConfiguration provides deviceConfig, content = content)
 }
 
 /**
