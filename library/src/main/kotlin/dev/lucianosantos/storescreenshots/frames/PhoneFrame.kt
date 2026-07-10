@@ -46,7 +46,7 @@ fun PhoneFrame(
         style = style,
         horizontalPadding = 28.dp,
         verticalPadding = 48.dp,
-        mockup = { externalModifier -> PhoneMockup(externalModifier, style.showStatusBar, style.statusBarClock, style.edgeToEdge, content) }
+        mockup = { externalModifier -> PhoneMockup(externalModifier, style.showStatusBar, style.statusBarClock, style.statusBarContentDark, style.edgeToEdge, content) }
     )
 }
 
@@ -55,6 +55,7 @@ private fun ColumnScope.PhoneMockup(
     externalModifier: Modifier,
     showStatusBar: Boolean,
     clock: String,
+    statusBarContentDark: Boolean,
     edgeToEdge: Boolean,
     content: @Composable () -> Unit,
 ) {
@@ -98,7 +99,11 @@ private fun ColumnScope.PhoneMockup(
                     .fillMaxSize()
                     .padding(top = if (edgeToEdge) 0.dp else StatusBarHeight)
             ) { content() }
-            if (showStatusBar) StatusBar(clock = clock, modifier = Modifier.align(Alignment.TopCenter))
+            if (showStatusBar) StatusBar(
+                clock = clock,
+                modifier = Modifier.align(Alignment.TopCenter),
+                contentColor = if (statusBarContentDark) Color.Black else Color.White,
+            )
             CameraNotch(modifier = Modifier.align(Alignment.TopCenter))
         }
     }
