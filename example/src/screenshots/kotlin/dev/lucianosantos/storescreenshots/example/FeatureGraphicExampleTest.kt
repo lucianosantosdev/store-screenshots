@@ -14,5 +14,9 @@ class FeatureGraphicExampleTest : StoreScreenshotsTest(FormFactor.GooglePlayFeat
     @Test
     fun feature_graphic() = customScreenshot(
         locales = listOf("en-US", "pt-BR"),
+        // The form factor defaults to subdir "." (a real app's single asset lands at
+        // images/featureGraphic.png). This sample emits a gallery of demo banners, so group them
+        // under images/featureGraphic/ instead.
+        subdir = "featureGraphic",
     ) { FeatureGraphicBanner() }
 }

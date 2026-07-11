@@ -40,12 +40,16 @@ import org.junit.Test
 
 class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureGraphic) {
 
+    // GooglePlayFeatureGraphic defaults to subdir "." (a real app's single asset lands at
+    // images/featureGraphic.png). These are demo banners, so each shot passes
+    // `subdir = "featureGraphic"` to group them under images/featureGraphic/ for the README gallery.
+
     // The mockup fits inside the banner by height; scale/translate it with normal Modifiers
     // (`Modifier.scale(…)` to zoom, `Modifier.offset(…)` to move) if you want to fill more or reframe.
 
     // Three different screens placed onto the three detected mockups (left → right).
     @Test
-    fun device_image_trio() = customScreenshot {
+    fun device_image_trio() = customScreenshot(subdir = "featureGraphic") {
         Box(Modifier.fillMaxSize().background(Color(0xFFEFEFEF)), contentAlignment = Alignment.Center) {
             DeviceImageMockup(
                 frame = frame("phone_mockup_trio.jpg"),
@@ -62,7 +66,7 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
 
     // A render with a GRAY (not white) empty screen — detection keys off the dark bezel, not colour.
     @Test
-    fun device_image_podium() = customScreenshot {
+    fun device_image_podium() = customScreenshot(subdir = "featureGraphic") {
         Box(Modifier.fillMaxSize().background(Color(0xFFF3DAD2)), contentAlignment = Alignment.Center) {
             DeviceImageMockup(frame("phone_mockup_podium.jpg"), screens = listOf(Screen { CounterScreen(count = 42) }), modifier = Modifier.fillMaxHeight())
         }
@@ -70,7 +74,7 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
 
     // A strongly-tilted tablet on a dark background — detection still finds the single screen.
     @Test
-    fun device_image_tablet() = customScreenshot {
+    fun device_image_tablet() = customScreenshot(subdir = "featureGraphic") {
         Box(Modifier.fillMaxSize().background(Color(0xFF2B2B30)), contentAlignment = Alignment.Center) {
             DeviceImageMockup(
                 frame("tablet_mockup_keyboard.jpg"),
@@ -85,7 +89,7 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
     // it drops straight onto a colourful marketing banner. Instead of bezel detection we pass
     // `screenColor` — detection locks onto the green blob and ignores body, bezel and background.
     @Test
-    fun device_image_chroma() = customScreenshot {
+    fun device_image_chroma() = customScreenshot(subdir = "featureGraphic") {
         Box(
             Modifier
                 .fillMaxSize()
@@ -146,7 +150,7 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
     // CHROMA KEY on a PHOTO: a real photograph of a smartwatch whose screen was painted flat green.
     // The opaque photo is the banner itself; chroma keying drops the live watch UI onto the screen.
     @Test
-    fun device_image_watch_chroma() = customScreenshot {
+    fun device_image_watch_chroma() = customScreenshot(subdir = "featureGraphic") {
         Box(Modifier.fillMaxSize().clipToBounds(), contentAlignment = Alignment.Center) {
             DeviceImageMockup(
                 frame("watch_chroma.png"),
@@ -163,7 +167,7 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
     // whose screens are all painted flat red. A single `screenColor` pass finds all four (ordered
     // left-to-right) and drops an independent live UI onto each — distinct counts AND background colours.
     @Test
-    fun device_image_four_devices_chroma() = customScreenshot {
+    fun device_image_four_devices_chroma() = customScreenshot(subdir = "featureGraphic") {
         Box(
             Modifier
                 .fillMaxSize()
@@ -218,7 +222,7 @@ class DeviceImageMockupTest : StoreScreenshotsTest(FormFactor.GooglePlayFeatureG
 
     // Two devices (watch + phone). Scaled up and nudged down so both fill the banner with the watch in frame.
     @Test
-    fun device_image_watch_phone() = customScreenshot {
+    fun device_image_watch_phone() = customScreenshot(subdir = "featureGraphic") {
         Box(Modifier.fillMaxSize().background(Color(0xFF6B533A)), contentAlignment = Alignment.Center) {
             DeviceImageMockup(
                 frame = frame("watch_phone_mockup.jpg"),

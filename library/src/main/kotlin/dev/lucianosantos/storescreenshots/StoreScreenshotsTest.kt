@@ -54,6 +54,8 @@ abstract class StoreScreenshotsTest(
      * @param titleRes String resource ID (`R.string.xxx`). Resolved per locale automatically.
      * @param descriptionRes Same as [titleRes] for the description.
      * @param fileName Output PNG name (without locale path). Defaults to the test method name.
+     * @param subdir Overrides the form factor's output subdirectory for just this shot (defaults to
+     *   [FormFactor.subdir]).
      * @param style Override the class-level style for just this screenshot.
      */
     fun screenshot(
@@ -65,10 +67,11 @@ abstract class StoreScreenshotsTest(
         backgroundColor: Color = Color(0xFF1F2937),
         contentColor: Color = Color.White,
         fileName: String? = null,
+        subdir: String? = null,
         style: ScreenshotStyle = screenshot.style,
         beforeCapture: (ComposeContentTestRule) -> Unit = {},
         content: @Composable () -> Unit,
-    ) = screenshot.screenshot(locales, title, description, titleRes, descriptionRes, backgroundColor, contentColor, fileName, style, beforeCapture, content)
+    ) = screenshot.screenshot(locales, title, description, titleRes, descriptionRes, backgroundColor, contentColor, fileName, subdir, style, beforeCapture, content)
 
     /**
      * Fully custom layout — you control everything. [ScreenshotScope] provides a `Mockup`
@@ -86,9 +89,10 @@ abstract class StoreScreenshotsTest(
     fun customScreenshot(
         locales: List<String> = listOf("en-US"),
         fileName: String? = null,
+        subdir: String? = null,
         beforeCapture: (ComposeContentTestRule) -> Unit = {},
         content: @Composable ScreenshotScope.() -> Unit,
-    ) = screenshot.customScreenshot(locales, fileName, beforeCapture, content)
+    ) = screenshot.customScreenshot(locales, fileName, subdir, beforeCapture, content)
 
     /**
      * Render one continuous layout [panels] screenshots wide and slice it into that many PNGs that
@@ -106,8 +110,9 @@ abstract class StoreScreenshotsTest(
         panels: Int,
         locales: List<String> = listOf("en-US"),
         fileName: String? = null,
+        subdir: String? = null,
         gap: Dp = 0.dp,
         beforeCapture: (ComposeContentTestRule) -> Unit = {},
         content: @Composable ScreenshotScope.() -> Unit,
-    ) = screenshot.splitScreenshot(panels, locales, fileName, gap, beforeCapture, content)
+    ) = screenshot.splitScreenshot(panels, locales, fileName, subdir, gap, beforeCapture, content)
 }

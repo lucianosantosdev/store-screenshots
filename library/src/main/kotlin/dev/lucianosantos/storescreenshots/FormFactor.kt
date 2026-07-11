@@ -7,6 +7,9 @@ package dev.lucianosantos.storescreenshots
  * - Android form factors: `{locale}/images/{subdir}/{name}.png`
  * - Apple form factors: `{locale}/{subdir}/{name}.png`
  *
+ * A form factor whose output is a single image directly under `images/` (e.g. the feature
+ * graphic) uses `subdir = "."`, so the path collapses to `{locale}/images/{name}.png`.
+ *
  * To match Fastlane's layout, set `destDir` to `fastlane/metadata/android` (Android) or
  * `fastlane/screenshots` (Apple). By default screenshots land in `build/outputs/store-screenshots/`.
  */
@@ -65,13 +68,15 @@ enum class FormFactor(
     /**
      * Google Play feature graphic. Landscape 1024x500 promotional banner shown at the top of
      * the store listing. `512dp x 250dp` at xhdpi (density 2.0) renders exactly 1024x500 px.
-     * Output lands under `{locale}/images/featureGraphic/` to match Fastlane's supply layout.
+     * It is a single image, not a folder of screenshots, so `subdir = "."` places it directly at
+     * `{locale}/images/featureGraphic.png` (the exact path Fastlane's supply expects) when the shot
+     * is named `featureGraphic`.
      */
     GooglePlayFeatureGraphic(
         widthPx = 1024,
         heightPx = 500,
         qualifiers = "w512dp-h250dp-xhdpi",
-        subdir = "featureGraphic",
+        subdir = ".",
         useImagesSubdir = true,
     ),
 

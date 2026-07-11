@@ -44,7 +44,7 @@ pluginManagement {
         mavenCentral()
     }
     plugins {
-        id("io.github.lucianosantosdev.storescreenshots") version "1.4.2"
+        id("io.github.lucianosantosdev.storescreenshots") version "1.4.5"
     }
 }
 

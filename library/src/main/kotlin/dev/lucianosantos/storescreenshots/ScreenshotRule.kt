@@ -68,6 +68,9 @@ class ScreenshotRule(
      * @param contentColor Foreground text color.
      * @param fileName Output PNG name (without locale path). Defaults to the test method name.
      *   A `.png` extension is added automatically if omitted.
+     * @param subdir Overrides the form factor's output subdirectory for just this shot. Defaults to
+     *   [FormFactor.subdir]. Use it to place a shot somewhere other than the form factor's default —
+     *   e.g. `subdir = "featureGraphic"` to group several banners under `images/featureGraphic/`.
      * @param style Override the class-level style for just this screenshot.
      * @param beforeCapture Optional interaction run after the content is idle and before the PNG
      *   is captured — e.g. scroll a list to its end so a reveal-on-scroll control (a Wear
@@ -84,6 +87,7 @@ class ScreenshotRule(
         backgroundColor: Color = Color(0xFF1F2937),
         contentColor: Color = Color.White,
         fileName: String? = null,
+        subdir: String? = null,
         style: ScreenshotStyle = this.style,
         beforeCapture: (ComposeContentTestRule) -> Unit = {},
         content: @Composable () -> Unit,
@@ -112,7 +116,7 @@ class ScreenshotRule(
                         beforeCapture(composeRule)
                         composeRule.waitForIdle()
 
-                        val outputFile = outputPath(locale, fileName ?: testMethodName)
+                        val outputFile = outputPath(locale, fileName ?: testMethodName, subdir)
                         composeRule.onRoot().captureRoboImage(
                             filePath = outputFile.absolutePath,
                             roborazziOptions = RoborazziOptions(),
@@ -140,6 +144,7 @@ class ScreenshotRule(
     fun customScreenshot(
         locales: List<String> = listOf("en-US"),
         fileName: String? = null,
+        subdir: String? = null,
         beforeCapture: (ComposeContentTestRule) -> Unit = {},
         content: @Composable ScreenshotScope.() -> Unit,
     ) {
@@ -157,7 +162,7 @@ class ScreenshotRule(
                         beforeCapture(composeRule)
                         composeRule.waitForIdle()
                         composeRule.onRoot().captureRoboImage(
-                            filePath = outputPath(locale, fileName ?: testMethodName).absolutePath,
+                            filePath = outputPath(locale, fileName ?: testMethodName, subdir).absolutePath,
                             roborazziOptions = RoborazziOptions(),
                         )
                     }
@@ -197,11 +202,14 @@ class ScreenshotRule(
      * @param gap dp of canvas rendered and discarded between slices (>= 0). Default `0.dp`.
      * @param fileName Base name for the slices (without the `_NN` suffix or `.png`). Defaults to
      *   the test method name.
+     * @param subdir Overrides the form factor's output subdirectory for these slices. Defaults to
+     *   [FormFactor.subdir].
      */
     fun splitScreenshot(
         panels: Int,
         locales: List<String> = listOf("en-US"),
         fileName: String? = null,
+        subdir: String? = null,
         gap: Dp = 0.dp,
         beforeCapture: (ComposeContentTestRule) -> Unit = {},
         content: @Composable ScreenshotScope.() -> Unit,
@@ -236,7 +244,7 @@ class ScreenshotRule(
                             )
                             val full = BitmapFactory.decodeFile(temp.absolutePath)
                                 ?: error("Could not decode the captured split canvas at ${temp.absolutePath}")
-                            writeSlices(full, panels, panelDp, gapDp, locale, fileName ?: testMethodName)
+                            writeSlices(full, panels, panelDp, gapDp, locale, fileName ?: testMethodName, subdir)
                         } finally {
                             temp.delete()
                         }
@@ -252,7 +260,7 @@ class ScreenshotRule(
      * them, written as `{base}_01.png`, `{base}_02.png`, … The pixel geometry is derived from the
      * captured width so it matches whatever density Robolectric rendered at.
      */
-    private fun writeSlices(full: Bitmap, panels: Int, panelDp: Int, gapDp: Int, locale: String, base: String) {
+    private fun writeSlices(full: Bitmap, panels: Int, panelDp: Int, gapDp: Int, locale: String, base: String, subdir: String? = null) {
         val totalDp = panelDp * panels + gapDp * (panels - 1)
         val density = full.width.toFloat() / totalDp
         val panelWidth = (panelDp * density).roundToInt()
@@ -262,7 +270,7 @@ class ScreenshotRule(
             val width = minOf(panelWidth, full.width - x)
             val slice = Bitmap.createBitmap(full, x, 0, width, full.height)
             val name = "${base}_${(i + 1).toString().padStart(2, '0')}"
-            outputPath(locale, name).outputStream().use { slice.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            outputPath(locale, name, subdir).outputStream().use { slice.compress(Bitmap.CompressFormat.PNG, 100, it) }
         }
     }
 
@@ -306,11 +314,12 @@ class ScreenshotRule(
         }
     }
 
-    private fun outputPath(locale: String, name: String): File {
+    private fun outputPath(locale: String, name: String, subdirOverride: String? = null): File {
+        val subdir = subdirOverride ?: formFactor.subdir
         val subPath = if (formFactor.useImagesSubdir) {
-            "$locale/images/${formFactor.subdir}"
+            "$locale/images/$subdir"
         } else {
-            "$locale/${formFactor.subdir}"
+            "$locale/$subdir"
         }
         val dir = File(outputRootDir, subPath).apply { mkdirs() }
         val pngName = if (name.endsWith(".png", ignoreCase = true)) name else "$name.png"
