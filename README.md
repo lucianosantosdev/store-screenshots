@@ -226,6 +226,7 @@ Pass a `ScreenshotStyle` to `StoreScreenshotsTest` (class-level default) or to `
 | `mockupCameraDistance` | Perspective strength for the 3D tilt. Higher = flatter, lower = more dramatic. Default `12`. |
 | `showStatusBar` | Show/hide the status bar on phone, tablet, and Apple mockups. Default `true`. |
 | `statusBarClock` | Clock text in the status bar. Default `"12:00"`. |
+| `statusBarContentDark` | When `true`, the status bar clock and icons use a dark color instead of the default white so they stay visible on light mockup backgrounds. Default `false`. |
 | `edgeToEdge` | When `true` (default) the screen content is drawn full-bleed under the frame's status bar / notch, like a real edge-to-edge app. Set it to `false` to reserve the status bar's height so a standalone screen (rendered without the app's own window insets) doesn't have its top content — tabs, a top app bar — drawn under the status bar. Applies to phone and tablet frames and to `DeviceMockup(edgeToEdge = …)`; the Wear frame has no status bar strip. |
 | `titleFontFamily` / `descriptionFontFamily` | Font for the default title/description Text composables. |
 | `background` | Composable rendered behind everything. Overrides `backgroundColor`. |

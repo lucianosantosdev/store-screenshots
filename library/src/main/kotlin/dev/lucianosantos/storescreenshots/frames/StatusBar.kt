@@ -30,7 +30,11 @@ import androidx.compose.ui.unit.sp
 internal val StatusBarHeight: Dp = 38.dp
 
 @Composable
-internal fun StatusBar(clock: String, modifier: Modifier = Modifier) {
+internal fun StatusBar(
+    clock: String,
+    modifier: Modifier = Modifier,
+    contentColor: Color = Color.White,
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -39,25 +43,25 @@ internal fun StatusBar(clock: String, modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = clock, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+        Text(text = clock, color = contentColor, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Icon(Icons.Filled.SignalCellular4Bar, null, tint = Color.White, modifier = Modifier.size(14.dp))
-            Icon(Icons.Filled.Wifi, null, tint = Color.White, modifier = Modifier.size(14.dp))
-            BatteryIcon()
+            Icon(Icons.Filled.SignalCellular4Bar, null, tint = contentColor, modifier = Modifier.size(14.dp))
+            Icon(Icons.Filled.Wifi, null, tint = contentColor, modifier = Modifier.size(14.dp))
+            BatteryIcon(contentColor)
         }
     }
 }
 
 @Composable
-private fun BatteryIcon() {
+private fun BatteryIcon(contentColor: Color) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier
                 .size(width = 22.dp, height = 11.dp)
-                .border(1.dp, Color.White, RoundedCornerShape(3.dp))
+                .border(1.dp, contentColor, RoundedCornerShape(3.dp))
                 .padding(1.5.dp),
             contentAlignment = Alignment.CenterStart
         ) {
@@ -65,7 +69,7 @@ private fun BatteryIcon() {
                 modifier = Modifier
                     .fillMaxWidth(0.78f)
                     .fillMaxHeight()
-                    .background(Color.White, RoundedCornerShape(1.dp))
+                    .background(contentColor, RoundedCornerShape(1.dp))
             )
         }
         Box(
@@ -73,7 +77,7 @@ private fun BatteryIcon() {
                 .padding(start = 1.dp)
                 .width(1.5.dp)
                 .height(5.dp)
-                .background(Color.White, RoundedCornerShape(topEnd = 1.dp, bottomEnd = 1.dp))
+                .background(contentColor, RoundedCornerShape(topEnd = 1.dp, bottomEnd = 1.dp))
         )
     }
 }

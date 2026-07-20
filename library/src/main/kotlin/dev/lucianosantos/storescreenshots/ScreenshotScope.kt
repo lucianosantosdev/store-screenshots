@@ -47,6 +47,7 @@ class ScreenshotScope internal constructor(
                 modifier = modifier,
                 showStatusBar = style.showStatusBar,
                 statusBarClock = style.statusBarClock,
+                statusBarContentDark = style.statusBarContentDark,
                 rotationX = rotationX,
                 rotationY = rotationY,
                 rotationZ = rotationZ,
