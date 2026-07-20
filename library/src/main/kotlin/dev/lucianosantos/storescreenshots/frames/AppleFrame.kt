@@ -20,9 +20,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.lucianosantos.storescreenshots.ScreenshotStyle
 
+/** The screen cutout an iPhone frame draws. */
+enum class AppleNotchStyle {
+    /** Pill-shaped Dynamic Island — iPhone 14 Pro and later. */
+    DynamicIsland,
+
+    /** Wide top notch — iPhone X through 14 Plus, which is what the 6.5" slot depicts. */
+    Notch,
+}
+
 /**
- * iPhone frame with Dynamic Island for Apple App Store screenshots.
- * Targets 6.7" iPhone (1290x2796) — the size App Store Connect requires for new submissions.
+ * iPhone frame for Apple App Store screenshots.
+ *
+ * Defaults to the 6.7" body (1290x2796, Dynamic Island). Pass [aspectRatio] and [notch] to draw a
+ * different iPhone — the 6.5" slot (1284x2778) shows devices that shipped with a notch, so drawing
+ * a Dynamic Island there would depict a phone that never existed at that size.
  */
 @Composable
 fun AppleFrame(
@@ -31,6 +43,8 @@ fun AppleFrame(
     backgroundColor: Color,
     contentColor: Color = Color.White,
     style: ScreenshotStyle = ScreenshotStyle(),
+    aspectRatio: Float = 1290f / 2796f,
+    notch: AppleNotchStyle = AppleNotchStyle.DynamicIsland,
     content: @Composable () -> Unit,
 ) {
     FramedLayout(
@@ -43,7 +57,17 @@ fun AppleFrame(
         verticalPadding = 28.dp,
         titleFontSize = 26.sp,
         descriptionFontSize = 14.sp,
-        mockup = { externalModifier -> IPhoneMockup(externalModifier, style.showStatusBar, style.statusBarClock, style.statusBarContentDark, content) }
+        mockup = { externalModifier ->
+            IPhoneMockup(
+                externalModifier,
+                style.showStatusBar,
+                style.statusBarClock,
+                style.statusBarContentDark,
+                aspectRatio,
+                notch,
+                content
+            )
+        }
     )
 }
 
@@ -53,12 +77,14 @@ private fun ColumnScope.IPhoneMockup(
     showStatusBar: Boolean,
     clock: String,
     statusBarContentDark: Boolean,
+    aspectRatio: Float,
+    notch: AppleNotchStyle,
     content: @Composable () -> Unit,
 ) {
     Box(
         modifier = externalModifier
             .fillMaxHeight()
-            .aspectRatio(1290f / 2796f)
+            .aspectRatio(aspectRatio)
     ) {
         Box(
             modifier = Modifier
@@ -77,7 +103,10 @@ private fun ColumnScope.IPhoneMockup(
                 modifier = Modifier.align(Alignment.TopCenter),
                 contentColor = if (statusBarContentDark) Color.Black else Color.White,
             )
-            DynamicIsland(modifier = Modifier.align(Alignment.TopCenter))
+            when (notch) {
+                AppleNotchStyle.DynamicIsland -> DynamicIsland(Modifier.align(Alignment.TopCenter))
+                AppleNotchStyle.Notch -> Notch(Modifier.align(Alignment.TopCenter))
+            }
         }
     }
 }
@@ -91,5 +120,19 @@ private fun DynamicIsland(modifier: Modifier = Modifier) {
             .clip(RoundedCornerShape(50))
             .background(Color.Black)
             .border(0.5.dp, Color(0xFF222222), RoundedCornerShape(50))
+    )
+}
+
+/**
+ * The pre-14-Pro notch: flush with the top edge, so only its bottom corners are rounded.
+ * Wider and shorter than the Dynamic Island, and not inset from the top.
+ */
+@Composable
+private fun Notch(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(width = 156.dp, height = 30.dp)
+            .clip(RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp))
+            .background(Color.Black)
     )
 }

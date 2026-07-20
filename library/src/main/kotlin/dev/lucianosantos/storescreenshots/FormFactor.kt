@@ -66,6 +66,25 @@ enum class FormFactor(
     ),
 
     /**
+     * Apple App Store iPhone 6.5" screenshot. Portrait 1284x2778 (iPhone 12/13/14 Plus and Pro Max).
+     *
+     * The size App Store Connect selects by default, so it is usually the slot to fill first —
+     * Apple scales it into the others. The 6.5" slot also accepts 1242x2688 (414dp x 896dp);
+     * 428dp x 926dp is used here because it is the taller, current-generation ratio and Apple
+     * takes either.
+     *
+     * These devices have a notch rather than a Dynamic Island, which is why [AppleFrame] takes
+     * the cutout as a parameter.
+     */
+    AppleIPhone65(
+        widthPx = 1284,
+        heightPx = 2778,
+        qualifiers = "w428dp-h926dp-xxhdpi",
+        subdir = "iphone65",
+        useImagesSubdir = false,
+    ),
+
+    /**
      * Google Play feature graphic. Landscape 1024x500 promotional banner shown at the top of
      * the store listing. `512dp x 250dp` at xhdpi (density 2.0) renders exactly 1024x500 px.
      * It is a single image, not a folder of screenshots, so `subdir = "."` places it directly at

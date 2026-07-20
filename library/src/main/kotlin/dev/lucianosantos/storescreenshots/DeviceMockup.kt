@@ -157,6 +157,10 @@ fun DeviceMockup(
             val (w, h) = orientSize(430.dp, 932.dp, orientation)
             ScaledMockup(w, h, rotated) { AppleBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge) { ProvideDeviceConfiguration(w, h, content) } }
         }
+        FormFactor.AppleIPhone65 -> {
+            val (w, h) = orientSize(428.dp, 926.dp, orientation)
+            ScaledMockup(w, h, rotated) { AppleBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge) { ProvideDeviceConfiguration(w, h, content) } }
+        }
         FormFactor.GooglePlayFeatureGraphic -> error(
             "FormFactor.GooglePlayFeatureGraphic is a banner canvas, not a device. " +
                 "Compose real devices with DeviceMockup(formFactor = FormFactor.Phone / Tablet10 / …) " +

@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 import dev.lucianosantos.storescreenshots.frames.AppleFrame
+import dev.lucianosantos.storescreenshots.frames.AppleNotchStyle
 import dev.lucianosantos.storescreenshots.frames.FramedLayout
 import dev.lucianosantos.storescreenshots.frames.PhoneFrame
 import dev.lucianosantos.storescreenshots.frames.TabletFrame
@@ -307,7 +308,18 @@ class ScreenshotRule(
                 FormFactor.Wear -> WearFrame(backgroundColor, content)
                 FormFactor.Tablet7,
                 FormFactor.Tablet10 -> TabletFrame(title, description, backgroundColor, contentColor, style, content = content)
-                FormFactor.AppleIPhone67 -> AppleFrame(title, description, backgroundColor, contentColor, style, content)
+                FormFactor.AppleIPhone67 -> AppleFrame(
+                    title, description, backgroundColor, contentColor, style,
+                    aspectRatio = 1290f / 2796f,
+                    notch = AppleNotchStyle.DynamicIsland,
+                    content = content,
+                )
+                FormFactor.AppleIPhone65 -> AppleFrame(
+                    title, description, backgroundColor, contentColor, style,
+                    aspectRatio = 1284f / 2778f,
+                    notch = AppleNotchStyle.Notch,
+                    content = content,
+                )
                 // Guarded against in screenshot(); a feature graphic is composed via customScreenshot.
                 FormFactor.GooglePlayFeatureGraphic -> error("unreachable")
             }
