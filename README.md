@@ -144,7 +144,20 @@ storeScreenshots {
 | `Tablet7` | 1200 x 1920 | `sevenInchScreenshots` |
 | `Tablet10` | 1600 x 2560 | `tenInchScreenshots` |
 | `AppleIPhone67` | 1290 x 2796 | `iphone67` |
+| `AppleIPhone65` | 1284 x 2778 | `iphone65` |
 | `GooglePlayFeatureGraphic` | 1024 x 500 | `featureGraphic` |
+
+Both iPhone sizes are accepted by App Store Connect. It offers the **6.5" slot by default**
+and scales that image into the other iPhone sizes, so `AppleIPhone65` is usually the one to
+fill first. `AppleIPhone67` matches the 6.7" slot.
+
+The two draw different hardware, because they depict different phones: 6.7" gets a Dynamic
+Island, 6.5" gets a notch (those devices shipped before the Island existed). Override it on
+`AppleFrame` with `notch = AppleNotchStyle.DynamicIsland | .Notch` if you are composing the
+frame yourself.
+
+Apple form factors write to `{locale}/{subdir}/`, without the `images/` level Play uses — set
+`destDir` to `fastlane/screenshots` for them and `fastlane/metadata/android` for Play.
 
 ### Feature graphic
 
@@ -323,7 +336,8 @@ fun HomePreview() = ScreenshotPreview(
 | `@Tablet7ScreenshotPreview` | 600 x 960 dp |
 | `@Tablet10ScreenshotPreview` | 800 x 1280 dp |
 | `@AppleIPhone67ScreenshotPreview` | 430 x 932 dp |
-| `@AllScreenshotPreviews` | All five at once |
+| `@AppleIPhone65ScreenshotPreview` | 428 x 926 dp |
+| `@AllScreenshotPreviews` | All six at once |
 
 Previews go in `src/debug/` (Studio only renders debug variant). Tests go in `src/screenshots/`. Shared composables go in `src/main/`.
 
