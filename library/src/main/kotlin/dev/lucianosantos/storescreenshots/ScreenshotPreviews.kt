@@ -37,6 +37,9 @@ annotation class AppleIPhone67ScreenshotPreview
 @Preview(name = "iPhone 6.5\" (1284×2778)", widthDp = 428, heightDp = 926)
 annotation class AppleIPhone65ScreenshotPreview
 
+@Preview(name = "iPad 13\" (2048×2732)", widthDp = 1024, heightDp = 1366)
+annotation class AppleIPad13ScreenshotPreview
+
 // Rendered at 1.5× the 1024×500 output so the short banner isn't dwarfed by the phone/tablet
 // previews beside it — see the note above. The exported PNG is unaffected (that comes from the test).
 @Preview(name = "Feature Graphic (1024×500)", widthDp = 1536, heightDp = 750)
@@ -52,5 +55,6 @@ annotation class GooglePlayFeatureGraphicScreenshotPreview
 @Tablet10ScreenshotPreview
 @AppleIPhone67ScreenshotPreview
 @AppleIPhone65ScreenshotPreview
+@AppleIPad13ScreenshotPreview
 @GooglePlayFeatureGraphicScreenshotPreview
 annotation class AllScreenshotPreviews

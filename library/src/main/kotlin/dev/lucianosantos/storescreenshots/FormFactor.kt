@@ -85,6 +85,25 @@ enum class FormFactor(
     ),
 
     /**
+     * Apple App Store 13" iPad screenshot. Portrait 2048x2732 (12.9"/13" iPad Pro & iPad Air).
+     *
+     * App Store Connect requires a 13" iPad screenshot to submit any app that runs on iPad — even an
+     * iPhone-first design still lists on iPad, so the slot is mandatory. 2048x2732 is the long-standing
+     * size the slot accepts (1024dp x 1366dp at @2x / xhdpi); it also takes 2064x2752 and either
+     * landscape orientation. The 4:3 portrait 2048x2732 used here is what every iPad build has shipped.
+     *
+     * Drawn with the same neutral tablet bezel as the Android tablets in [DeviceMockup] — a uniform
+     * rounded frame with no notch, which reads correctly as an iPad.
+     */
+    AppleIPad13(
+        widthPx = 2048,
+        heightPx = 2732,
+        qualifiers = "w1024dp-h1366dp-xhdpi",
+        subdir = "ipad13",
+        useImagesSubdir = false,
+    ),
+
+    /**
      * Google Play feature graphic. Landscape 1024x500 promotional banner shown at the top of
      * the store listing. `512dp x 250dp` at xhdpi (density 2.0) renders exactly 1024x500 px.
      * It is a single image, not a folder of screenshots, so `subdir = "."` places it directly at
