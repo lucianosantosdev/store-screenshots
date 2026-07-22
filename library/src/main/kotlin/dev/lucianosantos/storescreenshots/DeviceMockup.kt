@@ -161,6 +161,12 @@ fun DeviceMockup(
             val (w, h) = orientSize(428.dp, 926.dp, orientation)
             ScaledMockup(w, h, rotated) { AppleBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge) { ProvideDeviceConfiguration(w, h, content) } }
         }
+        FormFactor.AppleIPad13 -> {
+            // 4:3 to match the w1024dp-h1366dp qualifier (12.9"/13" iPad). Uses the neutral tablet
+            // bezel — a uniform rounded frame, no notch — which reads as an iPad.
+            val (w, h) = orientSize(1024.dp, 1366.dp, orientation)
+            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge) { ProvideDeviceConfiguration(w, h, content) } }
+        }
         FormFactor.GooglePlayFeatureGraphic -> error(
             "FormFactor.GooglePlayFeatureGraphic is a banner canvas, not a device. " +
                 "Compose real devices with DeviceMockup(formFactor = FormFactor.Phone / Tablet10 / …) " +

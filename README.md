@@ -145,6 +145,7 @@ storeScreenshots {
 | `Tablet10` | 1600 x 2560 | `tenInchScreenshots` |
 | `AppleIPhone67` | 1290 x 2796 | `iphone67` |
 | `AppleIPhone65` | 1284 x 2778 | `iphone65` |
+| `AppleIPad13` | 2048 x 2732 | `ipad13` |
 | `GooglePlayFeatureGraphic` | 1024 x 500 | `featureGraphic` |
 
 Both iPhone sizes are accepted by App Store Connect. It offers the **6.5" slot by default**
@@ -155,6 +156,10 @@ The two draw different hardware, because they depict different phones: 6.7" gets
 Island, 6.5" gets a notch (those devices shipped before the Island existed). Override it on
 `AppleFrame` with `notch = AppleNotchStyle.DynamicIsland | .Notch` if you are composing the
 frame yourself.
+
+`AppleIPad13` fills the **13" iPad** slot, which App Store Connect requires for any app that
+runs on iPad — even an iPhone-first app still lists there. It renders 2048 x 2732 (the slot also
+accepts 2064 x 2752 and either landscape) with the neutral tablet bezel, no notch.
 
 Apple form factors write to `{locale}/{subdir}/`, without the `images/` level Play uses — set
 `destDir` to `fastlane/screenshots` for them and `fastlane/metadata/android` for Play.
@@ -337,7 +342,8 @@ fun HomePreview() = ScreenshotPreview(
 | `@Tablet10ScreenshotPreview` | 800 x 1280 dp |
 | `@AppleIPhone67ScreenshotPreview` | 430 x 932 dp |
 | `@AppleIPhone65ScreenshotPreview` | 428 x 926 dp |
-| `@AllScreenshotPreviews` | All six at once |
+| `@AppleIPad13ScreenshotPreview` | 1024 x 1366 dp |
+| `@AllScreenshotPreviews` | All seven at once |
 
 Previews go in `src/debug/` (Studio only renders debug variant). Tests go in `src/screenshots/`. Shared composables go in `src/main/`.
 
