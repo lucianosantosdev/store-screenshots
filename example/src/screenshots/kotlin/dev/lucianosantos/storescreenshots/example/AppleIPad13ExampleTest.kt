@@ -11,6 +11,6 @@ class AppleIPad13ExampleTest : StoreScreenshotsTest(FormFactor.AppleIPad13) {
     fun counter() = screenshot(
         locales = listOf("en-US", "pt-BR"),
         titleRes = R.string.screenshot_apple_title,
-        descriptionRes = R.string.screenshot_apple_desc,
+        descriptionRes = R.string.screenshot_ipad13_desc,
     ) { CounterScreen(count = 42) }
 }
