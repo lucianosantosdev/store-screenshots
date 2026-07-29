@@ -7,8 +7,8 @@
     <string name="screenshot_tablet10_title">Tela grande, mesmo código</string>
     <string name="screenshot_tablet10_desc">Layout de 10 polegadas usa a mesma UI Compose</string>
     <string name="screenshot_apple_title">Publique em todas as lojas</string>
-    <string name="screenshot_apple_desc">Tamanho 6.7\" do App Store Connect, pronto para enviar</string>
-    <string name="screenshot_apple65_desc">Tamanho 6.5\" do App Store Connect, pronto para enviar</string>
+    <string name="screenshot_apple_desc">Tamanho 6.7″ do App Store Connect, pronto para enviar</string>
+    <string name="screenshot_apple65_desc">Tamanho 6.5″ do App Store Connect, pronto para enviar</string>
     <string name="screenshot_ipad13_desc">Tamanho iPad de 13 polegadas do App Store Connect, pronto para enviar</string>
     <string name="screenshot_feature_title">Imagens de destaque incríveis</string>
     <string name="screenshot_feature_desc">Feito inteiramente com Jetpack Compose</string>
