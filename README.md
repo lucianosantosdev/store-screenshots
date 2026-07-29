@@ -157,9 +157,33 @@ Island, 6.5" gets a notch (those devices shipped before the Island existed). Ove
 `AppleFrame` with `notch = AppleNotchStyle.DynamicIsland | .Notch` if you are composing the
 frame yourself.
 
+Both are a scale model of a real iPhone. The enclosure, bezel, corner radii, Dynamic Island,
+side buttons and status bar were measured off an iPhone 17 running iOS 26.5 in the Xcode
+Simulator, and are drawn as a fixed fraction of the frame's width — so the phone stays in
+proportion whether you render a full-size App Store shot or a thumbnail on a feature graphic. The
+measurements live in `IPhone17Metrics`, which also records how the captures were taken so they can
+be redone against a newer device.
+
+**The status bar an iPhone frame draws is an iOS status bar** — a vector-drawn clock, four
+cellular bars, the Wi-Fi arcs, and the iOS battery — not the Material icons the Android frames
+use. App Store Review guideline 2.3.10 rejects screenshots showing "non-iOS status bar images",
+which is what an Android-looking status bar inside an iPhone bezel reads as. `IosStatusBarComparisonTest`
+holds those glyphs against a real Simulator capture so they cannot quietly drift back.
+
+The Action, volume, and side buttons sit where the real ones do, standing proud of the enclosure
+by the same amount, and darken into a contact shadow where they tuck under it. The Simulator
+renders its buttons perfectly flat; these carry a hairline highlight around the outline — the
+light catching the milled edge, brightest on the top cap and fading down the outer edge — so they
+read as machined aluminium rather than grey tabs.
+
 `AppleIPad13` fills the **13" iPad** slot, which App Store Connect requires for any app that
 runs on iPad — even an iPhone-first app still lists there. It renders 2048 x 2732 (the slot also
 accepts 2064 x 2752 and either landscape) with the neutral tablet bezel, no notch.
+
+| | | |
+| :---: | :---: | :---: |
+| <img src="example/screenshots/en-US/iphone67/counter.jpg" width="180" /> | <img src="example/screenshots/en-US/iphone65/counter.jpg" width="180" /> | <img src="example/screenshots/en-US/ipad13/counter.jpg" width="180" /> |
+| `AppleIPhone67` — Dynamic Island | `AppleIPhone65` — notch | `AppleIPad13` |
 
 Apple form factors write to `{locale}/{subdir}/`, without the `images/` level Play uses — set
 `destDir` to `fastlane/screenshots` for them and `fastlane/metadata/android` for Play.
@@ -242,10 +266,11 @@ Pass a `ScreenshotStyle` to `StoreScreenshotsTest` (class-level default) or to `
 | `mockupRotation` | In-plane Z rotation in degrees (the flat `Modifier.rotate` spin). |
 | `mockupRotationX` / `mockupRotationY` | 3D perspective tilt in degrees — X tips the device toward/away, Y turns it left/right. See [3D perspective](#3d-perspective). |
 | `mockupCameraDistance` | Perspective strength for the 3D tilt. Higher = flatter, lower = more dramatic. Default `12`. |
+| `mockupElevation` | Casts a soft drop shadow in the shape of the device's enclosure so it lifts off the banner. Reads like Material elevation — the value is the shadow's blur radius, offset downward by a fraction of it. Default `0.dp` (no shadow). Applies to the phone, tablet, and iPhone frames and to `DeviceMockup(elevation = …)`; the Wear frame fills its whole canvas, so a shadow has nowhere to fall. |
 | `showStatusBar` | Show/hide the status bar on phone, tablet, and Apple mockups. Default `true`. |
-| `statusBarClock` | Clock text in the status bar. Default `"12:00"`. |
+| `statusBarClock` | Clock text in the status bar. Default `"12:00"`; Apple's own marketing screenshots use `"9:41"`. |
 | `statusBarContentDark` | When `true`, the status bar clock and icons use a dark color instead of the default white so they stay visible on light mockup backgrounds. Default `false`. |
-| `edgeToEdge` | When `true` (default) the screen content is drawn full-bleed under the frame's status bar / notch, like a real edge-to-edge app. Set it to `false` to reserve the status bar's height so a standalone screen (rendered without the app's own window insets) doesn't have its top content — tabs, a top app bar — drawn under the status bar. Applies to phone and tablet frames and to `DeviceMockup(edgeToEdge = …)`; the Wear frame has no status bar strip. |
+| `edgeToEdge` | When `true` (default) the screen content is drawn full-bleed under the frame's status bar / notch, like a real edge-to-edge app. Set it to `false` to reserve the status bar's height so a standalone screen (rendered without the app's own window insets) doesn't have its top content — tabs, a top app bar — drawn under the status bar. Applies to the phone, tablet, and iPhone frames and to `DeviceMockup(edgeToEdge = …)`; the Wear frame has no status bar strip. |
 | `titleFontFamily` / `descriptionFontFamily` | Font for the default title/description Text composables. |
 | `background` | Composable rendered behind everything. Overrides `backgroundColor`. |
 | `mockupFrame` | Composable that replaces the built-in device bezel entirely. Receives app content as a parameter. |

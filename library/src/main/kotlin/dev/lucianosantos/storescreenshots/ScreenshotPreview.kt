@@ -75,13 +75,11 @@ fun ScreenshotPreview(
             FormFactor.AppleIPad13 -> TabletFrame(title, description, backgroundColor, contentColor, style, content = content)
             FormFactor.AppleIPhone67 -> AppleFrame(
                 title, description, backgroundColor, contentColor, style,
-                aspectRatio = 1290f / 2796f,
                 notch = AppleNotchStyle.DynamicIsland,
                 content = content,
             )
             FormFactor.AppleIPhone65 -> AppleFrame(
                 title, description, backgroundColor, contentColor, style,
-                aspectRatio = 1284f / 2778f,
                 notch = AppleNotchStyle.Notch,
                 content = content,
             )

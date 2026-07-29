@@ -23,12 +23,26 @@ android {
     buildFeatures {
         compose = true
     }
+
+    // IPhoneBezelComparisonTest renders the frame under Robolectric and diffs it against the
+    // iPhone 17 Simulator captures in src/test/resources/reference.
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 kotlin {
     compilerOptions {
         jvmTarget = JvmTarget.JVM_17
     }
+}
+
+tasks.withType<Test>().configureEach {
+    // Roborazzi defaults to compare mode; the comparison test needs it to write the capture out.
+    systemProperty("roborazzi.test.record", "true")
+    testLogging { showStandardStreams = true }
 }
 
 dependencies {
@@ -40,6 +54,10 @@ dependencies {
     api(libs.compose.material.icons.extended)
     api(libs.compose.ui.test.junit4)
     api(libs.compose.ui.tooling.preview)
+
+    // Supplies the ComponentActivity that createComposeRule() launches. Debug-only, and only the
+    // release variant is published, so it never reaches consumers.
+    debugImplementation(libs.compose.ui.test.manifest)
 
     api(libs.junit)
     api(libs.robolectric)

@@ -11,3 +11,7 @@ plugin/bin/
 # PNGs are never versioned — screenshot runs write full-resolution PNGs, but only the small JPEGs
 # (produced by the root `compressScreenshots` task) are committed for the README.
 *.png
+
+# …except the iPhone 17 status bar capture. It is not screenshot output, it is the fixture
+# IosStatusBarComparisonTest measures the drawn status bar against.
+!library/src/test/resources/reference/iphone17_statusbar.png
