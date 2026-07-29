@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.unit.dp
 import dev.lucianosantos.storescreenshots.frames.AppleFrame
+import dev.lucianosantos.storescreenshots.frames.AppleIPadFrame
 import dev.lucianosantos.storescreenshots.frames.AppleNotchStyle
 import dev.lucianosantos.storescreenshots.frames.FramedLayout
 import dev.lucianosantos.storescreenshots.frames.PhoneFrame
@@ -70,9 +71,8 @@ fun ScreenshotPreview(
             FormFactor.Phone -> PhoneFrame(title, description, backgroundColor, contentColor, style, content)
             FormFactor.Wear -> WearFrame(backgroundColor, content)
             FormFactor.Tablet7,
-            FormFactor.Tablet10,
-            // The 13" iPad uses the same neutral tablet frame — no notch, uniform bezel.
-            FormFactor.AppleIPad13 -> TabletFrame(title, description, backgroundColor, contentColor, style, content = content)
+            FormFactor.Tablet10 -> TabletFrame(title, description, backgroundColor, contentColor, style, content = content)
+            FormFactor.AppleIPad13 -> AppleIPadFrame(title, description, backgroundColor, contentColor, style, content = content)
             FormFactor.AppleIPhone67 -> AppleFrame(
                 title, description, backgroundColor, contentColor, style,
                 notch = AppleNotchStyle.DynamicIsland,

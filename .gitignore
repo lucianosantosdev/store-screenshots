@@ -12,6 +12,6 @@ plugin/bin/
 # (produced by the root `compressScreenshots` task) are committed for the README.
 *.png
 
-# …except the iPhone 17 status bar capture. It is not screenshot output, it is the fixture
-# IosStatusBarComparisonTest measures the drawn status bar against.
-!library/src/test/resources/reference/iphone17_statusbar.png
+# …except the status bar captures. They are not screenshot output, they are the fixtures the
+# status bar comparison tests measure the drawn glyphs against.
+!library/src/test/resources/reference/*_statusbar.png

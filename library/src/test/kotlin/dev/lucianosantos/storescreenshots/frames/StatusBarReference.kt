@@ -17,8 +17,9 @@ import kotlin.math.min
 internal object StatusBarReference {
 
     /**
-     * `iphone17_statusbar.png` — the top strip of an iPhone 17's framebuffer, captured at @3x from
-     * the Xcode Simulator with the status bar overridden to Apple's usual state:
+     * Loads one of the committed captures: `iphone17_statusbar.png`, the top strip of an iPhone 17's
+     * framebuffer at @3x, or `ipad13_statusbar.png`, the same for a 13-inch iPad Air at @2x. Both
+     * were taken from the Xcode Simulator with the status bar overridden to Apple's usual state:
      *
      * ```
      * xcrun simctl boot "iPhone 17"
@@ -26,15 +27,19 @@ internal object StatusBarReference {
      *     --dataNetwork wifi --wifiMode active --wifiBars 3 \
      *     --cellularMode active --cellularBars 4 \
      *     --batteryState discharging --batteryLevel 100
-     * xcrun simctl io booted screenshot screen.png    # crop to 1206x210 from the top-left
+     * xcrun simctl io booted screenshot screen.png    # crop the top strip, full width
      * ```
      *
-     * 1206 px at @3x is 402 pt, which is [IPhone17Metrics.ScreenWidth] — so the capture's pixels map
-     * onto the metrics directly, at three pixels per point.
+     * The iPad is captured in dark appearance so its glyphs are white, and `--cellularMode` is left
+     * off: a Wi-Fi iPad shows no cellular bars, which is what its slot's screenshots depict.
+     *
+     * Each capture's width is its device's screen width in points times its scale — 1206 px at @3x
+     * is [IPhone17Metrics.ScreenWidth], 2048 px at @2x is [IPadAir13Metrics.ScreenWidth] — so a
+     * capture's pixels map onto the metrics directly.
      */
-    fun load(): BufferedImage {
-        val stream = StatusBarReference::class.java.getResourceAsStream("/reference/iphone17_statusbar.png")
-            ?: error("Missing /reference/iphone17_statusbar.png — see the KDoc on StatusBarReference")
+    fun load(name: String): BufferedImage {
+        val stream = StatusBarReference::class.java.getResourceAsStream("/reference/$name")
+            ?: error("Missing /reference/$name — see the KDoc on StatusBarReference")
         return stream.use { ImageIO.read(it) }
     }
 

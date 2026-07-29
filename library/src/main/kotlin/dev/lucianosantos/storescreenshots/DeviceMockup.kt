@@ -37,6 +37,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 import dev.lucianosantos.storescreenshots.frames.AppleNotchStyle
+import dev.lucianosantos.storescreenshots.frames.IPadAir13Metrics
+import dev.lucianosantos.storescreenshots.frames.IPadBezel
 import dev.lucianosantos.storescreenshots.frames.IPhone17Metrics
 import dev.lucianosantos.storescreenshots.frames.IPhoneBezel
 import dev.lucianosantos.storescreenshots.frames.mockupShadow
@@ -96,6 +98,12 @@ private fun orientSize(portraitWidth: Dp, portraitHeight: Dp, orientation: Mocku
  */
 private fun iPhoneBodySize(screenWidth: Dp, screenHeight: Dp): Pair<Dp, Dp> {
     val bezel = IPhone17Metrics.Bezel * (screenWidth.value / IPhone17Metrics.ScreenWidth)
+    return (screenWidth + (bezel * 2).dp) to (screenHeight + (bezel * 2).dp)
+}
+
+/** The same, for an iPad — see [IPadAir13Metrics]. */
+private fun iPadBodySize(screenWidth: Dp, screenHeight: Dp): Pair<Dp, Dp> {
+    val bezel = IPadAir13Metrics.Bezel * (screenWidth.value / IPadAir13Metrics.ScreenWidth)
     return (screenWidth + (bezel * 2).dp) to (screenHeight + (bezel * 2).dp)
 }
 
@@ -193,10 +201,14 @@ fun DeviceMockup(
             }
         }
         FormFactor.AppleIPad13 -> {
-            // 4:3 to match the w1024dp-h1366dp qualifier (12.9"/13" iPad). Uses the neutral tablet
-            // bezel — a uniform rounded frame, no notch — which reads as an iPad.
+            // 4:3 to match the w1024dp-h1366dp qualifier, which is a real 13" iPad's display.
             val (w, h) = orientSize(1024.dp, 1366.dp, orientation)
-            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, elevation) { ProvideDeviceConfiguration(w, h, content) } }
+            val (bw, bh) = iPadBodySize(w, h)
+            ScaledMockup(bw, bh, rotated) {
+                IPadBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, elevation) {
+                    ProvideDeviceConfiguration(w, h, content)
+                }
+            }
         }
         FormFactor.GooglePlayFeatureGraphic -> error(
             "FormFactor.GooglePlayFeatureGraphic is a banner canvas, not a device. " +

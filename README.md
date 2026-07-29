@@ -178,7 +178,13 @@ read as machined aluminium rather than grey tabs.
 
 `AppleIPad13` fills the **13" iPad** slot, which App Store Connect requires for any app that
 runs on iPad — even an iPhone-first app still lists there. It renders 2048 x 2732 (the slot also
-accepts 2064 x 2752 and either landscape) with the neutral tablet bezel, no notch.
+accepts 2064 x 2752 and either landscape).
+
+It is measured the same way, off a 13-inch iPad Air whose display is exactly 2048 x 2732, and it
+draws an **iPadOS** status bar rather than a phone's or a Material one: no cellular bars (a Wi-Fi
+iPad shows none), and the clock at the leading edge followed by the date rather than centred. Pass
+`statusBarClock = "9:41  Wed 29 Jul"` for the full thing, or just a time for a plainer bar.
+`IPadOsStatusBarComparisonTest` holds those glyphs against the capture.
 
 | | | |
 | :---: | :---: | :---: |

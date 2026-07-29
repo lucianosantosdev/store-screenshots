@@ -68,7 +68,7 @@ class IosStatusBarComparisonTest {
 
     @Test
     fun statusBarMatchesIos() {
-        val reference = StatusBarReference.opaque(StatusBarReference.load())
+        val reference = StatusBarReference.opaque(StatusBarReference.load("iphone17_statusbar.png"))
         // The app the capture was taken over, sampled well clear of any glyph.
         val (r, g, b) = StatusBarReference.rgb(reference, 600, 190)
 
