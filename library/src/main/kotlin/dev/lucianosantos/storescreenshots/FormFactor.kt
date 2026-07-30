@@ -1,5 +1,7 @@
 package dev.lucianosantos.storescreenshots
 
+import kotlin.math.roundToInt
+
 /**
  * Each form factor encodes the output pixel size and the subdirectory name for screenshots.
  *
@@ -20,19 +22,31 @@ enum class FormFactor(
     val subdir: String,
     val useImagesSubdir: Boolean,
 ) {
-    /** Play Store phone screenshot. Portrait 1080x1920. */
+    /**
+     * Play Store phone screenshot. Portrait 1233x2430 — `411dp x 810dp` at xxhdpi (density 3.0).
+     *
+     * Play rejects a screenshot whose long side is more than twice its short side. The canvas used
+     * to be `411dp x 914dp`, which renders 1233x2742 — a 1:2.22 image the Play Console turns away.
+     * The width is unchanged, so title and description keep wrapping exactly as before; only the
+     * canvas height comes down, which leaves the phone mockup slightly less room and scales it down
+     * a few percent.
+     */
     Phone(
-        widthPx = 1080,
-        heightPx = 1920,
-        qualifiers = "w411dp-h914dp-xxhdpi",
+        widthPx = 1233,
+        heightPx = 2430,
+        qualifiers = "w411dp-h810dp-xxhdpi",
         subdir = "phoneScreenshots",
         useImagesSubdir = true,
     ),
 
-    /** Play Store Wear OS screenshot. Round 384x384. */
+    /**
+     * Play Store Wear OS screenshot. Round 681x681 — `227dp x 227dp` at xxhdpi (density 3.0), the
+     * logical size of a real round Wear display. Play takes a square watch screenshot anywhere from
+     * 384x384 up to 3840x3840, so this renders above the floor rather than at it.
+     */
     Wear(
-        widthPx = 384,
-        heightPx = 384,
+        widthPx = 681,
+        heightPx = 681,
         qualifiers = "w227dp-h227dp-round-xxhdpi",
         subdir = "wearScreenshots",
         useImagesSubdir = true,
@@ -118,4 +132,38 @@ enum class FormFactor(
         useImagesSubdir = true,
     ),
 
+    ;
+
+    init {
+        val (qualifierWidthPx, qualifierHeightPx) = qualifiers.toPixelSize()
+        require(widthPx == qualifierWidthPx && heightPx == qualifierHeightPx) {
+            "FormFactor.$name declares ${widthPx}x$heightPx but its qualifiers '$qualifiers' " +
+                "render ${qualifierWidthPx}x$qualifierHeightPx. Keep the two in step: the " +
+                "qualifiers are what actually decide the PNG's size."
+        }
+    }
+}
+
+/** Density multiplier for each Android density bucket that can appear in a qualifier string. */
+private val densityBuckets = mapOf(
+    "ldpi" to 0.75f,
+    "mdpi" to 1f,
+    "hdpi" to 1.5f,
+    "tvdpi" to 1.33125f,
+    "xhdpi" to 2f,
+    "xxhdpi" to 3f,
+    "xxxhdpi" to 4f,
+)
+
+/**
+ * The pixel size a Robolectric qualifier string renders at: its `wNNNdp` x `hNNNdp` logical size
+ * multiplied by the density bucket it names (defaulting to mdpi when it names none).
+ */
+private fun String.toPixelSize(): Pair<Int, Int> {
+    val widthDp = Regex("""w(\d+)dp""").find(this)?.groupValues?.get(1)?.toInt()
+        ?: error("Qualifiers '$this' have no wNNNdp width.")
+    val heightDp = Regex("""h(\d+)dp""").find(this)?.groupValues?.get(1)?.toInt()
+        ?: error("Qualifiers '$this' have no hNNNdp height.")
+    val density = split("-").firstNotNullOfOrNull(densityBuckets::get) ?: 1f
+    return (widthDp * density).roundToInt() to (heightDp * density).roundToInt()
 }

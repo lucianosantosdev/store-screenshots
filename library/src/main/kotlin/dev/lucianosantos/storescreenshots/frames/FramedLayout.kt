@@ -2,6 +2,7 @@ package dev.lucianosantos.storescreenshots.frames
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
@@ -102,7 +103,7 @@ internal fun FramedLayout(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Top/Bottom: mockup gets weight so it fills remaining space after title/desc.
-            // Middle: mockup takes intrinsic size; weighted spacers center it.
+            // Middle: a weighted Column bounds the mockup's height and centers it.
             val weightedOffset = offsetModifier.weight(1f, fill = false)
 
             when (style.mockupPosition) {
@@ -117,11 +118,15 @@ internal fun FramedLayout(
                 }
                 MockupPosition.Middle -> {
                     titleSlot()
-                    Spacer(Modifier.weight(1f))
-                    if (oy > 0.dp) Spacer(Modifier.height(oy))
-                    mockup(offsetModifier)
-                    if (oy < 0.dp) Spacer(Modifier.height(-oy))
-                    Spacer(Modifier.weight(1f))
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        if (oy > 0.dp) Spacer(Modifier.height(oy))
+                        mockup(offsetModifier)
+                        if (oy < 0.dp) Spacer(Modifier.height(-oy))
+                    }
                     descriptionSlot()
                 }
                 MockupPosition.Bottom -> {

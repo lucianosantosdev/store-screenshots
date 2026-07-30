@@ -1,28 +1,10 @@
 package dev.lucianosantos.storescreenshots.frames
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import dev.lucianosantos.storescreenshots.DeviceMockup
+import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.ScreenshotStyle
 
 /**
@@ -47,136 +29,17 @@ fun PhoneFrame(
         style = style,
         horizontalPadding = 28.dp,
         verticalPadding = 48.dp,
-        mockup = { externalModifier -> PhoneMockup(externalModifier, style.showStatusBar, style.statusBarClock, style.statusBarContentDark, style.edgeToEdge, style.mockupElevation, content) }
+        mockup = { externalModifier ->
+            DeviceMockup(
+                formFactor = FormFactor.Phone,
+                modifier = externalModifier,
+                showStatusBar = style.showStatusBar,
+                statusBarClock = style.statusBarClock,
+                statusBarContentDark = style.statusBarContentDark,
+                edgeToEdge = style.edgeToEdge,
+                elevation = style.mockupElevation,
+                content = content,
+            )
+        },
     )
-}
-
-@Composable
-private fun ColumnScope.PhoneMockup(
-    externalModifier: Modifier,
-    showStatusBar: Boolean,
-    clock: String,
-    statusBarContentDark: Boolean,
-    edgeToEdge: Boolean,
-    elevation: Dp,
-    content: @Composable () -> Unit,
-) {
-    Box(
-        modifier = externalModifier
-            .fillMaxWidth()
-            .aspectRatio(9f / 18f)
-    ) {
-        SideButton(
-            modifier = Modifier.align(Alignment.TopStart).offset(x = (-3).dp, y = 110.dp),
-            heightDp = 38,
-            isLeft = true
-        )
-        SideButton(
-            modifier = Modifier.align(Alignment.TopStart).offset(x = (-3).dp, y = 156.dp),
-            heightDp = 58,
-            isLeft = true
-        )
-        SideButton(
-            modifier = Modifier.align(Alignment.TopEnd).offset(x = 3.dp, y = 92.dp),
-            heightDp = 70,
-            isLeft = false
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .mockupShadow(elevation, RoundedCornerShape(42.dp))
-                .clip(RoundedCornerShape(42.dp))
-                .background(Brush.linearGradient(listOf(Color(0xFF3A3A3A), Color(0xFF1A1A1A))))
-                .padding(1.5.dp)
-                .clip(RoundedCornerShape(40.dp))
-                .background(Color.Black)
-                .padding(7.dp)
-                .clip(RoundedCornerShape(32.dp))
-        ) {
-            // Non-edge-to-edge: reserve the status bar height so top content isn't drawn
-            // under the status bar / notch (the standalone-screen equivalent of the app's
-            // window insets).
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = if (edgeToEdge) 0.dp else StatusBarHeight)
-            ) { content() }
-            if (showStatusBar) StatusBar(
-                clock = clock,
-                modifier = Modifier.align(Alignment.TopCenter),
-                contentColor = if (statusBarContentDark) Color.Black else Color.White,
-            )
-            CameraNotch(modifier = Modifier.align(Alignment.TopCenter))
-        }
-    }
-}
-
-@Composable
-private fun SideButton(modifier: Modifier, heightDp: Int, isLeft: Boolean) {
-    val shape = if (isLeft) {
-        RoundedCornerShape(topStart = 2.dp, bottomStart = 2.dp)
-    } else {
-        RoundedCornerShape(topEnd = 2.dp, bottomEnd = 2.dp)
-    }
-    Box(
-        modifier = modifier
-            .size(width = 5.dp, height = heightDp.dp)
-            .background(
-                brush = Brush.horizontalGradient(
-                    colors = if (isLeft) listOf(Color(0xFF0F0F0F), Color(0xFF2E2E2E))
-                    else listOf(Color(0xFF2E2E2E), Color(0xFF0F0F0F))
-                ),
-                shape = shape
-            )
-    )
-}
-
-@Composable
-private fun CameraNotch(modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .padding(top = 7.dp)
-            .size(width = 90.dp, height = 24.dp)
-            .clip(RoundedCornerShape(50))
-            .background(Color.Black)
-            .border(0.5.dp, Color(0xFF2A2A2A), RoundedCornerShape(50))
-            .padding(horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .height(6.dp)
-                .clip(RoundedCornerShape(50))
-                .background(Brush.verticalGradient(listOf(Color(0xFF1A1A1A), Color(0xFF2E2E2E))))
-                .border(0.5.dp, Color(0xFF333333), RoundedCornerShape(50))
-        )
-        Box(
-            modifier = Modifier
-                .size(12.dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.radialGradient(listOf(Color(0xFF1F2A40), Color(0xFF0A0F1A), Color.Black))
-                )
-                .border(0.5.dp, Color(0xFF2A2A2A), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .clip(CircleShape)
-                    .background(Brush.radialGradient(listOf(Color(0xFF0D1422), Color.Black)))
-            )
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(start = 2.dp, top = 2.dp)
-                    .size(width = 3.dp, height = 2.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.7f))
-            )
-        }
-    }
 }
