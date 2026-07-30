@@ -36,6 +36,12 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
+import dev.lucianosantos.storescreenshots.frames.AppleNotchStyle
+import dev.lucianosantos.storescreenshots.frames.IPadAir13Metrics
+import dev.lucianosantos.storescreenshots.frames.IPadBezel
+import dev.lucianosantos.storescreenshots.frames.IPhone17Metrics
+import dev.lucianosantos.storescreenshots.frames.IPhoneBezel
+import dev.lucianosantos.storescreenshots.frames.mockupShadow
 import dev.lucianosantos.storescreenshots.frames.StatusBar
 import dev.lucianosantos.storescreenshots.frames.StatusBarHeight
 
@@ -86,6 +92,22 @@ private fun orientSize(portraitWidth: Dp, portraitHeight: Dp, orientation: Mocku
     if (orientation == MockupOrientation.Landscape) portraitHeight to portraitWidth else portraitWidth to portraitHeight
 
 /**
+ * The body an iPhone with a [screenWidth] x [screenHeight] display sits in — the display plus the
+ * bezel on all four sides, at the proportions measured in [IPhone17Metrics]. [IPhoneBezel] is sized
+ * by its body, not its screen, so the footprint has to be grown before it is laid out.
+ */
+private fun iPhoneBodySize(screenWidth: Dp, screenHeight: Dp): Pair<Dp, Dp> {
+    val bezel = IPhone17Metrics.Bezel * (screenWidth.value / IPhone17Metrics.ScreenWidth)
+    return (screenWidth + (bezel * 2).dp) to (screenHeight + (bezel * 2).dp)
+}
+
+/** The same, for an iPad — see [IPadAir13Metrics]. */
+private fun iPadBodySize(screenWidth: Dp, screenHeight: Dp): Pair<Dp, Dp> {
+    val bezel = IPadAir13Metrics.Bezel * (screenWidth.value / IPadAir13Metrics.ScreenWidth)
+    return (screenWidth + (bezel * 2).dp) to (screenHeight + (bezel * 2).dp)
+}
+
+/**
  * Renders just the device bezel/frame for the given [formFactor] — no title, no description,
  * no background banner. Use inside a fully custom layout via `customScreenshot { … }`.
  *
@@ -112,6 +134,11 @@ private fun orientSize(portraitWidth: Dp, portraitHeight: Dp, orientation: Mocku
  * use it to capture a screen whose UI only appears in landscape (e.g. a tablet two-/three-pane
  * layout), which a portrait frame can't trigger. Ignored by [FormFactor.Wear] (square).
  *
+ * [elevation] casts a soft drop shadow in the shape of the device's enclosure, so it lifts off
+ * whatever is behind it — useful when several devices overlap on a feature graphic and the one in
+ * front would otherwise blend into the one behind. `0.dp` (the default) draws no shadow. The round
+ * watch fills its whole canvas, so it takes no elevation.
+ *
  * [rotationX], [rotationY], and [rotationZ] tilt the whole device in 3D for a perspective mockup
  * (degrees): X tips it toward/away from the viewer, Y turns it left/right, Z spins it in-plane.
  * [cameraDistance] controls the perspective strength — see [DefaultMockupCameraDistance].
@@ -128,6 +155,7 @@ fun DeviceMockup(
     statusBarClock: String = "12:00",
     statusBarContentDark: Boolean = false,
     edgeToEdge: Boolean = true,
+    elevation: Dp = 0.dp,
     rotationX: Float = 0f,
     rotationY: Float = 0f,
     rotationZ: Float = 0f,
@@ -138,7 +166,7 @@ fun DeviceMockup(
     when (formFactor) {
         FormFactor.Phone -> {
             val (w, h) = orientSize(411.dp, 822.dp, orientation)
-            ScaledMockup(w, h, rotated) { PhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge) { ProvideDeviceConfiguration(w, h, content) } }
+            ScaledMockup(w, h, rotated) { PhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, elevation) { ProvideDeviceConfiguration(w, h, content) } }
         }
         FormFactor.Wear ->
             WatchMockup(WatchShape.Round, rotated, content = content)
@@ -146,26 +174,41 @@ fun DeviceMockup(
             // Native size matches the form factor's own 16:10 qualifier (w600dp-h960dp) so the frame
             // and the content it measures reflect a real Android tablet, not a 4:3 iPad.
             val (w, h) = orientSize(600.dp, 960.dp, orientation)
-            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge) { ProvideDeviceConfiguration(w, h, content) } }
+            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, elevation) { ProvideDeviceConfiguration(w, h, content) } }
         }
         FormFactor.Tablet10 -> {
             // 16:10 to match the w800dp-h1280dp qualifier (Pixel Tablet, Galaxy Tab, …).
             val (w, h) = orientSize(800.dp, 1280.dp, orientation)
-            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge) { ProvideDeviceConfiguration(w, h, content) } }
+            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, elevation) { ProvideDeviceConfiguration(w, h, content) } }
         }
         FormFactor.AppleIPhone67 -> {
             val (w, h) = orientSize(430.dp, 932.dp, orientation)
-            ScaledMockup(w, h, rotated) { AppleBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge) { ProvideDeviceConfiguration(w, h, content) } }
+            val (bw, bh) = iPhoneBodySize(w, h)
+            ScaledMockup(bw, bh, rotated) {
+                IPhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, AppleNotchStyle.DynamicIsland, elevation) {
+                    ProvideDeviceConfiguration(w, h, content)
+                }
+            }
         }
         FormFactor.AppleIPhone65 -> {
             val (w, h) = orientSize(428.dp, 926.dp, orientation)
-            ScaledMockup(w, h, rotated) { AppleBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge) { ProvideDeviceConfiguration(w, h, content) } }
+            val (bw, bh) = iPhoneBodySize(w, h)
+            ScaledMockup(bw, bh, rotated) {
+                // The 6.5" slot depicts notch-era iPhones, so it keeps the notch cutout.
+                IPhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, AppleNotchStyle.Notch, elevation) {
+                    ProvideDeviceConfiguration(w, h, content)
+                }
+            }
         }
         FormFactor.AppleIPad13 -> {
-            // 4:3 to match the w1024dp-h1366dp qualifier (12.9"/13" iPad). Uses the neutral tablet
-            // bezel — a uniform rounded frame, no notch — which reads as an iPad.
+            // 4:3 to match the w1024dp-h1366dp qualifier, which is a real 13" iPad's display.
             val (w, h) = orientSize(1024.dp, 1366.dp, orientation)
-            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge) { ProvideDeviceConfiguration(w, h, content) } }
+            val (bw, bh) = iPadBodySize(w, h)
+            ScaledMockup(bw, bh, rotated) {
+                IPadBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, elevation) {
+                    ProvideDeviceConfiguration(w, h, content)
+                }
+            }
         }
         FormFactor.GooglePlayFeatureGraphic -> error(
             "FormFactor.GooglePlayFeatureGraphic is a banner canvas, not a device. " +
@@ -335,6 +378,7 @@ private fun PhoneBezel(
     clock: String,
     statusBarContentDark: Boolean,
     edgeToEdge: Boolean,
+    elevation: Dp,
     content: @Composable () -> Unit,
 ) {
     Box(modifier = modifier) {
@@ -346,6 +390,7 @@ private fun PhoneBezel(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .mockupShadow(elevation, RoundedCornerShape(42.dp))
                 .clip(RoundedCornerShape(42.dp))
                 .background(Brush.linearGradient(listOf(Color(0xFF3A3A3A), Color(0xFF1A1A1A))))
                 .padding(1.5.dp)
@@ -474,10 +519,12 @@ private fun TabletBezel(
     clock: String,
     statusBarContentDark: Boolean,
     edgeToEdge: Boolean,
+    elevation: Dp,
     content: @Composable () -> Unit,
 ) {
     Box(
         modifier = modifier
+            .mockupShadow(elevation, RoundedCornerShape(28.dp))
             .clip(RoundedCornerShape(28.dp))
             .background(Brush.linearGradient(listOf(Color(0xFF3A3A3A), Color(0xFF1A1A1A))))
             .padding(2.dp)
@@ -492,38 +539,6 @@ private fun TabletBezel(
             Modifier.align(Alignment.TopCenter),
             contentColor = if (statusBarContentDark) Color.Black else Color.White,
         )
-    }
-}
-
-@Composable
-private fun AppleBezel(
-    modifier: Modifier,
-    showStatusBar: Boolean,
-    clock: String,
-    statusBarContentDark: Boolean,
-    edgeToEdge: Boolean,
-    content: @Composable () -> Unit,
-) {
-    Box(modifier = modifier) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(58.dp))
-                .background(Brush.linearGradient(listOf(Color(0xFF1A1A1A), Color(0xFF0A0A0A))))
-                .padding(2.dp)
-                .clip(RoundedCornerShape(56.dp))
-                .background(Color.Black)
-                .padding(6.dp)
-                .clip(RoundedCornerShape(50.dp))
-        ) {
-            Box(Modifier.fillMaxSize().padding(top = if (edgeToEdge) 0.dp else StatusBarHeight)) { content() }
-            if (showStatusBar) StatusBar(
-                clock,
-                Modifier.align(Alignment.TopCenter),
-                contentColor = if (statusBarContentDark) Color.Black else Color.White,
-            )
-            DynamicIsland(Modifier.align(Alignment.TopCenter))
-        }
     }
 }
 
@@ -574,14 +589,3 @@ private fun CameraNotch(modifier: Modifier) {
     }
 }
 
-@Composable
-private fun DynamicIsland(modifier: Modifier) {
-    Box(
-        modifier = modifier
-            .padding(top = 12.dp)
-            .size(width = 124.dp, height = 36.dp)
-            .clip(RoundedCornerShape(50))
-            .background(Color.Black)
-            .border(0.5.dp, Color(0xFF222222), RoundedCornerShape(50))
-    )
-}

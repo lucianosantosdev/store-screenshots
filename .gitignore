@@ -11,3 +11,7 @@ plugin/bin/
 # PNGs are never versioned — screenshot runs write full-resolution PNGs, but only the small JPEGs
 # (produced by the root `compressScreenshots` task) are committed for the README.
 *.png
+
+# …except the status bar captures. They are not screenshot output, they are the fixtures the
+# status bar comparison tests measure the drawn glyphs against.
+!library/src/test/resources/reference/*_statusbar.png

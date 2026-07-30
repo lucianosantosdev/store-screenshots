@@ -3,6 +3,7 @@ package dev.lucianosantos.storescreenshots
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 
@@ -19,6 +20,11 @@ import androidx.compose.ui.unit.dp
  *   in-plane (Z). Set [mockupRotationX] or [mockupRotationY] for a perspective mockup.
  * - [mockupCameraDistance] — perspective strength for the 3D tilt; see
  *   [DefaultMockupCameraDistance].
+ * - [mockupElevation] — casts a soft drop shadow in the shape of the device's enclosure, so it
+ *   lifts off the banner rather than sitting flat on it. Reads like Material elevation: the value
+ *   is the shadow's blur radius, and it is offset downward by a fraction of that. `0.dp` (the
+ *   default) draws no shadow. Applies to the phone, tablet, and iPhone frames; the Wear frame is a
+ *   bare circle that fills its whole 384x384 canvas, so a shadow would have nowhere to fall.
  * - [fontFamily] — applied to the default title/description Text composables. Has no effect
  *   when [title] / [description] composables override the default rendering.
  * - [background] — full-canvas composable rendered underneath everything. When set, the
@@ -31,8 +37,10 @@ import androidx.compose.ui.unit.dp
  * - [edgeToEdge] — when true (default) the screen content is drawn full-bleed under the frame's
  *   status bar / notch, matching a real edge-to-edge app. Set it to false to reserve the status
  *   bar's height at the top so a standalone screen (rendered without the app's own window insets)
- *   doesn't have its top content — tabs, a top app bar — drawn under the status bar. Phone and
- *   tablet only; the Wear frame has no status bar strip.
+ *   doesn't have its top content — tabs, a top app bar — drawn under the status bar. Phone, tablet,
+ *   and iPhone; the Wear frame has no status bar strip.
+ * - [statusBarClock] — the time the frame's status bar shows. Apple's own marketing screenshots
+ *   use `9:41`.
  * - [statusBarContentDark] — when true, the status bar clock and icons use a dark color instead
  *   of the default white so they stay visible on light mockup backgrounds.
  *
@@ -46,6 +54,7 @@ data class ScreenshotStyle(
     val mockupRotationX: Float = 0f,
     val mockupRotationY: Float = 0f,
     val mockupCameraDistance: Float = DefaultMockupCameraDistance,
+    val mockupElevation: Dp = 0.dp,
     val fontFamily: FontFamily = FontFamily.Default,
     val titleFontFamily: FontFamily = FontFamily.Default,
     val descriptionFontFamily: FontFamily = FontFamily.Default,

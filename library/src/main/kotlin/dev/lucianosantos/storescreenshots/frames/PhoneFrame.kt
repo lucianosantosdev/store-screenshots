@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.lucianosantos.storescreenshots.ScreenshotStyle
 
@@ -46,7 +47,7 @@ fun PhoneFrame(
         style = style,
         horizontalPadding = 28.dp,
         verticalPadding = 48.dp,
-        mockup = { externalModifier -> PhoneMockup(externalModifier, style.showStatusBar, style.statusBarClock, style.statusBarContentDark, style.edgeToEdge, content) }
+        mockup = { externalModifier -> PhoneMockup(externalModifier, style.showStatusBar, style.statusBarClock, style.statusBarContentDark, style.edgeToEdge, style.mockupElevation, content) }
     )
 }
 
@@ -57,6 +58,7 @@ private fun ColumnScope.PhoneMockup(
     clock: String,
     statusBarContentDark: Boolean,
     edgeToEdge: Boolean,
+    elevation: Dp,
     content: @Composable () -> Unit,
 ) {
     Box(
@@ -83,6 +85,7 @@ private fun ColumnScope.PhoneMockup(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .mockupShadow(elevation, RoundedCornerShape(42.dp))
                 .clip(RoundedCornerShape(42.dp))
                 .background(Brush.linearGradient(listOf(Color(0xFF3A3A3A), Color(0xFF1A1A1A))))
                 .padding(1.5.dp)
