@@ -15,8 +15,9 @@ import java.util.Properties
  *
  * What this does to the host module:
  * 1. Applies the Roborazzi Gradle plugin (so `captureRoboImage` works at test time).
- * 2. Adds `src/screenshots/{kotlin,res}` to the Android `test` source set so screenshot code
- *    lives separately from regular unit tests without needing a custom build variant.
+ * 2. Adds `src/screenshots/{kotlin,java,resources}` to the Android `test` source set so screenshot
+ *    code lives separately from regular unit tests without needing a custom build variant, and
+ *    `src/screenshots/res` to the `debug` source set so its strings reach the unit test's R class.
  * 3. Wires the store-screenshots library in as a `testImplementation` dependency, plus
  *    `ui-test-manifest` on debug so `createComposeRule()` has an activity to launch.
  * 4. Enables Android resource & return-default-values in unit tests (Robolectric needs both).
@@ -95,7 +96,17 @@ class StoreScreenshotsPlugin : Plugin<Project> {
         testSourceSet.kotlin.directories.add("src/screenshots/kotlin")
         testSourceSet.java.directories.add("src/screenshots/java")
         testSourceSet.resources.directories.add("src/screenshots/resources")
-        testSourceSet.res.directories.add("src/screenshots/res")
+
+        // `res` goes on `debug`, not `test`: AGP builds a unit test's R class from the variant
+        // under test and never merges the `test` source set's own res/, so anything declared
+        // there would compile to nothing. Debug also keeps the strings out of the released APK
+        // while making them visible to the @Preview functions `debugImplementation` wires up.
+        val debugSourceSet = common.sourceSets.findByName("debug")
+            ?: error(
+                "store-screenshots needs a `debug` build type on project ${target.path} to host " +
+                    "src/screenshots/res, but none exists."
+            )
+        debugSourceSet.res.directories.add("src/screenshots/res")
 
         common.testOptions.unitTests.apply {
             isIncludeAndroidResources = true

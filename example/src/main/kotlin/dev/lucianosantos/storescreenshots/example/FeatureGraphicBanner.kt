@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,9 +31,16 @@ import dev.lucianosantos.storescreenshots.WatchShape
  * Example Google Play feature graphic: a 1024x500 promotional banner that shows the app on a
  * family of devices. There is no built-in frame for [FormFactor.GooglePlayFeatureGraphic] — you
  * compose the banner yourself and drop a [DeviceMockup] for each form factor your app supports.
+ *
+ * The marketing copy is passed in rather than read from `R.string` here: this composable lives in
+ * `src/main`, and the listing strings live in `src/screenshots/res`, which is a debug-only source
+ * set. Callers in `src/screenshots` and `src/debug` resolve them.
+ *
+ * [description] is optional — omit it for a headline-only banner and the sub-headline is dropped
+ * entirely, along with the space between the two.
  */
 @Composable
-fun FeatureGraphicBanner() {
+fun FeatureGraphicBanner(title: String, description: String? = null) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -71,19 +77,21 @@ fun FeatureGraphicBanner() {
                     .padding(start = 44.dp, end = 16.dp),
             ) {
                 Text(
-                    text = stringResource(R.string.screenshot_feature_title),
+                    text = title,
                     color = Color.White,
                     fontSize = 30.sp,
                     fontWeight = FontWeight.Bold,
                     lineHeight = 36.sp,
                 )
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    text = stringResource(R.string.screenshot_feature_desc),
-                    color = Color.White.copy(alpha = 0.85f),
-                    fontSize = 16.sp,
-                    lineHeight = 22.sp,
-                )
+                if (description != null) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = description,
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 16.sp,
+                        lineHeight = 22.sp,
+                    )
+                }
             }
 
             // Device family, arranged on a shared baseline and ascending in size left-to-right:
