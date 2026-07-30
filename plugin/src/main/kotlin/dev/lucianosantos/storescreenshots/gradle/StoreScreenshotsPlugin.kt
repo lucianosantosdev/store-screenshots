@@ -17,7 +17,8 @@ import java.util.Properties
  * 1. Applies the Roborazzi Gradle plugin (so `captureRoboImage` works at test time).
  * 2. Adds `src/screenshots/{kotlin,res}` to the Android `test` source set so screenshot code
  *    lives separately from regular unit tests without needing a custom build variant.
- * 3. Wires the store-screenshots library in as a `testImplementation` dependency.
+ * 3. Wires the store-screenshots library in as a `testImplementation` dependency, plus
+ *    `ui-test-manifest` on debug so `createComposeRule()` has an activity to launch.
  * 4. Enables Android resource & return-default-values in unit tests (Robolectric needs both).
  * 5. Sets `storeScreenshots.outputRoot` to the root project dir on all `Test` tasks,
  *    so screenshots land at `<repoRoot>/fastlane/metadata/...` regardless of which module
@@ -41,6 +42,7 @@ class StoreScreenshotsPlugin : Plugin<Project> {
         // Also add to debug so Android Studio can render @Preview functions that
         // reference library classes (ScreenshotPreview, FormFactor, frames, etc.).
         target.dependencies.add("debugImplementation", libraryNotation())
+        target.dependencies.add("debugImplementation", "androidx.compose.ui:ui-test-manifest")
 
         // If the consuming project lives in the same build as a `:library` project that
         // matches our group/name (i.e. the example module inside this very repo), wire it
