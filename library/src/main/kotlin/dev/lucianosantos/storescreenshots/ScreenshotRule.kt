@@ -3,6 +3,7 @@ package dev.lucianosantos.storescreenshots
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
@@ -132,6 +133,7 @@ class ScreenshotRule(
                             filePath = outputFile.absolutePath,
                             roborazziOptions = RoborazziOptions(),
                         )
+                        flattenToOpaque(outputFile)
                     }
                 },
                 junitDescription,
@@ -171,10 +173,12 @@ class ScreenshotRule(
                         composeRule.waitForIdle()
                         beforeCapture(composeRule)
                         composeRule.waitForIdle()
+                        val outputFile = outputPath(locale, fileName ?: testMethodName, subdir)
                         composeRule.onRoot().captureRoboImage(
-                            filePath = outputPath(locale, fileName ?: testMethodName, subdir).absolutePath,
+                            filePath = outputFile.absolutePath,
                             roborazziOptions = RoborazziOptions(),
                         )
+                        flattenToOpaque(outputFile)
                     }
                 },
                 junitDescription,
@@ -279,8 +283,36 @@ class ScreenshotRule(
             val width = minOf(panelWidth, full.width - x)
             val slice = Bitmap.createBitmap(full, x, 0, width, full.height)
             val name = "${base}_${(i + 1).toString().padStart(2, '0')}"
-            outputPath(locale, name, subdir).outputStream().use { slice.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            val target = outputPath(locale, name, subdir)
+            target.outputStream().use { slice.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            flattenToOpaque(target)
         }
+    }
+
+    /**
+     * Rewrites [file] without an alpha channel, if it has one.
+     *
+     * Roborazzi captures ARGB_8888 and encodes RGBA, but both stores ask for 24-bit PNG,
+     * and Google Play enforces it on at least one slot: uploading a wear screenshot with
+     * alpha to `listings/{lang}/wearScreenshots` returns a bare HTTP 500, while the same
+     * image flattened to RGB returns 200 (verified against the Publisher API in August
+     * 2026 — the phone slot still accepts alpha, so this surfaced as a listing upload that
+     * failed for four consecutive releases with no usable error).
+     *
+     * Composited onto black rather than white: store frames are captured over a dark
+     * backdrop, and a white matte would fringe any anti-aliased edge that is translucent.
+     */
+    private fun flattenToOpaque(file: File) {
+        val src = BitmapFactory.decodeFile(file.absolutePath) ?: return
+        if (!src.hasAlpha()) return
+        val flat = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.ARGB_8888)
+        Canvas(flat).apply {
+            drawColor(android.graphics.Color.BLACK)
+            drawBitmap(src, 0f, 0f, null)
+        }
+        // Marks the alpha type opaque, which is what makes the encoder drop the channel.
+        flat.setHasAlpha(false)
+        file.outputStream().use { flat.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 
     @Composable
