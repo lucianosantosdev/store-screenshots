@@ -26,6 +26,7 @@ import org.junit.runner.Description
 import org.junit.runners.model.Statement
 import org.robolectric.RuntimeEnvironment
 import java.io.File
+import java.util.Locale
 
 /**
  * JUnit rule that renders Compose UI under Robolectric, wraps it in a form-factor frame,
@@ -55,7 +56,16 @@ class ScreenshotRule(
     override fun apply(base: Statement, description: Description): Statement {
         testMethodName = description.methodName ?: error("Test has no method name")
         junitDescription = description
-        return base
+        return object : Statement() {
+            override fun evaluate() {
+                val defaultLocale = Locale.getDefault()
+                try {
+                    base.evaluate()
+                } finally {
+                    Locale.setDefault(defaultLocale)
+                }
+            }
+        }
     }
 
     /**
@@ -100,8 +110,7 @@ class ScreenshotRule(
                 "and compose DeviceMockup(formFactor = …) for each device you want to show."
         }
         for (locale in locales) {
-            RuntimeEnvironment.setQualifiers(formFactor.qualifiers)
-            RuntimeEnvironment.setQualifiers("+${locale.toAndroidResourceQualifier()}")
+            applyLocale(formFactor.qualifiers, locale)
 
             val context: Context = RuntimeEnvironment.getApplication()
             val resolvedTitle = if (titleRes != 0) context.getString(titleRes) else title
@@ -152,8 +161,7 @@ class ScreenshotRule(
     ) {
         val scope = ScreenshotScope(formFactor, style)
         for (locale in locales) {
-            RuntimeEnvironment.setQualifiers(formFactor.qualifiers)
-            RuntimeEnvironment.setQualifiers("+${locale.toAndroidResourceQualifier()}")
+            applyLocale(formFactor.qualifiers, locale)
 
             val composeRule = createComposeRule()
             composeRule.apply(
@@ -225,8 +233,7 @@ class ScreenshotRule(
         val gapDp = gap.value.roundToInt()
         val wideQualifiers = widenQualifiers(formFactor.qualifiers, panels, gapDp)
         for (locale in locales) {
-            RuntimeEnvironment.setQualifiers(wideQualifiers)
-            RuntimeEnvironment.setQualifiers("+${locale.toAndroidResourceQualifier()}")
+            applyLocale(wideQualifiers, locale)
 
             val composeRule = createComposeRule()
             composeRule.apply(
@@ -344,6 +351,23 @@ class ScreenshotRule(
             return File(System.getProperty("user.dir"))
         }
     }
+}
+
+/**
+ * Puts the whole process into [locale] before a capture: [qualifiers] plus the locale for
+ * Robolectric's resource table, and [java.util.Locale.setDefault] for everything that resolves
+ * strings outside it.
+ *
+ * The second half is what makes a Compose Multiplatform app localize. Compose Resources
+ * (`stringResource(Res.string.…)`) does not read Robolectric's resource qualifiers — it picks its
+ * locale from the JVM default — so a project whose UI strings live in `composeResources/` would
+ * render every locale in English while the frame's own `R.string` title switched language
+ * correctly.
+ */
+private fun applyLocale(qualifiers: String, locale: String) {
+    RuntimeEnvironment.setQualifiers(qualifiers)
+    RuntimeEnvironment.setQualifiers("+${locale.toAndroidResourceQualifier()}")
+    Locale.setDefault(Locale.forLanguageTag(locale))
 }
 
 private fun String.toAndroidResourceQualifier(): String {
