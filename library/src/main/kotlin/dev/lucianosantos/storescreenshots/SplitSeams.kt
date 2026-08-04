@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
  * be baked into the exported PNGs. Pass the same [count] and [gap] you give `splitScreenshot`.
  *
  * ```kotlin
- * @Preview(widthDp = 1281, heightDp = 914)
+ * @Preview(widthDp = 1290, heightDp = 736)   // 3 × 414dp + 2 × 24dp gap
  * @Composable fun StoryPreview() = Box(Modifier.fillMaxSize()) {
  *     StoryBanner()
  *     SplitSeams(count = 3, gap = 24.dp)   // shades the two discarded gap strips

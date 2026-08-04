@@ -16,25 +16,23 @@ import kotlin.math.roundToInt
  * `fastlane/screenshots` (Apple). By default screenshots land in `build/outputs/store-screenshots/`.
  */
 enum class FormFactor(
-    val widthPx: Int,
-    val heightPx: Int,
     val qualifiers: String,
     val subdir: String,
     val useImagesSubdir: Boolean,
 ) {
     /**
-     * Play Store phone screenshot. Portrait 1233x2430 — `411dp x 810dp` at xxhdpi (density 3.0).
+     * Play Store phone screenshot. Portrait 1242x2208 — `414dp x 736dp` at xxhdpi (density 3.0),
+     * exactly 9:16.
      *
-     * Play rejects a screenshot whose long side is more than twice its short side. The canvas used
-     * to be `411dp x 914dp`, which renders 1233x2742 — a 1:2.22 image the Play Console turns away.
-     * The width is unchanged, so title and description keep wrapping exactly as before; only the
-     * canvas height comes down, which leaves the phone mockup slightly less room and scales it down
-     * a few percent.
+     * The canvas used to be `411dp x 914dp`, which renders 1233x2742 — a 1:2.22 image the Play
+     * Console turns away, since it rejects a screenshot whose long side is more than twice its
+     * short side. Clearing that rule alone would allow anything up to 1:2, but Play's separate
+     * promotional-eligibility guidance asks for 9:16 portrait at 1080px or more, so this targets
+     * 9:16 exactly rather than merely legal. The width moves by 3dp, so title and description wrap
+     * essentially as before; the height comes down enough that the phone mockup scales to fit.
      */
     Phone(
-        widthPx = 1233,
-        heightPx = 2430,
-        qualifiers = "w411dp-h810dp-xxhdpi",
+        qualifiers = "w414dp-h736dp-xxhdpi",
         subdir = "phoneScreenshots",
         useImagesSubdir = true,
     ),
@@ -45,8 +43,6 @@ enum class FormFactor(
      * 384x384 up to 3840x3840, so this renders above the floor rather than at it.
      */
     Wear(
-        widthPx = 681,
-        heightPx = 681,
         qualifiers = "w227dp-h227dp-round-xxhdpi",
         subdir = "wearScreenshots",
         useImagesSubdir = true,
@@ -54,8 +50,6 @@ enum class FormFactor(
 
     /** Play Store 7-inch tablet screenshot. Portrait 1200x1920. */
     Tablet7(
-        widthPx = 1200,
-        heightPx = 1920,
         qualifiers = "w600dp-h960dp-xhdpi",
         subdir = "sevenInchScreenshots",
         useImagesSubdir = true,
@@ -63,8 +57,6 @@ enum class FormFactor(
 
     /** Play Store 10-inch tablet screenshot. Portrait 1600x2560. */
     Tablet10(
-        widthPx = 1600,
-        heightPx = 2560,
         qualifiers = "w800dp-h1280dp-xhdpi",
         subdir = "tenInchScreenshots",
         useImagesSubdir = true,
@@ -72,8 +64,6 @@ enum class FormFactor(
 
     /** Apple App Store iPhone 6.7" screenshot. Portrait 1290x2796 (iPhone 14/15 Pro Max etc.). */
     AppleIPhone67(
-        widthPx = 1290,
-        heightPx = 2796,
         qualifiers = "w430dp-h932dp-xxhdpi",
         subdir = "iphone67",
         useImagesSubdir = false,
@@ -91,8 +81,6 @@ enum class FormFactor(
      * the cutout as a parameter.
      */
     AppleIPhone65(
-        widthPx = 1284,
-        heightPx = 2778,
         qualifiers = "w428dp-h926dp-xxhdpi",
         subdir = "iphone65",
         useImagesSubdir = false,
@@ -110,8 +98,6 @@ enum class FormFactor(
      * rounded frame with no notch, which reads correctly as an iPad.
      */
     AppleIPad13(
-        widthPx = 2048,
-        heightPx = 2732,
         qualifiers = "w1024dp-h1366dp-xhdpi",
         subdir = "ipad13",
         useImagesSubdir = false,
@@ -125,8 +111,6 @@ enum class FormFactor(
      * is named `featureGraphic`.
      */
     GooglePlayFeatureGraphic(
-        widthPx = 1024,
-        heightPx = 500,
         qualifiers = "w512dp-h250dp-xhdpi",
         subdir = ".",
         useImagesSubdir = true,
@@ -134,17 +118,18 @@ enum class FormFactor(
 
     ;
 
-    init {
-        val (qualifierWidthPx, qualifierHeightPx) = qualifiers.toPixelSize()
-        require(widthPx == qualifierWidthPx && heightPx == qualifierHeightPx) {
-            "FormFactor.$name declares ${widthPx}x$heightPx but its qualifiers '$qualifiers' " +
-                "render ${qualifierWidthPx}x$qualifierHeightPx. Keep the two in step: the " +
-                "qualifiers are what actually decide the PNG's size."
-        }
-    }
+    /**
+     * Width in pixels of the PNG this form factor produces, derived from [qualifiers] rather than
+     * declared alongside them — the qualifiers are what actually decide the size, so a hand-written
+     * copy could only ever drift out of step with them.
+     */
+    val widthPx: Int get() = qualifiers.toPixelSize().first
+
+    /** Height in pixels of the PNG this form factor produces. See [widthPx]. */
+    val heightPx: Int get() = qualifiers.toPixelSize().second
 }
 
-/** Density multiplier for each Android density bucket that can appear in a qualifier string. */
+/** Density multiplier for each named Android density bucket that can appear in a qualifier. */
 private val densityBuckets = mapOf(
     "ldpi" to 0.75f,
     "mdpi" to 1f,
@@ -157,13 +142,31 @@ private val densityBuckets = mapOf(
 
 /**
  * The pixel size a Robolectric qualifier string renders at: its `wNNNdp` x `hNNNdp` logical size
- * multiplied by the density bucket it names (defaulting to mdpi when it names none).
+ * multiplied by the density it names. A qualifier with no density segment is mdpi, per Android's
+ * own default. A numeric bucket such as `560dpi` scales by `560/160`.
+ *
+ * A density segment that names no scale — `nodpi`, `anydpi` — is an error rather than a silent
+ * fallback to mdpi, which would otherwise report a plausible-looking but wrong pixel size.
  */
 private fun String.toPixelSize(): Pair<Int, Int> {
     val widthDp = Regex("""w(\d+)dp""").find(this)?.groupValues?.get(1)?.toInt()
         ?: error("Qualifiers '$this' have no wNNNdp width.")
     val heightDp = Regex("""h(\d+)dp""").find(this)?.groupValues?.get(1)?.toInt()
         ?: error("Qualifiers '$this' have no hNNNdp height.")
-    val density = split("-").firstNotNullOfOrNull(densityBuckets::get) ?: 1f
+    val density = density()
     return (widthDp * density).roundToInt() to (heightDp * density).roundToInt()
+}
+
+/**
+ * The density a qualifier string names, as a multiplier over mdpi. The `wNNNdp`/`hNNNdp` segments
+ * end in `dp`, not `dpi`, so they never match here.
+ */
+private fun String.density(): Float {
+    val segment = split("-").lastOrNull { it.endsWith("dpi") } ?: return 1f
+    densityBuckets[segment]?.let { return it }
+    Regex("""^(\d+)dpi$""").find(segment)?.let { return it.groupValues[1].toInt() / 160f }
+    error(
+        "Qualifiers '$this' name density '$segment', which has no pixel scale. Use one of " +
+            "${densityBuckets.keys.joinToString()} or a numeric bucket such as '560dpi'."
+    )
 }

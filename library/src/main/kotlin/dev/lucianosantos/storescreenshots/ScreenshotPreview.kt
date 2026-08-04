@@ -19,7 +19,7 @@ import dev.lucianosantos.storescreenshots.frames.WearFrame
  *
  * ```kotlin
  * // Preview — shows the framed screenshot in Android Studio
- * @Preview(widthDp = 411, heightDp = 914)
+ * @PhoneScreenshotPreview
  * @Composable
  * fun HomePreview() = ScreenshotPreview(
  *     formFactor = FormFactor.Phone,

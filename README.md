@@ -139,8 +139,8 @@ storeScreenshots {
 
 | FormFactor | Output size | Subdir |
 | --- | --- | --- |
-| `Phone` | 1080 x 1920 | `phoneScreenshots` |
-| `Wear` | 384 x 384 | `wearScreenshots` |
+| `Phone` | 1242 x 2208 | `phoneScreenshots` |
+| `Wear` | 681 x 681 | `wearScreenshots` |
 | `Tablet7` | 1200 x 1920 | `sevenInchScreenshots` |
 | `Tablet10` | 1600 x 2560 | `tenInchScreenshots` |
 | `AppleIPhone67` | 1290 x 2796 | `iphone67` |
@@ -367,7 +367,7 @@ fun HomePreview() = ScreenshotPreview(
 
 | Annotation | Dimensions |
 | --- | --- |
-| `@PhoneScreenshotPreview` | 411 x 914 dp |
+| `@PhoneScreenshotPreview` | 414 x 736 dp |
 | `@WearScreenshotPreview` | 227 x 227 dp |
 | `@Tablet7ScreenshotPreview` | 600 x 960 dp |
 | `@Tablet10ScreenshotPreview` | 800 x 1280 dp |
@@ -721,7 +721,7 @@ To preview the whole un-sliced banner in Android Studio, render it at
 `widthDp = N × formFactorDp + (N − 1) × gap` with the seam marks on top:
 
 ```kotlin
-@Preview(widthDp = 1281, heightDp = 914) // 3 × 411dp + 2 × 24dp gap
+@Preview(widthDp = 1290, heightDp = 736) // 3 × 414dp + 2 × 24dp gap
 @Composable
 fun StoryPreview() = Box(Modifier.fillMaxSize()) {
     StoryBanner()
