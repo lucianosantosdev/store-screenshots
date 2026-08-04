@@ -12,6 +12,7 @@ plugin/bin/
 # (produced by the root `compressScreenshots` task) are committed for the README.
 *.png
 
-# …except the status bar captures. They are not screenshot output, they are the fixtures the
-# status bar comparison tests measure the drawn glyphs against.
-!library/src/test/resources/reference/*_statusbar.png
+# …except the test reference images. These are not screenshot output — they are the fixtures the
+# comparison tests measure against: the status bar captures taken off real Apple hardware, and the
+# frame goldens that hold the rendered frame to what it looked like when it was last approved.
+!library/src/test/resources/reference/*.png
