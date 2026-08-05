@@ -118,8 +118,13 @@ internal fun FramedLayout(
                 }
                 MockupPosition.Middle -> {
                     titleSlot()
+                    // The same 24dp of air Top and Bottom put between the device and the text they
+                    // sit against, made explicit here rather than left to whatever the weighted
+                    // Column happens to have spare. On a tall canvas there was enough slack that
+                    // the gap looked deliberate; on a shorter one the mockup grows into the whole
+                    // column and the title and description end up touching the bezel.
                     Column(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).padding(vertical = 24.dp),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
