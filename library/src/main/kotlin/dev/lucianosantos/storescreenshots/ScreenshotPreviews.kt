@@ -27,7 +27,7 @@ import androidx.compose.ui.tooling.preview.Preview
 // had already drifted to sizes the library has never emitted.
 
 internal const val PhonePreviewWidthDp = 414
-internal const val PhonePreviewHeightDp = 736
+internal const val PhonePreviewHeightDp = 828
 
 internal const val WearPreviewWidthDp = 227
 internal const val WearPreviewHeightDp = 227

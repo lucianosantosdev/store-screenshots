@@ -1,5 +1,6 @@
 package dev.lucianosantos.storescreenshots
 
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -21,18 +22,32 @@ enum class FormFactor(
     val useImagesSubdir: Boolean,
 ) {
     /**
-     * Play Store phone screenshot. Portrait 1242x2208 — `414dp x 736dp` at xxhdpi (density 3.0),
-     * exactly 9:16.
+     * Play Store phone screenshot. Portrait 1242x2484 — `414dp x 828dp` at xxhdpi (density 3.0),
+     * exactly 1:2.
      *
      * The canvas used to be `411dp x 914dp`, which renders 1233x2742 — a 1:2.22 image the Play
      * Console turns away, since it rejects a screenshot whose long side is more than twice its
-     * short side. Clearing that rule alone would allow anything up to 1:2, but Play's separate
-     * promotional-eligibility guidance asks for 9:16 portrait at 1080px or more, so this targets
-     * 9:16 exactly rather than merely legal. The width moves by 3dp, so title and description wrap
-     * essentially as before; the height comes down enough that the phone mockup scales to fit.
+     * short side. 1:2 is the tallest canvas that clears that rule, and it is deliberately the
+     * default because it is the one that changes the least: the phone mockup is limited by the
+     * canvas *width* here, exactly as it was at 1:2.22, so a shot keeps roughly the proportions it
+     * had before (device 321dp wide against 355dp, rather than the 275dp a 9:16 canvas forces).
+     *
+     * Play separately asks for 9:16 portrait at 1080px or more to be eligible for promotion. That
+     * is a real trade rather than a strict improvement — at 9:16 there is not enough height left
+     * beside a title and description for the mockup, so the device shrinks by about a quarter and
+     * the shot reads emptier. It is one line away when a project wants it:
+     *
+     * ```kotlin
+     * class HomeShots : StoreScreenshotsTest(
+     *     FormFactor.Phone,
+     *     canvas = ScreenshotCanvas.px(1080, 1920), // or px(1242, 2208)
+     * )
+     * ```
+     *
+     * See [ScreenshotCanvas] for overriding any form factor's size.
      */
     Phone(
-        qualifiers = "w414dp-h736dp-xxhdpi",
+        qualifiers = "w414dp-h828dp-xxhdpi",
         subdir = "phoneScreenshots",
         useImagesSubdir = true,
     ),
@@ -129,7 +144,12 @@ enum class FormFactor(
     val heightPx: Int get() = qualifiers.toPixelSize().second
 }
 
-/** Density multiplier for each named Android density bucket that can appear in a qualifier. */
+/**
+ * Density multiplier for each named Android density bucket that can appear in a qualifier. Read in
+ * both directions — [density] resolves a qualifier's bucket to its scale, and [densityQualifier]
+ * goes back the other way for [ScreenshotCanvas] — so it is one table rather than two that would
+ * have to be kept in step.
+ */
 private val densityBuckets = mapOf(
     "ldpi" to 0.75f,
     "mdpi" to 1f,
@@ -141,6 +161,17 @@ private val densityBuckets = mapOf(
 )
 
 /**
+ * The qualifier segment naming [density] — the bucket's name when it is one Android names, and the
+ * `NNNdpi` form otherwise (Robolectric accepts either).
+ *
+ * Matched with a tolerance because the buckets are not all exact: `tvdpi` is 1.33125, which no
+ * caller is going to type back exactly.
+ */
+internal fun densityQualifier(density: Float): String =
+    densityBuckets.entries.firstOrNull { abs(it.value - density) < 0.001f }?.key
+        ?: "${(density * 160).roundToInt()}dpi"
+
+/**
  * The pixel size a Robolectric qualifier string renders at: its `wNNNdp` x `hNNNdp` logical size
  * multiplied by the density it names. A qualifier with no density segment is mdpi, per Android's
  * own default. A numeric bucket such as `560dpi` scales by `560/160`.
@@ -148,7 +179,7 @@ private val densityBuckets = mapOf(
  * A density segment that names no scale — `nodpi`, `anydpi` — is an error rather than a silent
  * fallback to mdpi, which would otherwise report a plausible-looking but wrong pixel size.
  */
-private fun String.toPixelSize(): Pair<Int, Int> {
+internal fun String.toPixelSize(): Pair<Int, Int> {
     val widthDp = Regex("""w(\d+)dp""").find(this)?.groupValues?.get(1)?.toInt()
         ?: error("Qualifiers '$this' have no wNNNdp width.")
     val heightDp = Regex("""h(\d+)dp""").find(this)?.groupValues?.get(1)?.toInt()
@@ -161,7 +192,7 @@ private fun String.toPixelSize(): Pair<Int, Int> {
  * The density a qualifier string names, as a multiplier over mdpi. The `wNNNdp`/`hNNNdp` segments
  * end in `dp`, not `dpi`, so they never match here.
  */
-private fun String.density(): Float {
+internal fun String.density(): Float {
     val segment = split("-").lastOrNull { it.endsWith("dpi") } ?: return 1f
     densityBuckets[segment]?.let { return it }
     Regex("""^(\d+)dpi$""").find(segment)?.let { return it.groupValues[1].toInt() / 160f }

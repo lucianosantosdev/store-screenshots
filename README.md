@@ -139,7 +139,7 @@ storeScreenshots {
 
 | FormFactor | Output size | Subdir |
 | --- | --- | --- |
-| `Phone` | 1242 x 2208 | `phoneScreenshots` |
+| `Phone` | 1242 x 2484 | `phoneScreenshots` |
 | `Wear` | 681 x 681 | `wearScreenshots` |
 | `Tablet7` | 1200 x 1920 | `sevenInchScreenshots` |
 | `Tablet10` | 1600 x 2560 | `tenInchScreenshots` |
@@ -156,6 +156,33 @@ The two draw different hardware, because they depict different phones: 6.7" gets
 Island, 6.5" gets a notch (those devices shipped before the Island existed). Override it on
 `AppleFrame` with `notch = AppleNotchStyle.DynamicIsland | .Notch` if you are composing the
 frame yourself.
+
+### Changing the canvas size
+
+The sizes above are defaults, not requirements. Play accepts any portrait phone screenshot from
+320px to 3840px so long as the long side is no more than twice the short side, and where you sit
+in that range is a design decision. Pass a `ScreenshotCanvas` to make it:
+
+```kotlin
+class HomeShots : StoreScreenshotsTest(
+    FormFactor.Phone,
+    canvas = ScreenshotCanvas.px(1080, 1920),   // or .dp(414, 736)
+)
+```
+
+`Phone` defaults to **1242 x 2484 — exactly 1:2**, the tallest shape Play accepts and so the one
+that leaves the device mockup largest. Play's promotional-eligibility guidance separately asks for
+**9:16** at 1080px or wider, which is a genuine trade rather than a free upgrade: at 9:16 there is
+much less height left beside the title and description, so the mockup shrinks by roughly a quarter
+and the shot reads emptier. Take it deliberately with `ScreenshotCanvas.px(1080, 1920)`.
+
+Only the size is replaced — every other qualifier survives, so a resized `Wear` is still round.
+`px` resolves against the form factor's density unless you pass another, and refuses a pixel size
+that does not land on a whole dp rather than quietly writing an image a pixel off.
+
+A custom `mockupFrame` is scaled to fit whatever canvas it lands on, the same as the built-in
+bezels, so the common `Modifier.fillMaxWidth().aspectRatio(…)` frame gets smaller on a short canvas
+instead of running off the bottom edge.
 
 Both are a scale model of a real iPhone. The enclosure, bezel, corner radii, Dynamic Island,
 side buttons and status bar were measured off an iPhone 17 running iOS 26.5 in the Xcode

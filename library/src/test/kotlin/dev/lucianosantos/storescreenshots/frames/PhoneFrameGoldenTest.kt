@@ -49,7 +49,7 @@ class PhoneFrameGoldenTest : StoreScreenshotsTest(FormFactor.Phone) {
     /** A pixel counts as different when a channel is off by more than this, out of 255. */
     private val channelTolerance = 8
 
-    /** At most this fraction of the canvas may differ — 0.2% of 1242x2208 is about 5,500 px. */
+    /** At most this fraction of the canvas may differ — 0.2% of 1242x2484 is about 6,200 px. */
     private val differingPixelTolerance = 0.002f
 
     /** Mean absolute channel error across the whole canvas. Antialiasing noise sits far below 1. */

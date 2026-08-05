@@ -11,7 +11,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.RoborazziOptions
 import com.github.takahirom.roborazzi.captureRoboImage
-import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
@@ -48,8 +47,12 @@ import java.util.Locale
 class ScreenshotRule(
     val formFactor: FormFactor,
     val style: ScreenshotStyle = ScreenshotStyle(),
+    canvas: ScreenshotCanvas? = null,
     private val outputRootDir: File = defaultOutputRoot(),
 ) : TestRule {
+
+    /** [formFactor]'s qualifiers, with the optional [ScreenshotCanvas] override applied. */
+    private val qualifiers: String = formFactor.qualifiersWith(canvas)
 
     private lateinit var testMethodName: String
     private lateinit var junitDescription: Description
@@ -111,7 +114,7 @@ class ScreenshotRule(
                 "and compose DeviceMockup(formFactor = …) for each device you want to show."
         }
         for (locale in locales) {
-            applyLocale(formFactor.qualifiers, locale)
+            applyLocale(qualifiers, locale)
 
             val context: Context = RuntimeEnvironment.getApplication()
             val resolvedTitle = if (titleRes != 0) context.getString(titleRes) else title
@@ -163,7 +166,7 @@ class ScreenshotRule(
     ) {
         val scope = ScreenshotScope(formFactor, style)
         for (locale in locales) {
-            applyLocale(formFactor.qualifiers, locale)
+            applyLocale(qualifiers, locale)
 
             val composeRule = createComposeRule()
             composeRule.apply(
@@ -233,9 +236,9 @@ class ScreenshotRule(
         }
         require(gap.value >= 0f) { "splitScreenshot gap must be >= 0 (got $gap)." }
         val scope = ScreenshotScope(formFactor, style)
-        val panelDp = panelWidthDp(formFactor.qualifiers)
+        val panelDp = panelWidthDp(qualifiers)
         val gapDp = gap.value.roundToInt()
-        val wideQualifiers = widenQualifiers(formFactor.qualifiers, panels, gapDp)
+        val wideQualifiers = widenQualifiers(qualifiers, panels, gapDp)
         for (locale in locales) {
             applyLocale(wideQualifiers, locale)
 
@@ -339,7 +342,10 @@ class ScreenshotRule(
                 horizontalPadding = 28.dp,
                 verticalPadding = 48.dp,
                 mockup = { externalModifier ->
-                    Box(externalModifier) { customFrame(content) }
+                    // Scaled rather than placed raw: a custom frame has no fit-to-footprint
+                    // contract of its own, so on a canvas too short for it it would otherwise
+                    // lay out past the bottom edge and be clipped. See [ScaleToFit].
+                    ScaleToFit(externalModifier) { customFrame(content) }
                 }
             )
         } else {

@@ -17,7 +17,7 @@ import org.junit.Test
 class FormFactorSizeTest {
 
     private val expectedSizes = mapOf(
-        FormFactor.Phone to (1242 to 2208),
+        FormFactor.Phone to (1242 to 2484),
         FormFactor.Wear to (681 to 681),
         FormFactor.Tablet7 to (1200 to 1920),
         FormFactor.Tablet10 to (1600 to 2560),
@@ -126,19 +126,74 @@ class FormFactorSizeTest {
     }
 
     /**
-     * Clearing the 1:2 rejection rule is the floor, not the target. Play's promotional-eligibility
-     * guidance asks for 9:16 portrait screenshots at 1080px or wider, so the phone canvas is sized
-     * to that exactly: a canvas that is merely legal passes the gate that rejects and misses the
-     * gate that promotes.
+     * The default phone canvas sits exactly on the 1:2 limit — the tallest shape Play accepts, and
+     * so the one that leaves the mockup largest, which is why it is the default rather than the
+     * 9:16 that Play's promotional guidance prefers. 9:16 costs about a quarter of the device's
+     * width, and a project that wants that trade makes it explicitly through [ScreenshotCanvas].
+     *
+     * Pinned to the pixel because it is a boundary: anything taller is rejected outright, so this
+     * is the one size where drifting by a single pixel is the difference between a listing that
+     * uploads and one that does not.
      */
     @Test
-    fun thePhoneCanvasIsExactlyNineBySixteenAndWideEnoughToBePromoted() {
+    fun theDefaultPhoneCanvasIsExactlyOneByTwoAndWideEnoughForEveryPlayFloor() {
         val (width, height) = FormFactor.Phone.widthPx to FormFactor.Phone.heightPx
-        assertEquals("phone screenshots must be 9:16", 9 * height, 16 * width)
+        assertEquals("the default phone canvas must be exactly 1:2", 2 * width, height)
         assertEquals(
-            "phone screenshots must be at least 1080px wide to be promotion-eligible, was $width",
+            "phone screenshots must be at least 1080px wide to clear Play's floors, was $width",
             true,
             width >= 1080,
+        )
+    }
+
+    /**
+     * The canvas override has to keep every qualifier that is not the size. Wear's `-round` is the
+     * one that bites: dropping it renders a square watch face, and the frame would look wrong long
+     * before anyone thought to blame the resize.
+     */
+    @Test
+    fun resizingAFormFactorKeepsItsOtherQualifiers() {
+        assertEquals(
+            "w300dp-h300dp-round-xxhdpi",
+            FormFactor.Wear.qualifiersWith(ScreenshotCanvas.px(900, 900)),
+        )
+        assertEquals(
+            "the form factor's own density is kept when none is given",
+            "w414dp-h736dp-xxhdpi",
+            FormFactor.Phone.qualifiersWith(ScreenshotCanvas.px(1242, 2208)),
+        )
+        assertEquals(
+            "a stated density replaces the form factor's",
+            "w540dp-h960dp-xhdpi",
+            FormFactor.Phone.qualifiersWith(ScreenshotCanvas.px(1080, 1920, density = 2f)),
+        )
+        assertEquals(
+            "a density with no named bucket is written as NNNdpi",
+            "w300dp-h600dp-400dpi",
+            FormFactor.Phone.qualifiersWith(ScreenshotCanvas.dp(300, 600, density = 2.5f)),
+        )
+        assertEquals(
+            "no override leaves the qualifiers alone",
+            FormFactor.Phone.qualifiers,
+            FormFactor.Phone.qualifiersWith(null),
+        )
+    }
+
+    /**
+     * A pixel size that does not land on a whole dp is refused rather than rounded. Robolectric's
+     * canvas is specified in dp, so the alternative is writing an image a pixel off the size the
+     * caller asked for — and a store slot with an exact size requirement would reject it for a
+     * reason nothing in the build points at.
+     */
+    @Test
+    fun aPixelSizeThatCannotBeRenderedExactlyIsRejected() {
+        val error = org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+            FormFactor.Phone.qualifiersWith(ScreenshotCanvas.px(1000, 2000))
+        }
+        assertEquals(
+            "the message should name the axis and the size actually rendered",
+            true,
+            error.message!!.contains("333dp") && error.message!!.contains("999px"),
         )
     }
 }

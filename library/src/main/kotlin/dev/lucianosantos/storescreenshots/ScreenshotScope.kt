@@ -38,7 +38,9 @@ class ScreenshotScope internal constructor(
         val content = glassWrap(style.screenGlass, content)
         val customFrame = style.mockupFrame
         if (customFrame != null) {
-            androidx.compose.foundation.layout.Box(
+            // Same fit-to-bounds treatment the built-in bezels get, so a custom frame shrinks
+            // instead of overflowing when the space it is placed in is too short for it.
+            ScaleToFit(
                 modifier.mockup3dRotation(rotationX, rotationY, rotationZ, cameraDistance)
             ) { customFrame(content) }
         } else {
