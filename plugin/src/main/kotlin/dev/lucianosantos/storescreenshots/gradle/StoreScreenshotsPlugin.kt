@@ -26,6 +26,12 @@ import java.util.Properties
  *    produced them.
  * 6. Registers a `storeScreenshots` task in the host module that runs `testDebugUnitTest`
  *    and is the recommended entry point.
+ *
+ * **The host module is assumed to have a plain `debug` build type and no product flavors.** Both
+ * the `storeScreenshots` task (which depends on `testDebugUnitTest`) and the `src/screenshots/res`
+ * registration name `debug` directly rather than reading `testBuildType`. With product flavors the
+ * task is `testFreeDebugUnitTest` and neither holds, so screenshot generation is not supported on
+ * a flavored module today.
  */
 class StoreScreenshotsPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -101,12 +107,24 @@ class StoreScreenshotsPlugin : Plugin<Project> {
         // under test and never merges the `test` source set's own res/, so anything declared
         // there would compile to nothing. Debug also keeps the strings out of the released APK
         // while making them visible to the @Preview functions `debugImplementation` wires up.
+        //
+        // `debug` is assumed rather than read from `testBuildType`, the same assumption the
+        // `storeScreenshots` task already makes by depending on `testDebugUnitTest`. A project
+        // with product flavors or a different test build type is not supported either way.
+        //
+        // A missing `debug` build type only costs the listing strings, and the rest of the plugin
+        // still does its job, so it warns rather than failing the whole configuration phase for a
+        // project that applied the plugin but never runs it.
         val debugSourceSet = common.sourceSets.findByName("debug")
-            ?: error(
-                "store-screenshots needs a `debug` build type on project ${target.path} to host " +
-                    "src/screenshots/res, but none exists."
+        if (debugSourceSet != null) {
+            debugSourceSet.res.directories.add("src/screenshots/res")
+        } else {
+            target.logger.warn(
+                "store-screenshots: project ${target.path} has no `debug` build type, so " +
+                    "src/screenshots/res was not registered. Listing strings referenced as " +
+                    "titleRes/descriptionRes will not resolve."
             )
-        debugSourceSet.res.directories.add("src/screenshots/res")
+        }
 
         common.testOptions.unitTests.apply {
             isIncludeAndroidResources = true
