@@ -109,12 +109,17 @@ fun CustomScreenshotLayout(
                 )
         )
 
-        // Device mockup (drawn before text so text stays on top)
+        // Device mockup (drawn before text so text stays on top).
+        //
+        // The offset is what clears the headline. The text is anchored to the top and the device
+        // to the centre, so shortening the canvas moves them towards each other: at the 80.dp this
+        // used while the canvas was 914dp tall, the device sat 46dp higher and printed its status
+        // bar clock straight through the word "SCREENSHOTS".
         Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .fillMaxWidth(0.85f)
-                .offset(x = 60.dp, y = 80.dp)
+                .offset(x = 60.dp, y = 170.dp)
                 .rotate(12f)
         ) {
             mockup()

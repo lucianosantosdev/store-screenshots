@@ -34,6 +34,17 @@ import org.robolectric.annotation.GraphicsMode
  *
  * Pass a [ScreenshotStyle] to customize mockup position, font family, or to swap in your own
  * composables for the background, title, or description.
+ *
+ * Pass a [ScreenshotCanvas] to render at a size other than the form factor's default — every store
+ * slot accepts a range rather than one number, and which point in it suits a design is a call the
+ * project makes:
+ *
+ * ```kotlin
+ * class HomeShots : StoreScreenshotsTest(
+ *     FormFactor.Phone,
+ *     canvas = ScreenshotCanvas.px(1242, 2208), // 9:16 instead of the default 1:2
+ * )
+ * ```
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -41,10 +52,11 @@ import org.robolectric.annotation.GraphicsMode
 abstract class StoreScreenshotsTest(
     formFactor: FormFactor,
     style: ScreenshotStyle = ScreenshotStyle(),
+    canvas: ScreenshotCanvas? = null,
 ) {
 
     @get:Rule
-    val screenshot: ScreenshotRule = ScreenshotRule(formFactor, style)
+    val screenshot: ScreenshotRule = ScreenshotRule(formFactor, style, canvas)
 
     /**
      * Render [content] inside the form-factor frame and capture per-locale PNGs.

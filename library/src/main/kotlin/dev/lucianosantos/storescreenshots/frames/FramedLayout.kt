@@ -1,6 +1,7 @@
 package dev.lucianosantos.storescreenshots.frames
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -102,7 +103,7 @@ internal fun FramedLayout(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Top/Bottom: mockup gets weight so it fills remaining space after title/desc.
-            // Middle: mockup takes intrinsic size; weighted spacers center it.
+            // Middle: a weighted Column bounds the mockup's height and centers it.
             val weightedOffset = offsetModifier.weight(1f, fill = false)
 
             when (style.mockupPosition) {
@@ -117,11 +118,20 @@ internal fun FramedLayout(
                 }
                 MockupPosition.Middle -> {
                     titleSlot()
-                    Spacer(Modifier.weight(1f))
-                    if (oy > 0.dp) Spacer(Modifier.height(oy))
-                    mockup(offsetModifier)
-                    if (oy < 0.dp) Spacer(Modifier.height(-oy))
-                    Spacer(Modifier.weight(1f))
+                    // The same 24dp of air Top and Bottom put between the device and the text they
+                    // sit against, made explicit here rather than left to whatever the weighted
+                    // Column happens to have spare. On a tall canvas there was enough slack that
+                    // the gap looked deliberate; on a shorter one the mockup grows into the whole
+                    // column and the title and description end up touching the bezel.
+                    Column(
+                        modifier = Modifier.weight(1f).padding(vertical = 24.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        if (oy > 0.dp) Spacer(Modifier.height(oy))
+                        mockup(offsetModifier)
+                        if (oy < 0.dp) Spacer(Modifier.height(-oy))
+                    }
                     descriptionSlot()
                 }
                 MockupPosition.Bottom -> {
