@@ -422,7 +422,7 @@ private fun panelWidthDp(qualifiers: String): Int =
  * Widens the `wNNNdp` width in a Robolectric [qualifiers] string to hold [panels] panels plus
  * [gapDp] dp between each, leaving the height and density buckets untouched — so the canvas is the
  * full split width at the form factor's normal height and pixel density.
- * e.g. `w414dp-h736dp-xxhdpi`, 3 panels, 24dp gap → `w1290dp-h736dp-xxhdpi` (414×3 + 24×2).
+ * e.g. `w414dp-h828dp-xxhdpi`, 3 panels, 24dp gap → `w1290dp-h828dp-xxhdpi` (414×3 + 24×2).
  */
 private fun widenQualifiers(qualifiers: String, panels: Int, gapDp: Int): String =
     Regex("""w(\d+)dp""").replace(qualifiers) { match ->

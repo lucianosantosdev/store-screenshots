@@ -25,17 +25,20 @@ enum class FormFactor(
      * Play Store phone screenshot. Portrait 1242x2484 — `414dp x 828dp` at xxhdpi (density 3.0),
      * exactly 1:2.
      *
-     * The canvas used to be `411dp x 914dp`, which renders 1233x2742 — a 1:2.22 image the Play
-     * Console turns away, since it rejects a screenshot whose long side is more than twice its
-     * short side. 1:2 is the tallest canvas that clears that rule, and it is deliberately the
-     * default because it is the one that changes the least: the phone mockup is limited by the
-     * canvas *width* here, exactly as it was at 1:2.22, so a shot keeps roughly the proportions it
-     * had before (device 321dp wide against 355dp, rather than the 275dp a 9:16 canvas forces).
+     * The canvas used to be `411dp x 914dp`, which renders 1233x2742 — a 1:2.22 image, past the
+     * maximum Play documents (long side no more than twice the short side). That limit is not
+     * enforced at upload, and listings do ship 1:2.22 phone screenshots today, so this is about
+     * staying inside the range Play asks for rather than clearing a gate that would block a
+     * release. 1:2 is the tallest canvas inside it, and it is deliberately the default because it
+     * is the one that changes the least: the phone mockup is limited by the canvas *width* here,
+     * exactly as it was at 1:2.22, so a shot keeps roughly the proportions it had before (device
+     * 321dp wide against 355dp, rather than the 275dp a 9:16 canvas forces).
      *
-     * Play separately asks for 9:16 portrait at 1080px or more to be eligible for promotion. That
-     * is a real trade rather than a strict improvement — at 9:16 there is not enough height left
-     * beside a title and description for the mockup, so the device shrinks by about a quarter and
-     * the shot reads emptier. It is one line away when a project wants it:
+     * Play separately asks for 9:16 portrait at 1080px or more to be eligible for promotion, and
+     * 1:2 does not satisfy that — 9:16 is 1:1.78. It is also a real trade rather than a strict
+     * improvement: at 9:16 there is not enough height left beside a title and description for the
+     * mockup, so the device shrinks by about a quarter and the shot reads emptier. It is one line
+     * away when a project wants it:
      *
      * ```kotlin
      * class HomeShots : StoreScreenshotsTest(
