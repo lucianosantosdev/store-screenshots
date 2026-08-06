@@ -441,11 +441,36 @@ Two consequences worth knowing:
 - **Debug resources override `main`.** A name that exists in both silently wins in every debug
   build. Prefix listing strings (`screenshot_…`) so they can't collide with production copy.
 - **Only `src/debug/` and `src/screenshots/` can read them.** A composable in `src/main/` that
-  references one won't compile in a release build. Pass the text in as a parameter instead — see
-  [`FeatureGraphicBanner`](example/src/main/kotlin/dev/lucianosantos/storescreenshots/example/FeatureGraphicBanner.kt).
+  references one won't compile in a release build. Take the copy as a parameter and let the caller
+  in `src/screenshots/` resolve it:
+
+  ```kotlin
+  // src/main — no R.string reference, so it compiles in every variant.
+  @Composable
+  fun Banner(title: String, description: String? = null) { /* … */ }
+
+  // src/screenshots — resolves the debug-only strings and passes them down.
+  customScreenshot(fileName = "banner") {
+      Banner(
+          title = stringResource(R.string.screenshot_banner_title),
+          description = stringResource(R.string.screenshot_banner_desc),
+      )
+  }
+  ```
+
+  [`FeatureGraphicBanner`](example/src/main/kotlin/dev/lucianosantos/storescreenshots/example/FeatureGraphicBanner.kt)
+  is written this way. Note it still isn't release-compilable, for an unrelated reason — it draws
+  `DeviceMockup`s, and this library is a `testImplementation`/`debugImplementation` dependency of
+  the example. Parameterizing the copy is what keeps the *strings* out of `src/main`; a composable
+  that also needs library types stays debug-only regardless.
 
 The frame images for [image mockups](#where-to-put-the-frame-image) work the same way, but go in
 `src/screenshots/resources/` and load from the classpath.
+
+> **Plain `debug` build type, no product flavors.** Both the `storeScreenshots` task (which runs
+> `testDebugUnitTest`) and the `src/screenshots/res` registration name `debug` directly rather than
+> reading `testBuildType`. On a module with product flavors the task is `testFreeDebugUnitTest` and
+> neither holds, so screenshot generation is not supported there yet.
 
 ## Examples
 
