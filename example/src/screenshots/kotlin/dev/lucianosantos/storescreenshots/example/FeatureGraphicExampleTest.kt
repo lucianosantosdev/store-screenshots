@@ -1,5 +1,6 @@
 package dev.lucianosantos.storescreenshots.example
 
+import androidx.compose.ui.res.stringResource
 import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.StoreScreenshotsTest
 import org.junit.Test
@@ -18,5 +19,10 @@ class FeatureGraphicExampleTest : StoreScreenshotsTest(FormFactor.GooglePlayFeat
         // images/featureGraphic.png). This sample emits a gallery of demo banners, so group them
         // under images/featureGraphic/ instead.
         subdir = "featureGraphic",
-    ) { FeatureGraphicBanner() }
+    ) {
+        FeatureGraphicBanner(
+            title = stringResource(R.string.screenshot_feature_title),
+            description = stringResource(R.string.screenshot_feature_desc),
+        )
+    }
 }

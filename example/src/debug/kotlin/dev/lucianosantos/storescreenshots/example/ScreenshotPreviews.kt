@@ -95,7 +95,10 @@ fun ApplePreview() = ScreenshotPreview(
 
 @GooglePlayFeatureGraphicScreenshotPreview
 @Composable
-fun FeatureGraphicPreview() = FeatureGraphicBanner()
+fun FeatureGraphicPreview() = FeatureGraphicBanner(
+    title = stringResource(R.string.screenshot_feature_title),
+    description = stringResource(R.string.screenshot_feature_desc),
+)
 
 @Preview(name = "Watch — Round & Square", widthDp = 280, heightDp = 150)
 @Composable
