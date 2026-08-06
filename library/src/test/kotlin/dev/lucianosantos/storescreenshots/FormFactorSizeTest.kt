@@ -1,6 +1,7 @@
 package dev.lucianosantos.storescreenshots
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -44,15 +45,19 @@ class FormFactorSizeTest {
     }
 
     /**
-     * Play turns away any screenshot whose long side is more than twice its short side — the bug
-     * that sent the phone canvas back at 1233x2742 (1:2.22).
+     * Play documents a maximum dimension no more than twice the minimum, which the old phone
+     * canvas missed at 1233x2742 (1:2.22).
+     *
+     * The limit is documented but **not enforced at upload** — images past it do go through the
+     * Publishing API today, and shipping listings carry 1:2.22 phone screenshots. So this pins us
+     * inside the range Play asks for; it is not a gate that would otherwise fail a release.
      *
      * Only the Play *screenshot* slots are held to it. The App Store sets its own dimensions and
      * several of them are past 1:2 by Apple's own mandate (iPhone 6.7" is 1290x2796, 1:2.17), and
      * the feature graphic is a fixed 1024x500 promotional banner, not a screenshot.
      */
     @Test
-    fun noPlayScreenshotIsTooElongatedForPlayToAccept() {
+    fun everyPlayScreenshotIsWithinPlaysDocumentedAspectLimit() {
         val playScreenshots = listOf(
             FormFactor.Phone,
             FormFactor.Wear,
@@ -62,11 +67,10 @@ class FormFactorSizeTest {
         for (formFactor in playScreenshots) {
             val longest = maxOf(formFactor.widthPx, formFactor.heightPx)
             val shortest = minOf(formFactor.widthPx, formFactor.heightPx)
-            assertEquals(
+            assertTrue(
                 "${formFactor.name} is ${formFactor.widthPx}x${formFactor.heightPx}, a " +
-                    "1:${"%.2f".format(longest.toFloat() / shortest)} image — Play rejects " +
-                    "anything past 1:2",
-                true,
+                    "1:${"%.2f".format(longest.toFloat() / shortest)} image — past the 1:2 " +
+                    "maximum Play documents",
                 longest <= shortest * 2,
             )
         }
@@ -126,22 +130,22 @@ class FormFactorSizeTest {
     }
 
     /**
-     * The default phone canvas sits exactly on the 1:2 limit — the tallest shape Play accepts, and
-     * so the one that leaves the mockup largest, which is why it is the default rather than the
-     * 9:16 that Play's promotional guidance prefers. 9:16 costs about a quarter of the device's
-     * width, and a project that wants that trade makes it explicitly through [ScreenshotCanvas].
+     * The default phone canvas sits exactly on the 1:2 limit — the tallest shape inside Play's
+     * documented range, and so the one that leaves the mockup largest, which is why it is the
+     * default rather than the 9:16 that Play's promotional guidance prefers. 9:16 costs about a
+     * quarter of the device's width, and a project that wants that trade makes it explicitly
+     * through [ScreenshotCanvas].
      *
-     * Pinned to the pixel because it is a boundary: anything taller is rejected outright, so this
-     * is the one size where drifting by a single pixel is the difference between a listing that
-     * uploads and one that does not.
+     * Pinned to the pixel because 1:2 is the edge of the documented range and the reason this
+     * default was chosen over any other. Note it does *not* satisfy promotional eligibility, which
+     * asks for 9:16 — that is a separate, deliberate opt-in.
      */
     @Test
     fun theDefaultPhoneCanvasIsExactlyOneByTwoAndWideEnoughForEveryPlayFloor() {
         val (width, height) = FormFactor.Phone.widthPx to FormFactor.Phone.heightPx
         assertEquals("the default phone canvas must be exactly 1:2", 2 * width, height)
-        assertEquals(
+        assertTrue(
             "phone screenshots must be at least 1080px wide to clear Play's floors, was $width",
-            true,
             width >= 1080,
         )
     }
@@ -190,9 +194,8 @@ class FormFactorSizeTest {
         val error = org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
             FormFactor.Phone.qualifiersWith(ScreenshotCanvas.px(1000, 2000))
         }
-        assertEquals(
-            "the message should name the axis and the size actually rendered",
-            true,
+        assertTrue(
+            "the message should name the axis and the size actually rendered, was: ${error.message}",
             error.message!!.contains("333dp") && error.message!!.contains("999px"),
         )
     }

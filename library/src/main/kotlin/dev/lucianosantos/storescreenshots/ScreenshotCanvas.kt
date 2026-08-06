@@ -6,12 +6,15 @@ import kotlin.math.roundToInt
  * An override for the canvas a form factor renders on, so a project is not stuck with the size
  * [FormFactor] ships as its default.
  *
- * Store requirements are a range, not a number — Play accepts any portrait phone screenshot from
- * 320px to 3840px as long as the long side is no more than twice the short side — and which point
- * in that range is right is a design decision, not a fact about the store. The default phone canvas
- * is 1:2 because it is the tallest legal shape and so the one that leaves the mockup largest; a
- * project that would rather be eligible for Play's promotional slots takes 9:16 and accepts a
- * smaller device:
+ * Store requirements are a range, not a number — Play documents portrait phone screenshots from
+ * 320px to 3840px with the long side no more than twice the short side — and which point in that
+ * range is right is a design decision, not a fact about the store. The default phone canvas is 1:2
+ * because it is the tallest shape inside that range and so the one that leaves the mockup largest.
+ * (The 2:1 maximum is documented but not enforced at upload; taller images do go through today.)
+ *
+ * The requirement worth opting into deliberately is promotional eligibility, which is separate and
+ * stricter — at least four screenshots, 1080px or wider, at 9:16. The 1:2 default does not meet it,
+ * so a project that wants Play's promotional slots takes 9:16 and accepts a smaller device:
  *
  * ```kotlin
  * class HomeShots : StoreScreenshotsTest(
