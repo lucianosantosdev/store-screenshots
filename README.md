@@ -44,7 +44,7 @@ pluginManagement {
         mavenCentral()
     }
     plugins {
-        id("io.github.lucianosantosdev.storescreenshots") version "1.4.5"
+        id("io.github.lucianosantosdev.storescreenshots") version "<version>"
     }
 }
 
@@ -55,6 +55,8 @@ dependencyResolutionManagement {
     }
 }
 ```
+
+Replace `<version>` with the current release — the [![Maven Central](https://img.shields.io/maven-central/v/io.github.lucianosantosdev/storescreenshots-plugin?label=)](https://central.sonatype.com/artifact/io.github.lucianosantosdev/storescreenshots-plugin) badge above always shows it.
 
 The plugin resolves its runtime library (`io.github.lucianosantosdev:storescreenshots-library`) automatically — you only declare the plugin id.
 
