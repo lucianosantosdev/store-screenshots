@@ -9,21 +9,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.lucianosantos.storescreenshots.ScreenshotStyle
-import dev.lucianosantos.storescreenshots.frames.IPhone17Metrics as M
 
-/** Width-to-height ratio of an iPhone 17's enclosure, measured off the Simulator. */
-val AppleIPhoneAspectRatio: Float = M.BodyWidth / M.BodyHeight
+/** Width-to-height ratio of the default [AppleFrame] device's enclosure. */
+val AppleIPhoneAspectRatio: Float = AppleIPhoneModel.IPhone17ProMax.aspectRatio
 
 /**
  * iPhone frame for Apple App Store screenshots.
  *
- * The mockup is a scale model of an iPhone 17 as the Simulator draws it — machined rail, black
- * bezel, rounded display, side buttons, Dynamic Island, and an iOS status bar rather than a
- * Material one, which App Store Review guideline 2.3.10 rejects.
+ * The mockup is a scale model of [device] as the Simulator draws it — machined rail, black bezel,
+ * rounded display, side buttons, Dynamic Island, and an iOS status bar rather than a Material one,
+ * which App Store Review guideline 2.3.10 rejects.
  *
- * [aspectRatio] is the aspect ratio of the *body*, and defaults to the real one. Pass [notch] to
- * draw an older iPhone: the 6.5" slot depicts devices that shipped with a notch, so drawing a
- * Dynamic Island there would show a phone that never existed at that size.
+ * [device] defaults to the iPhone 17 Pro Max, which is what both App Store iPhone slots are sized
+ * for and what a reviewer expects a current submission to depict. [aspectRatio] is the aspect ratio
+ * of the *body*, and follows [device] unless you override it.
  */
 @Composable
 fun AppleFrame(
@@ -32,8 +31,8 @@ fun AppleFrame(
     backgroundColor: Color,
     contentColor: Color = Color.White,
     style: ScreenshotStyle = ScreenshotStyle(),
-    aspectRatio: Float = AppleIPhoneAspectRatio,
-    notch: AppleNotchStyle = AppleNotchStyle.DynamicIsland,
+    device: AppleIPhoneModel = AppleIPhoneModel.IPhone17ProMax,
+    aspectRatio: Float = device.aspectRatio,
     content: @Composable () -> Unit,
 ) {
     FramedLayout(
@@ -49,7 +48,7 @@ fun AppleFrame(
         titleFontSize = 26.sp,
         descriptionFontSize = 14.sp,
         mockup = { externalModifier ->
-            IPhoneMockup(externalModifier, style, aspectRatio, notch, content)
+            IPhoneMockup(externalModifier, style, aspectRatio, device, content)
         }
     )
 }
@@ -59,7 +58,7 @@ private fun ColumnScope.IPhoneMockup(
     externalModifier: Modifier,
     style: ScreenshotStyle,
     aspectRatio: Float,
-    notch: AppleNotchStyle,
+    device: AppleIPhoneModel,
     content: @Composable () -> Unit,
 ) {
     IPhoneBezel(
@@ -70,7 +69,7 @@ private fun ColumnScope.IPhoneMockup(
         clock = style.statusBarClock,
         statusBarContentDark = style.statusBarContentDark,
         edgeToEdge = style.edgeToEdge,
-        notch = notch,
+        metrics = device.metrics,
         elevation = style.mockupElevation,
         content = content,
     )

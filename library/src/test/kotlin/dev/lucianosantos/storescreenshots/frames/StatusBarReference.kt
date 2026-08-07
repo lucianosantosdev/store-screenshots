@@ -111,6 +111,7 @@ internal object StatusBarReference {
 
 /** An inclusive pixel rectangle. */
 internal data class Rect(val left: Int, val top: Int, val right: Int, val bottom: Int) {
+    val width: Int get() = right - left + 1
     val height: Int get() = bottom - top + 1
     val centerX: Int get() = (left + right) / 2
     val centerY: Int get() = (top + bottom) / 2

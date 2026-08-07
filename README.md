@@ -155,23 +155,31 @@ Both iPhone sizes are accepted by App Store Connect. It offers the **6.5" slot b
 and scales that image into the other iPhone sizes, so `AppleIPhone65` is usually the one to
 fill first. `AppleIPhone67` matches the 6.7" slot.
 
-The two draw different hardware, because they depict different phones: 6.7" gets a Dynamic
-Island, 6.5" gets a notch (those devices shipped before the Island existed). Override it on
-`AppleFrame` with `notch = AppleNotchStyle.DynamicIsland | .Notch` if you are composing the
-frame yourself.
+Both draw an **iPhone 17 Pro Max**. Both slots are Pro Max-class sizes — 428 x 926 pt and
+430 x 932 pt — and App Store Review expects the screenshots filling them to show a current
+iPhone; a frame carrying the notch of a phone Apple stopped selling in 2022 is grounds for a
+submission being dismissed under guideline 2.3.10. Pass `device = AppleIPhoneModel.IPhone17` to
+`AppleFrame` if you are composing the frame yourself and want the smaller 6.3" proportions.
 
 Both are a scale model of a real iPhone. The enclosure, bezel, corner radii, Dynamic Island,
-side buttons and status bar were measured off an iPhone 17 running iOS 26.5 in the Xcode
-Simulator, and are drawn as a fixed fraction of the frame's width — so the phone stays in
-proportion whether you render a full-size App Store shot or a thumbnail on a feature graphic. The
-measurements live in `IPhone17Metrics`, which also records how the captures were taken so they can
-be redone against a newer device.
+side buttons and status bar are drawn as a fixed fraction of the frame's width — so the phone
+stays in proportion whether you render a full-size App Store shot or a thumbnail on a feature
+graphic. The measurements live in `IPhone17ProMaxMetrics` and `IPhone17Metrics`, which also record
+where they came from — the Simulator's own vector chrome artwork and framebuffer, and the running
+device's reported safe area — so they can be redone against a newer iPhone.
 
 **The status bar an iPhone frame draws is an iOS status bar** — a vector-drawn clock, four
 cellular bars, the Wi-Fi arcs, and the iOS battery — not the Material icons the Android frames
 use. App Store Review guideline 2.3.10 rejects screenshots showing "non-iOS status bar images",
 which is what an Android-looking status bar inside an iPhone bezel reads as. `IosStatusBarComparisonTest`
-holds those glyphs against a real Simulator capture so they cannot quietly drift back.
+and `IPhone17ProMaxStatusBarComparisonTest` hold those glyphs against real Simulator captures so
+they cannot quietly drift back, and `IPhone17ProMaxBezelComparisonTest` does the same for the
+hardware around them — body, bezel, corner radii, Dynamic Island and every side button, against a
+capture of the Simulator's own device bezels.
+
+iOS does not simply scale that bar with the screen: a Pro Max sets a taller clock and larger glyphs
+than a 6.3" iPhone, and draws a slightly squarer Wi-Fi arc, so each modelled device carries its own
+measurements rather than one device's scaled to another's width.
 
 The Action, volume, and side buttons sit where the real ones do, standing proud of the enclosure
 by the same amount, and darken into a contact shadow where they tuck under it. The Simulator
@@ -192,7 +200,7 @@ iPad shows none), and the clock at the leading edge followed by the date rather 
 | | | |
 | :---: | :---: | :---: |
 | <img src="example/screenshots/en-US/iphone67/counter.jpg" width="180" /> | <img src="example/screenshots/en-US/iphone65/counter.jpg" width="180" /> | <img src="example/screenshots/en-US/ipad13/counter.jpg" width="180" /> |
-| `AppleIPhone67` — Dynamic Island | `AppleIPhone65` — notch | `AppleIPad13` |
+| `AppleIPhone67` — iPhone 17 Pro Max | `AppleIPhone65` — iPhone 17 Pro Max | `AppleIPad13` |
 
 Apple form factors write to `{locale}/{subdir}/`, without the `images/` level Play uses — set
 `destDir` to `fastlane/screenshots` for them and `fastlane/metadata/android` for Play.
@@ -320,7 +328,7 @@ Pass a `ScreenshotStyle` to `StoreScreenshotsTest` (class-level default) or to `
 | `showStatusBar` | Show/hide the status bar on phone, tablet, and Apple mockups. Default `true`. |
 | `statusBarClock` | Clock text in the status bar. Default `"12:00"`; Apple's own marketing screenshots use `"9:41"`. |
 | `statusBarContentDark` | When `true`, the status bar clock and icons use a dark color instead of the default white so they stay visible on light mockup backgrounds. Default `false`. |
-| `edgeToEdge` | When `true` (default) the screen content is drawn full-bleed under the frame's status bar / notch, like a real edge-to-edge app. Set it to `false` to reserve the status bar's height so a standalone screen (rendered without the app's own window insets) doesn't have its top content — tabs, a top app bar — drawn under the status bar. Applies to the phone, tablet, and iPhone frames and to `DeviceMockup(edgeToEdge = …)`; the Wear frame has no status bar strip. |
+| `edgeToEdge` | When `true` (default) the screen content is drawn full-bleed under the frame's status bar and screen cutout, like a real edge-to-edge app. Set it to `false` to reserve the status bar's height so a standalone screen (rendered without the app's own window insets) doesn't have its top content — tabs, a top app bar — drawn under the status bar. Applies to the phone, tablet, and iPhone frames and to `DeviceMockup(edgeToEdge = …)`; the Wear frame has no status bar strip. |
 | `titleFontFamily` / `descriptionFontFamily` | Font for the default title/description Text composables. |
 | `background` | Composable rendered behind everything. Overrides `backgroundColor`. |
 | `mockupFrame` | Composable that replaces the built-in device bezel entirely. Receives app content as a parameter. |

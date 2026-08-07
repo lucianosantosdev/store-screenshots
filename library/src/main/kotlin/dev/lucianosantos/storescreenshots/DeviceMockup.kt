@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
-import dev.lucianosantos.storescreenshots.frames.AppleNotchStyle
+import dev.lucianosantos.storescreenshots.frames.AppleIPhoneModel
 import dev.lucianosantos.storescreenshots.frames.IPadAir13Metrics
 import dev.lucianosantos.storescreenshots.frames.IPadBezel
 import dev.lucianosantos.storescreenshots.frames.IPhone17Metrics
@@ -93,11 +93,12 @@ private fun orientSize(portraitWidth: Dp, portraitHeight: Dp, orientation: Mocku
 
 /**
  * The body an iPhone with a [screenWidth] x [screenHeight] display sits in — the display plus the
- * bezel on all four sides, at the proportions measured in [IPhone17Metrics]. [IPhoneBezel] is sized
- * by its body, not its screen, so the footprint has to be grown before it is laid out.
+ * bezel on all four sides, at [device]'s measured proportions. [IPhoneBezel] is sized by its body,
+ * not its screen, so the footprint has to be grown before it is laid out.
  */
-private fun iPhoneBodySize(screenWidth: Dp, screenHeight: Dp): Pair<Dp, Dp> {
-    val bezel = IPhone17Metrics.Bezel * (screenWidth.value / IPhone17Metrics.ScreenWidth)
+private fun iPhoneBodySize(device: AppleIPhoneModel, screenWidth: Dp, screenHeight: Dp): Pair<Dp, Dp> {
+    val m = device.metrics
+    val bezel = m.Bezel * (screenWidth.value / m.ScreenWidth)
     return (screenWidth + (bezel * 2).dp) to (screenHeight + (bezel * 2).dp)
 }
 
@@ -183,19 +184,18 @@ fun DeviceMockup(
         }
         FormFactor.AppleIPhone67 -> {
             val (w, h) = orientSize(430.dp, 932.dp, orientation)
-            val (bw, bh) = iPhoneBodySize(w, h)
+            val (bw, bh) = iPhoneBodySize(AppleIPhoneModel.IPhone17ProMax, w, h)
             ScaledMockup(bw, bh, rotated) {
-                IPhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, AppleNotchStyle.DynamicIsland, elevation) {
+                IPhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, AppleIPhoneModel.IPhone17ProMax.metrics, elevation) {
                     ProvideDeviceConfiguration(w, h, content)
                 }
             }
         }
         FormFactor.AppleIPhone65 -> {
             val (w, h) = orientSize(428.dp, 926.dp, orientation)
-            val (bw, bh) = iPhoneBodySize(w, h)
+            val (bw, bh) = iPhoneBodySize(AppleIPhoneModel.IPhone17ProMax, w, h)
             ScaledMockup(bw, bh, rotated) {
-                // The 6.5" slot depicts notch-era iPhones, so it keeps the notch cutout.
-                IPhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, AppleNotchStyle.Notch, elevation) {
+                IPhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, AppleIPhoneModel.IPhone17ProMax.metrics, elevation) {
                     ProvideDeviceConfiguration(w, h, content)
                 }
             }
