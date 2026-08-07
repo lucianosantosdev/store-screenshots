@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.RoborazziOptions
 import com.github.takahirom.roborazzi.captureRoboImage
 import dev.lucianosantos.storescreenshots.StoreScreenshotsStubApplication
-import dev.lucianosantos.storescreenshots.frames.IPhone17Metrics as M
+import dev.lucianosantos.storescreenshots.frames.IPhone17ProMaxMetrics as M
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -25,30 +25,33 @@ import javax.imageio.ImageIO
 import kotlin.math.abs
 
 /**
- * Holds the status bar [IosStatusBar] draws against the one iOS draws.
+ * Holds the status bar [IosStatusBar] draws for an iPhone 17 Pro Max against the one iOS draws.
  *
  * This is the check that matters for App Store Review: guideline 2.3.10 rejects screenshots showing
- * "non-iOS status bar images", and the Apple frames used to draw Material icons. A regression here
- * is not a cosmetic drift, it is a rejected submission — so the glyphs are compared against a real
- * capture rather than against a golden image of our own output, which would happily lock in
- * whatever we last drew.
+ * "non-iOS status bar images", and it is what a submission gets dismissed over. So the glyphs are
+ * compared against a real capture rather than against a golden image of our own output, which would
+ * happily lock in whatever we last drew.
  *
- * The capture is `src/test/resources/reference/iphone17_statusbar.png`; [StatusBarReference]
- * documents how it was taken. Because it is at @3x and 402 pt wide, the test renders at
- * `xxhdpi` / 402 dp so the two line up pixel for pixel with no rescaling in between.
+ * The Pro Max needs its own capture rather than the iPhone 17's scaled up: iOS sets this bar a
+ * little larger than the width difference alone accounts for — a 13.33 pt clock against 12.67, a
+ * 28.33 pt battery against 25 — so a scaled comparison would pass while the drawn bar was wrong.
+ *
+ * The capture is `src/test/resources/reference/iphone17promax_statusbar.png`;
+ * [IPhone17ProMaxMetrics] documents how it was taken. Because it is at @3x and 440 pt wide, the test
+ * renders at `xxhdpi` / 440 dp so the two line up pixel for pixel with no rescaling in between.
  *
  * Every measurement is printed before anything is asserted, so a failure says which glyph moved and
  * by how much rather than just "images differ", and both images are written to
- * `build/reports/iphone17/` to be looked at.
+ * `build/reports/iphone17promax/` to be looked at.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
     sdk = [35],
     application = StoreScreenshotsStubApplication::class,
-    qualifiers = "w402dp-h874dp-xxhdpi",
+    qualifiers = "w440dp-h956dp-xxhdpi",
 )
-class IosStatusBarComparisonTest {
+class IPhone17ProMaxStatusBarComparisonTest {
 
     @get:Rule
     val compose = createComposeRule()
@@ -61,24 +64,29 @@ class IosStatusBarComparisonTest {
     private val glyphIouTolerance = 0.9f
 
     /**
-     * The clock may land within this fraction of the screen's width. At the capture's 1206 px that
-     * is 6 px — a fifth of a point on the device.
+     * The clock may land within this fraction of the screen's width. At the capture's 1320 px that
+     * is 6.6 px — a fifth of a point on the device.
      */
     private val clockTolerance = 0.005f
 
     @Test
     fun statusBarMatchesIos() {
-        val reference = StatusBarReference.opaque(StatusBarReference.load("iphone17_statusbar.png"))
+        val reference = StatusBarReference.opaque(StatusBarReference.load("iphone17promax_statusbar.png"))
         // The app the capture was taken over, sampled well clear of any glyph.
-        val (r, g, b) = StatusBarReference.rgb(reference, 600, 190)
+        val (r, g, b) = StatusBarReference.rgb(reference, 660, 190)
 
         val rendered = render {
             Box(Modifier.fillMaxSize().background(Color(r, g, b))) {
-                IosStatusBar(clock = "09:41", screenWidth = M.ScreenWidth.dp, metrics = M, contentColor = Color.White)
+                IosStatusBar(
+                    clock = "09:41",
+                    screenWidth = M.ScreenWidth.dp,
+                    metrics = M,
+                    contentColor = Color.White,
+                )
             }
         }
 
-        val report = StringBuilder("iOS status bar vs store-screenshots status bar\n")
+        val report = StringBuilder("iOS status bar vs store-screenshots status bar (iPhone 17 Pro Max)\n")
         val failures = mutableListOf<String>()
         // Three pixels per reference point, matching the capture's @3x framebuffer.
         val scale = reference.width / M.ScreenWidth
@@ -90,7 +98,7 @@ class IosStatusBarComparisonTest {
         listOf(
             "cellular" to region(M.CellularX - 3, M.CellularX + 3 * M.CellularBarPitch + M.CellularBarWidth + 3),
             "wifi" to region(M.WifiX - 3, M.WifiX + M.WifiWidth + 3),
-            "battery" to region(M.BatteryX - 3, M.BatteryX + M.BatteryWidth + M.BatteryNubGap + M.BatteryNubWidth + 3),
+            "battery" to region(M.BatteryX - 3, M.BatteryX + M.BatteryWidth + 4),
         ).forEach { (name, box) ->
             val iou = StatusBarReference.inkIou(reference, rendered, box)
             val ok = iou >= glyphIouTolerance
@@ -117,7 +125,7 @@ class IosStatusBarComparisonTest {
         compare("clock centre y", expected.centerY, actual.centerY)
         compare("clock cap height", expected.height, actual.height)
 
-        val dir = File("build/reports/iphone17").apply { mkdirs() }
+        val dir = File("build/reports/iphone17promax").apply { mkdirs() }
         ImageIO.write(rendered, "png", File(dir, "statusbar-rendered.png"))
         ImageIO.write(reference, "png", File(dir, "statusbar-reference.png"))
 
@@ -128,7 +136,7 @@ class IosStatusBarComparisonTest {
     private fun render(content: @androidx.compose.runtime.Composable () -> Unit): BufferedImage {
         compose.setContent(content)
         compose.waitForIdle()
-        val file = File.createTempFile("ios-status-bar", ".png")
+        val file = File.createTempFile("ios-status-bar-promax", ".png")
         compose.onRoot().captureRoboImage(filePath = file.absolutePath, roborazziOptions = RoborazziOptions())
         return StatusBarReference.opaque(StatusBarReference.read(file))
     }

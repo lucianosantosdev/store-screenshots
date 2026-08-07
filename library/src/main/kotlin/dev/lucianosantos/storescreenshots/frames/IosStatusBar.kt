@@ -29,10 +29,14 @@ import dev.lucianosantos.storescreenshots.frames.IPhone17Metrics as Phone
  * The iPhone status bar: the clock to the left of the Dynamic Island, then four cellular bars, the
  * Wi-Fi glyph, and the battery on the right.
  *
- * Every glyph is a vector path measured off the Simulator (see [IPhone17Metrics]) rather than a
+ * Every glyph is a vector path measured off the Simulator (see [IPhoneMetrics]) rather than a
  * Material icon. That is not cosmetic — App Store Review guideline 2.3.10 rejects screenshots whose
  * status bar is not an iOS status bar, which is exactly what `Icons.Filled.SignalCellular4Bar` and
  * `Icons.Filled.Wifi` look like to a reviewer.
+ *
+ * iOS does not simply scale this bar with the screen — a Pro Max sets a taller clock and larger
+ * glyphs than a 6.3" iPhone does — so every figure comes from [metrics], the device being drawn,
+ * rather than from one device scaled to another's width.
  *
  * The bar lays itself out across the full [screenWidth] and positions everything from that, so it
  * stays correct whether the frame is drawn at App Store resolution or thumbnail size. Place it at
@@ -42,35 +46,36 @@ import dev.lucianosantos.storescreenshots.frames.IPhone17Metrics as Phone
 internal fun IosStatusBar(
     clock: String,
     screenWidth: Dp,
+    metrics: IPhoneMetrics,
     modifier: Modifier = Modifier,
     contentColor: Color = Color.White,
 ) {
-    // One measured iPhone 17 point, in this frame's dp.
-    val unit = screenWidth.value / Phone.ScreenWidth
+    // One measured device point, in this frame's dp.
+    val unit = screenWidth.value / metrics.ScreenWidth
     val measurer = rememberTextMeasurer()
-    Box(modifier = modifier.size(screenWidth, (Phone.SafeAreaTop * unit).dp)) {
+    Box(modifier = modifier.size(screenWidth, (metrics.SafeAreaTop * unit).dp)) {
         Canvas(Modifier.fillMaxSize()) {
-            val u = size.width / Phone.ScreenWidth
-            Phone.CellularBarHeights.forEachIndexed { index, heightPt ->
+            val u = size.width / metrics.ScreenWidth
+            metrics.CellularBarHeights.forEachIndexed { index, heightPt ->
                 drawRoundRect(
                     color = contentColor,
                     topLeft = Offset(
-                        (Phone.CellularX + index * Phone.CellularBarPitch) * u,
-                        (Phone.CellularBottom - heightPt) * u,
+                        (metrics.CellularX + index * metrics.CellularBarPitch) * u,
+                        (metrics.CellularBottom - heightPt) * u,
                     ),
-                    size = Size(Phone.CellularBarWidth * u, heightPt * u),
-                    cornerRadius = CornerRadius(Phone.CellularBarCorner * u),
+                    size = Size(metrics.CellularBarWidth * u, heightPt * u),
+                    cornerRadius = CornerRadius(metrics.CellularBarCorner * u),
                 )
             }
-            drawWifiGlyph(contentColor, Phone.WifiX * u, Phone.WifiTop * u, Phone.WifiWidth * u)
-            drawBatteryGlyph(contentColor, Phone.BatteryX * u, Phone.BatteryTop * u, Phone.BatteryWidth * u)
+            drawWifiGlyph(contentColor, metrics.WifiX * u, metrics.WifiTop * u, metrics.WifiWidth * u, metrics.Wifi)
+            drawBatteryGlyph(contentColor, metrics.BatteryX * u, metrics.BatteryTop * u, metrics.BatteryWidth * u)
             drawStatusBarClock(
                 measurer = measurer,
                 text = clock,
                 color = contentColor,
-                capHeight = Phone.ClockCapHeight * u,
-                centerY = Phone.ClockCenterY * u,
-                centerX = Phone.ClockCenterX * u,
+                capHeight = metrics.ClockCapHeight * u,
+                centerY = metrics.ClockCenterY * u,
+                centerX = metrics.ClockCenterX * u,
             )
         }
     }
@@ -96,7 +101,8 @@ internal fun IPadOsStatusBar(
     Box(modifier = modifier.size(screenWidth, (Pad.SafeAreaTop * unit).dp)) {
         Canvas(Modifier.fillMaxSize()) {
             val u = size.width / Pad.ScreenWidth
-            drawWifiGlyph(contentColor, Pad.WifiX * u, Pad.WifiTop * u, Pad.WifiWidth * u)
+            // iPadOS draws the phone's glyph, scaled down, so the iPad reuses the iPhone 17's fit.
+            drawWifiGlyph(contentColor, Pad.WifiX * u, Pad.WifiTop * u, Pad.WifiWidth * u, Phone.Wifi)
             drawBatteryGlyph(contentColor, Pad.BatteryX * u, Pad.BatteryTop * u, Pad.BatteryWidth * u)
             // Leading-aligned: iPadOS starts the clock at the edge rather than centring it.
             drawStatusBarClock(
@@ -158,19 +164,19 @@ private const val DigitCapHeightRatio = 0.75f
 
 /**
  * Two concentric arc bands with round caps, plus a dot that tapers to a point — the shape iOS
- * draws, rather than Material's filled fan. Sized from [width]; the proportions were fitted against
- * the iPhone capture and hold at any scale, so the iPad's smaller glyph reuses them.
+ * draws, rather than Material's filled fan. [glyph] carries the proportions and [width] the size to
+ * draw them at, so one fitted shape serves an App Store frame, a thumbnail and a preview alike.
  */
-internal fun DrawScope.drawWifiGlyph(color: Color, left: Float, top: Float, width: Float) {
-    val s = width / Phone.WifiWidth
+internal fun DrawScope.drawWifiGlyph(color: Color, left: Float, top: Float, width: Float, glyph: WifiGlyph) {
+    val s = width / glyph.Width
     val centerX = left + width / 2
-    val arcCenterY = top + Phone.WifiArcCenterY * s
-    val stroke = Stroke(width = Phone.WifiStroke * s, cap = StrokeCap.Round)
+    val arcCenterY = top + glyph.ArcCenterY * s
+    val stroke = Stroke(width = glyph.Stroke * s, cap = StrokeCap.Round)
     // 0° points right and angles run clockwise, so straight up is -90°.
-    val startAngle = -90f - Phone.WifiHalfSweep
-    val sweepAngle = Phone.WifiHalfSweep * 2
+    val startAngle = -90f - glyph.HalfSweep
+    val sweepAngle = glyph.HalfSweep * 2
 
-    listOf(Phone.WifiOuterRadius, Phone.WifiInnerRadius).forEach { radiusPt ->
+    listOf(glyph.OuterRadius, glyph.InnerRadius).forEach { radiusPt ->
         val radius = radiusPt * s
         drawArc(
             color = color,
@@ -184,14 +190,14 @@ internal fun DrawScope.drawWifiGlyph(color: Color, left: Float, top: Float, widt
     }
 
     // A dome as tall as half the band is thick, coming to a point on the baseline.
-    val dotHalfWidth = Phone.WifiDotHalfWidth * s
-    val dotCenterY = top + Phone.WifiDotCenterY * s
-    val domeRise = Phone.WifiStroke / 2 * s
+    val dotHalfWidth = glyph.DotHalfWidth * s
+    val dotCenterY = top + glyph.DotCenterY * s
+    val domeRise = glyph.Stroke / 2 * s
     val dot = Path().apply {
         moveTo(centerX - dotHalfWidth, dotCenterY)
         // A quadratic peaks halfway to its control point, so pull the control twice as high.
         quadraticTo(centerX, dotCenterY - 2 * domeRise, centerX + dotHalfWidth, dotCenterY)
-        lineTo(centerX, top + Phone.WifiHeight * s)
+        lineTo(centerX, top + glyph.Height * s)
         close()
     }
     drawPath(dot, color)

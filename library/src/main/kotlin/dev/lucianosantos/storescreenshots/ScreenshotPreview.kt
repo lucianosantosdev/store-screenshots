@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.unit.dp
 import dev.lucianosantos.storescreenshots.frames.AppleFrame
 import dev.lucianosantos.storescreenshots.frames.AppleIPadFrame
-import dev.lucianosantos.storescreenshots.frames.AppleNotchStyle
+import dev.lucianosantos.storescreenshots.frames.AppleIPhoneModel
 import dev.lucianosantos.storescreenshots.frames.FramedLayout
 import dev.lucianosantos.storescreenshots.frames.PhoneFrame
 import dev.lucianosantos.storescreenshots.frames.TabletFrame
@@ -73,14 +73,10 @@ fun ScreenshotPreview(
             FormFactor.Tablet7,
             FormFactor.Tablet10 -> TabletFrame(title, description, backgroundColor, contentColor, style, content = content)
             FormFactor.AppleIPad13 -> AppleIPadFrame(title, description, backgroundColor, contentColor, style, content = content)
-            FormFactor.AppleIPhone67 -> AppleFrame(
-                title, description, backgroundColor, contentColor, style,
-                notch = AppleNotchStyle.DynamicIsland,
-                content = content,
-            )
+            FormFactor.AppleIPhone67,
             FormFactor.AppleIPhone65 -> AppleFrame(
                 title, description, backgroundColor, contentColor, style,
-                notch = AppleNotchStyle.Notch,
+                device = AppleIPhoneModel.IPhone17ProMax,
                 content = content,
             )
             // Guarded against above; a feature graphic is previewed via its own banner composable.
