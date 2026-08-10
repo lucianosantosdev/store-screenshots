@@ -31,9 +31,12 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.platform.WindowInfo
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 import dev.lucianosantos.storescreenshots.frames.AppleNotchStyle
@@ -166,7 +169,7 @@ fun DeviceMockup(
     when (formFactor) {
         FormFactor.Phone -> {
             val (w, h) = orientSize(411.dp, 822.dp, orientation)
-            ScaledMockup(w, h, rotated) { PhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, elevation) { ProvideDeviceConfiguration(w, h, content) } }
+            ScaledMockup(w, h, rotated) { PhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, elevation) { ProvideDeviceEnvironment(w, h, content) } }
         }
         FormFactor.Wear ->
             WatchMockup(WatchShape.Round, rotated, content = content)
@@ -174,19 +177,19 @@ fun DeviceMockup(
             // Native size matches the form factor's own 16:10 qualifier (w600dp-h960dp) so the frame
             // and the content it measures reflect a real Android tablet, not a 4:3 iPad.
             val (w, h) = orientSize(600.dp, 960.dp, orientation)
-            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, elevation) { ProvideDeviceConfiguration(w, h, content) } }
+            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, elevation) { ProvideDeviceEnvironment(w, h, content) } }
         }
         FormFactor.Tablet10 -> {
             // 16:10 to match the w800dp-h1280dp qualifier (Pixel Tablet, Galaxy Tab, …).
             val (w, h) = orientSize(800.dp, 1280.dp, orientation)
-            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, elevation) { ProvideDeviceConfiguration(w, h, content) } }
+            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, elevation) { ProvideDeviceEnvironment(w, h, content) } }
         }
         FormFactor.AppleIPhone67 -> {
             val (w, h) = orientSize(430.dp, 932.dp, orientation)
             val (bw, bh) = iPhoneBodySize(w, h)
             ScaledMockup(bw, bh, rotated) {
                 IPhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, AppleNotchStyle.DynamicIsland, elevation) {
-                    ProvideDeviceConfiguration(w, h, content)
+                    ProvideDeviceEnvironment(w, h, content)
                 }
             }
         }
@@ -196,7 +199,7 @@ fun DeviceMockup(
             ScaledMockup(bw, bh, rotated) {
                 // The 6.5" slot depicts notch-era iPhones, so it keeps the notch cutout.
                 IPhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, AppleNotchStyle.Notch, elevation) {
-                    ProvideDeviceConfiguration(w, h, content)
+                    ProvideDeviceEnvironment(w, h, content)
                 }
             }
         }
@@ -206,7 +209,7 @@ fun DeviceMockup(
             val (bw, bh) = iPadBodySize(w, h)
             ScaledMockup(bw, bh, rotated) {
                 IPadBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, elevation) {
-                    ProvideDeviceConfiguration(w, h, content)
+                    ProvideDeviceEnvironment(w, h, content)
                 }
             }
         }
@@ -302,15 +305,26 @@ private fun watchSpec(shape: WatchShape): WatchSpec = when (shape) {
 }
 
 /**
- * Makes [content] see a [Configuration] that describes the device this mockup renders — its screen
- * size in dp and its orientation — instead of inheriting the surrounding canvas's config. Without
- * it, content placed in a portrait phone mockup on a landscape banner (e.g. a feature graphic)
- * reads `orientation == LANDSCAPE` and picks a landscape layout. Orientation is derived from the
- * (already orientation-adjusted) [widthDp] / [heightDp] the mockup lays the device out at, so
- * `MockupOrientation.Landscape` content also reads landscape.
+ * Makes [content] see the device this mockup renders — its screen size and its orientation —
+ * instead of inheriting the surrounding canvas's. Without it, content placed in a portrait phone
+ * mockup on a landscape banner (e.g. a feature graphic) reads landscape and picks a landscape
+ * layout.
+ *
+ * Two composition locals carry that, and both have to be set, because which one a screen reads
+ * depends on how it was written:
+ *
+ * - [LocalConfiguration] is what Android UI reads — `Configuration.orientation`, `screenWidthDp`.
+ * - [LocalWindowInfo] is what Compose Multiplatform UI reads. `Configuration` is Android-only, so
+ *   shared code has no equivalent and derives its layout from `LocalWindowInfo.containerSize`
+ *   instead. That local used to fall through to the canvas, so a CMP screen went on choosing a
+ *   landscape layout inside a portrait mockup however the Configuration was set — the mockup
+ *   looked right, and the app inside it did not.
+ *
+ * Orientation is derived from the (already orientation-adjusted) [widthDp] / [heightDp] the mockup
+ * lays the device out at, so `MockupOrientation.Landscape` content also reads landscape.
  */
 @Composable
-private fun ProvideDeviceConfiguration(
+private fun ProvideDeviceEnvironment(
     widthDp: Dp,
     heightDp: Dp,
     content: @Composable () -> Unit,
@@ -327,7 +341,25 @@ private fun ProvideDeviceConfiguration(
             }
         }
     }
-    CompositionLocalProvider(LocalConfiguration provides deviceConfig, content = content)
+    // containerSize is in pixels, so it converts through whatever density is in force for this
+    // content — including the remap WatchScreenContent applies, which keeps a square watch square.
+    val deviceSize = with(LocalDensity.current) {
+        IntSize(widthDp.roundToPx(), heightDp.roundToPx())
+    }
+    val outer = LocalWindowInfo.current
+    val deviceWindow = remember(outer, deviceSize) {
+        object : WindowInfo {
+            // Focus is a property of the real window, not of the device being drawn: delegate it
+            // so content that reacts to focus keeps behaving as it would outside a mockup.
+            override val isWindowFocused: Boolean get() = outer.isWindowFocused
+            override val containerSize: IntSize get() = deviceSize
+        }
+    }
+    CompositionLocalProvider(
+        LocalConfiguration provides deviceConfig,
+        LocalWindowInfo provides deviceWindow,
+        content = content,
+    )
 }
 
 /**
