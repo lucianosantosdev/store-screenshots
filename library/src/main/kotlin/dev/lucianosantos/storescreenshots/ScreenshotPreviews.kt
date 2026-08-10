@@ -13,10 +13,26 @@ import androidx.compose.ui.tooling.preview.Preview
  * fun HomePreview() = ScreenshotPreview(FormFactor.Phone, title = "…") { HomeScreen() }
  * ```
  *
- * Exception: [GooglePlayFeatureGraphicScreenshotPreview] renders at 1.5× its 1024×500 output rather
- * than pixel-for-pixel. At native size the short banner looks tiny next to the phone/tablet previews
- * in a shared preview panel; the feature graphic is resolution-independent (proportional layout), so
- * scaling it up keeps it legible and comparable without changing the exported PNG.
+ * No exceptions: every one of these is the form factor's own canvas, [FormFactor.
+ * GooglePlayFeatureGraphic] included. It used to preview at 1.5× — 1536×750dp against a real
+ * 512×250dp canvas — on the reasoning that a feature graphic is "resolution-independent
+ * (proportional layout)" and that at native size the banner looked tiny beside the phone and
+ * tablet previews. Neither held:
+ *
+ * - A banner is only proportional if it is written that way, and nothing encourages that. The
+ *   example banner in this repo positions its devices with `offset(x = 104.dp)` and sets type at
+ *   `30.sp`, which is how most people would write one. Absolute values do not survive a change of
+ *   canvas: authored against a 1536dp preview they land on a 512dp canvas three times too far out
+ *   and three times too large, walking mockups off the image and char-wrapping type that fitted a
+ *   moment earlier. Nothing catches it, because a broken banner still renders and still uploads.
+ *   (The example's own values are tuned to the real canvas — which is the same mismatch seen from
+ *   the other side: its PNG is right and its preview was never what shipped.)
+ * - The banner was never dwarfed. At its true 512dp it is the second-widest preview in the panel:
+ *   wider than the phone (414dp), the watch (227dp) and both iPhones, and behind only the 13" iPad.
+ *   It is *short* — 250dp — because a 1024×500 banner is short. The 1.5× scale did not fix a
+ *   legibility problem so much as make the banner the largest thing on screen.
+ *
+ * A preview whose whole value is standing in for the PNG has to be the size of the PNG.
  */
 
 // `@Preview` arguments must be compile-time constants, so these annotations cannot derive their
@@ -47,8 +63,8 @@ internal const val AppleIPhone65PreviewHeightDp = 926
 internal const val AppleIPad13PreviewWidthDp = 1024
 internal const val AppleIPad13PreviewHeightDp = 1366
 
-internal const val FeatureGraphicPreviewWidthDp = 1536
-internal const val FeatureGraphicPreviewHeightDp = 750
+internal const val FeatureGraphicPreviewWidthDp = 512
+internal const val FeatureGraphicPreviewHeightDp = 250
 
 @Preview(
     name = "Phone (${PhonePreviewWidthDp * 3}×${PhonePreviewHeightDp * 3})",
@@ -99,10 +115,8 @@ annotation class AppleIPhone65ScreenshotPreview
 )
 annotation class AppleIPad13ScreenshotPreview
 
-// Rendered at 1.5× the 1024×500 output so the short banner isn't dwarfed by the phone/tablet
-// previews beside it — see the note above. The exported PNG is unaffected (that comes from the test).
 @Preview(
-    name = "Feature Graphic (1024×500)",
+    name = "Feature Graphic (${FeatureGraphicPreviewWidthDp * 2}×${FeatureGraphicPreviewHeightDp * 2})",
     widthDp = FeatureGraphicPreviewWidthDp,
     heightDp = FeatureGraphicPreviewHeightDp,
 )
