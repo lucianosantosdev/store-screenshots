@@ -95,6 +95,13 @@ class FormFactorSizeTest {
             FormFactor.AppleIPhone67 to (AppleIPhone67PreviewWidthDp to AppleIPhone67PreviewHeightDp),
             FormFactor.AppleIPhone65 to (AppleIPhone65PreviewWidthDp to AppleIPhone65PreviewHeightDp),
             FormFactor.AppleIPad13 to (AppleIPad13PreviewWidthDp to AppleIPad13PreviewHeightDp),
+            FormFactor.GooglePlayFeatureGraphic to
+                (FeatureGraphicPreviewWidthDp to FeatureGraphicPreviewHeightDp),
+        )
+        assertEquals(
+            "a form factor was added without a @Preview canvas held against its qualifiers",
+            FormFactor.entries.toSet(),
+            previewCanvases.keys,
         )
         for ((formFactor, preview) in previewCanvases) {
             assertEquals(
@@ -107,20 +114,18 @@ class FormFactorSizeTest {
     }
 
     /**
-     * The feature graphic is the documented exception: it previews at 1.5× its 1024x500 output so
-     * the short banner isn't dwarfed beside the phone and tablet previews. Pinned as a ratio so
-     * the exception stays deliberate rather than becoming somewhere else drift can hide.
+     * The banner canvas itself, pinned. It is the one every absolute `dp` offset and `sp` size in a
+     * feature graphic is laid out against, and it is small — 512x250dp, not the 1024x500 *pixels*
+     * the slot is described by. Writing a banner against the pixel figure is the mistake this
+     * number exists to make visible.
      */
     @Test
-    fun theFeatureGraphicPreviewIsScaledUpByTheDocumentedFactor() {
-        val (widthDp, heightDp) = FormFactor.GooglePlayFeatureGraphic.logicalSize()
+    fun theFeatureGraphicIsLaidOutAtHalfItsPixelSize() {
         assertEquals(
-            "feature graphic preview width should be 1.5× its ${FormFactor.GooglePlayFeatureGraphic.widthPx}px output",
-            (FormFactor.GooglePlayFeatureGraphic.widthPx * 1.5f).toInt() to
-                (FormFactor.GooglePlayFeatureGraphic.heightPx * 1.5f).toInt(),
-            FeatureGraphicPreviewWidthDp to FeatureGraphicPreviewHeightDp,
+            "feature graphic canvas is 512x250dp at xhdpi",
+            512 to 250,
+            FormFactor.GooglePlayFeatureGraphic.logicalSize(),
         )
-        assertEquals("feature graphic canvas is 512x250dp at xhdpi", 512 to 250, widthDp to heightDp)
     }
 
     /** The `wNNNdp` x `hNNNdp` canvas a form factor's qualifiers name, before density. */
