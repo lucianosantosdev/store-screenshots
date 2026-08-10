@@ -190,7 +190,7 @@ fun DeviceMockup(
             val (bw, bh) = iPhoneBodySize(AppleIPhoneModel.IPhone17ProMax, w, h)
             ScaledMockup(bw, bh, rotated) {
                 IPhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, AppleIPhoneModel.IPhone17ProMax.metrics, elevation) {
-                    ProvideDeviceConfiguration(w, h, content)
+                    ProvideDeviceEnvironment(w, h, content)
                 }
             }
         }
@@ -199,7 +199,7 @@ fun DeviceMockup(
             val (bw, bh) = iPhoneBodySize(AppleIPhoneModel.IPhone17ProMax, w, h)
             ScaledMockup(bw, bh, rotated) {
                 IPhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, AppleIPhoneModel.IPhone17ProMax.metrics, elevation) {
-                    ProvideDeviceConfiguration(w, h, content)
+                    ProvideDeviceEnvironment(w, h, content)
                 }
             }
         }
