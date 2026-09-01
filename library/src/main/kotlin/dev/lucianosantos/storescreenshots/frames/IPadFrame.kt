@@ -24,9 +24,10 @@ val AppleIPadAspectRatio: Float = M.BodyWidth / M.BodyHeight
  * squared-off display, volume buttons, top power button, and an iPadOS status bar rather than a
  * Material one, which App Store Review guideline 2.3.10 rejects.
  *
- * The mockup is bounded by height and takes its width from [aspectRatio], so on the iPad slot's
- * squarish 2048x2732 canvas it fits the space left after the title and description instead of
- * overflowing and covering them.
+ * The mockup is bounded by height and takes its width from the body's proportions, so on the iPad
+ * slot's squarish 2048x2732 canvas it fits the space left after the title and description instead
+ * of overflowing and covering them. [aspectRatio] reshapes that body — pass `null` (the default) to
+ * draw the iPad at the proportions its own display and bezel give it.
  */
 @Composable
 fun AppleIPadFrame(
@@ -35,7 +36,7 @@ fun AppleIPadFrame(
     backgroundColor: Color,
     contentColor: Color = Color.White,
     style: ScreenshotStyle = ScreenshotStyle(),
-    aspectRatio: Float = AppleIPadAspectRatio,
+    aspectRatio: Float? = null,
     content: @Composable () -> Unit,
 ) {
     FramedLayout(
@@ -56,7 +57,7 @@ fun AppleIPadFrame(
 private fun ColumnScope.IPadMockup(
     externalModifier: Modifier,
     style: ScreenshotStyle,
-    aspectRatio: Float,
+    aspectRatio: Float?,
     content: @Composable () -> Unit,
 ) {
     // The slot's logical screen (1024x1366, a real 13" iPad's display) and the body around it.
@@ -64,11 +65,10 @@ private fun ColumnScope.IPadMockup(
     // as [AppleFrame] and [PhoneFrame] — not at whatever dp the footprint spans on the canvas.
     val logical = FormFactor.AppleIPad13.logicalSize
     val (bodyWidth, nativeBodyHeight) = iPadBodySize(logical.width, logical.height)
-    val bodyHeight = if (aspectRatio == AppleIPadAspectRatio) {
-        nativeBodyHeight
-    } else {
-        (bodyWidth.value / aspectRatio).dp
-    }
+    val bodyHeight = aspectRatio?.let { (bodyWidth.value / it).dp } ?: nativeBodyHeight
+    // See [AppleFrame]: the bezel is uniform, so an overridden ratio stretches the screen by what
+    // it stretches the body by, and that — not the logical height — is what content is measured in.
+    val screenHeight = logical.height + (bodyHeight - nativeBodyHeight)
     ScaledMockup(bodyWidth, bodyHeight, externalModifier) {
         IPadBezel(
             modifier = Modifier.fillMaxSize(),
@@ -78,7 +78,7 @@ private fun ColumnScope.IPadMockup(
             edgeToEdge = style.edgeToEdge,
             elevation = style.mockupElevation,
         ) {
-            ProvideDeviceEnvironment(logical.width, logical.height, content)
+            ProvideDeviceEnvironment(logical.width, screenHeight, content)
         }
     }
 }

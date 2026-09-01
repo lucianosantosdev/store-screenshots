@@ -353,7 +353,7 @@ class ScreenshotRule(
                 FormFactor.Phone -> PhoneFrame(title, description, backgroundColor, contentColor, style, content)
                 FormFactor.Wear -> WearFrame(backgroundColor, content)
                 FormFactor.Tablet7,
-                FormFactor.Tablet10 -> TabletFrame(title, description, backgroundColor, contentColor, style, content = content)
+                FormFactor.Tablet10 -> TabletFrame(title, description, backgroundColor, contentColor, style, formFactor = formFactor, content = content)
                 FormFactor.AppleIPad13 -> AppleIPadFrame(title, description, backgroundColor, contentColor, style, content = content)
                 FormFactor.AppleIPhone67,
                 FormFactor.AppleIPhone65 -> AppleFrame(
