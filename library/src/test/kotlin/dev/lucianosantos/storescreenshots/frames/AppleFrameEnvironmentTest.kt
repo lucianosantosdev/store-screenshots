@@ -1,35 +1,13 @@
 package dev.lucianosantos.storescreenshots.frames
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.unit.IntSize
 import dev.lucianosantos.storescreenshots.FormFactor
+import dev.lucianosantos.storescreenshots.RecordingContent
+import dev.lucianosantos.storescreenshots.Seen
 import dev.lucianosantos.storescreenshots.StoreScreenshotsTest
-import org.junit.Assert.assertEquals
+import dev.lucianosantos.storescreenshots.assertLogicalSize
+import dev.lucianosantos.storescreenshots.assertReportedSizeMatchesMeasured
 import org.junit.Test
-
-/**
- * What a screen inside an Apple frame believed about the device it was on. Recorded during
- * composition rather than asserted there, so a failure reports the values instead of dying
- * inside Compose.
- */
-private class Seen {
-    var containerSize: IntSize? = null
-    var screenWidthDp: Int? = null
-}
-
-@Composable
-private fun RecordingContent(seen: Seen) {
-    seen.containerSize = LocalWindowInfo.current.containerSize
-    seen.screenWidthDp = LocalConfiguration.current.screenWidthDp
-    Box(Modifier.fillMaxSize().background(Color(0xFF6A1B9A)))
-}
 
 /**
  * The Apple frames measure content at the slot's logical size — 428x926dp for the 6.5" iPhone,
@@ -59,7 +37,7 @@ class AppleFrameEnvironmentTest {
                 backgroundColor = Color.Black,
                 fileName = "env_iphone65",
             ) { RecordingContent(seen) }
-            seen.assertLogicalSize(width = 428, height = 926)
+            seen.assertLogicalSize(width = 428, height = 926, density = 3)
         }
     }
 
@@ -74,7 +52,7 @@ class AppleFrameEnvironmentTest {
                 backgroundColor = Color.Black,
                 fileName = "env_iphone67",
             ) { RecordingContent(seen) }
-            seen.assertLogicalSize(width = 430, height = 932)
+            seen.assertLogicalSize(width = 430, height = 932, density = 3)
         }
     }
 
@@ -89,16 +67,38 @@ class AppleFrameEnvironmentTest {
                 backgroundColor = Color.Black,
                 fileName = "env_ipad13",
             ) { RecordingContent(seen) }
-            seen.assertLogicalSize(width = 1024, height = 1366)
+            seen.assertLogicalSize(width = 1024, height = 1366, density = 2)
         }
     }
-}
 
-private fun Seen.assertLogicalSize(width: Int, height: Int) {
-    assertEquals("Configuration.screenWidthDp", width, requireNotNull(screenWidthDp) { "content never composed" })
-    val container = requireNotNull(containerSize) { "content never composed" }
-    // The canvases render at 3x (iPhones) and 2x (iPad); containerSize is in pixels.
-    val density = if (width >= 1024) 2 else 3
-    assertEquals("containerSize.width", width * density, container.width)
-    assertEquals("containerSize.height", height * density, container.height)
+    /**
+     * An overridden `aspectRatio` reshapes the body, and the frame reports the screen that reshaping
+     * leaves rather than the slot's logical height.
+     *
+     * The override branch used to keep reporting the logical 932dp while laying content out in the
+     * taller box the new body opened up — the frame lying about the one number it exists to make
+     * honest. 0.42 is well clear of the device's own 0.478, so a frame that ignored the override
+     * (as the old float-equality default did) or went on reporting 932dp fails loudly here.
+     */
+    class OverriddenBodyRatio : StoreScreenshotsTest(FormFactor.AppleIPhone67) {
+        @Test
+        fun theFrameReportsTheScreenTheOverrideLeaves() {
+            val seen = Seen()
+            customScreenshot(fileName = "env_iphone67_squat") {
+                AppleFrame(
+                    title = "probe",
+                    description = "probe",
+                    backgroundColor = Color.Black,
+                    formFactor = FormFactor.AppleIPhone67,
+                    aspectRatio = 0.42f,
+                ) { RecordingContent(seen) }
+            }
+            seen.assertReportedSizeMatchesMeasured(density = 3)
+            val height = requireNotNull(seen.screenHeightDp)
+            assert(height > 932) {
+                "a body stretched from 0.478 to 0.42 leaves a taller screen than the logical " +
+                    "932dp, but the frame reported ${height}dp"
+            }
+        }
+    }
 }

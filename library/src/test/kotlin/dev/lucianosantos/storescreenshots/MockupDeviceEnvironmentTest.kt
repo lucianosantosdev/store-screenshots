@@ -1,33 +1,10 @@
 package dev.lucianosantos.storescreenshots
 
 import android.content.res.Configuration
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.unit.IntSize
 import org.junit.Assert.assertTrue
 import org.junit.Test
-
-/**
- * What a screen inside the mockup believed about the device it was on. Recorded during composition
- * rather than asserted there, so a failure reports the values instead of dying inside Compose.
- */
-private class Seen {
-    var containerSize: IntSize? = null
-    var orientation: Int? = null
-}
-
-@Composable
-private fun RecordingContent(seen: Seen) {
-    seen.containerSize = LocalWindowInfo.current.containerSize
-    seen.orientation = LocalConfiguration.current.orientation
-    Box(Modifier.fillMaxSize().background(Color(0xFF6A1B9A)))
-}
 
 /**
  * A portrait mockup makes its content read portrait, on both of the locals a screen might ask.

@@ -105,6 +105,14 @@ internal fun iPhoneBodySize(device: AppleIPhoneModel, screenWidth: Dp, screenHei
     return (screenWidth + (bezel * 2).dp) to (screenHeight + (bezel * 2).dp)
 }
 
+/**
+ * The body a tablet with a [screenWidth] x [screenHeight] display sits in — the display plus
+ * [TabletBezelInset] on all four sides. [TabletBezel] is sized by its body, not its screen, so the
+ * footprint has to be grown before it is laid out, the same contract as [iPhoneBodySize].
+ */
+internal fun tabletBodySize(screenWidth: Dp, screenHeight: Dp): Pair<Dp, Dp> =
+    (screenWidth + TabletBezelInset * 2) to (screenHeight + TabletBezelInset * 2)
+
 /** The same, for an iPad — see [IPadAir13Metrics]. */
 internal fun iPadBodySize(screenWidth: Dp, screenHeight: Dp): Pair<Dp, Dp> {
     val bezel = IPadAir13Metrics.Bezel * (screenWidth.value / IPadAir13Metrics.ScreenWidth)
@@ -178,12 +186,14 @@ fun DeviceMockup(
             // Native size matches the form factor's own 16:10 qualifier (w600dp-h960dp) so the frame
             // and the content it measures reflect a real Android tablet, not a 4:3 iPad.
             val (w, h) = orientSize(600.dp, 960.dp, orientation)
-            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, elevation) { ProvideDeviceEnvironment(w, h, content) } }
+            val (bw, bh) = tabletBodySize(w, h)
+            ScaledMockup(bw, bh, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, elevation) { ProvideDeviceEnvironment(w, h, content) } }
         }
         FormFactor.Tablet10 -> {
             // 16:10 to match the w800dp-h1280dp qualifier (Pixel Tablet, Galaxy Tab, …).
             val (w, h) = orientSize(800.dp, 1280.dp, orientation)
-            ScaledMockup(w, h, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, elevation) { ProvideDeviceEnvironment(w, h, content) } }
+            val (bw, bh) = tabletBodySize(w, h)
+            ScaledMockup(bw, bh, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, elevation) { ProvideDeviceEnvironment(w, h, content) } }
         }
         FormFactor.AppleIPhone67 -> {
             val (w, h) = orientSize(430.dp, 932.dp, orientation)
@@ -544,8 +554,19 @@ private fun bandShape(capAtTop: Boolean): Shape = GenericShape { size, _ ->
     }
 }
 
+/** Outer rim of a tablet enclosure, and the black bezel inside it. */
+private val TabletRimWidth = 2.dp
+private val TabletBezelWidth = 8.dp
+
+/** How far [TabletBezel] insets its screen from the body's edge, on every side. */
+internal val TabletBezelInset: Dp = TabletRimWidth + TabletBezelWidth
+
+/**
+ * A neutral tablet enclosure: rounded rim, black bezel, no camera notch. [modifier] sizes the
+ * *body*; the screen inside is inset by [TabletBezelInset] on all four sides.
+ */
 @Composable
-private fun TabletBezel(
+internal fun TabletBezel(
     modifier: Modifier,
     showStatusBar: Boolean,
     clock: String,
@@ -559,12 +580,13 @@ private fun TabletBezel(
             .mockupShadow(elevation, RoundedCornerShape(28.dp))
             .clip(RoundedCornerShape(28.dp))
             .background(Brush.linearGradient(listOf(Color(0xFF3A3A3A), Color(0xFF1A1A1A))))
-            .padding(2.dp)
+            .padding(TabletRimWidth)
             .clip(RoundedCornerShape(26.dp))
             .background(Color.Black)
-            .padding(8.dp)
+            .padding(TabletBezelWidth)
             .clip(RoundedCornerShape(20.dp))
     ) {
+        // Non-edge-to-edge reserves the status bar height so top content isn't occluded.
         Box(Modifier.fillMaxSize().padding(top = if (edgeToEdge) 0.dp else StatusBarHeight)) { content() }
         if (showStatusBar) StatusBar(
             clock,

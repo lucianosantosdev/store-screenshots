@@ -31,8 +31,9 @@ val AppleIPhoneAspectRatio: Float = AppleIPhoneModel.IPhone17ProMax.aspectRatio
  * the bezel's footprint happens to span on the canvas.
  *
  * [device] defaults to the iPhone 17 Pro Max, which is what both App Store iPhone slots are sized
- * for and what a reviewer expects a current submission to depict. [aspectRatio] is the aspect ratio
- * of the *body*, and follows [device] unless you override it.
+ * for and what a reviewer expects a current submission to depict. [aspectRatio] reshapes the
+ * *body* — pass `null` (the default) to draw the device at the proportions the slot's display and
+ * [device]'s own bezel give it.
  */
 @Composable
 fun AppleFrame(
@@ -43,7 +44,7 @@ fun AppleFrame(
     style: ScreenshotStyle = ScreenshotStyle(),
     formFactor: FormFactor = FormFactor.AppleIPhone67,
     device: AppleIPhoneModel = AppleIPhoneModel.IPhone17ProMax,
-    aspectRatio: Float = device.aspectRatio,
+    aspectRatio: Float? = null,
     content: @Composable () -> Unit,
 ) {
     require(formFactor == FormFactor.AppleIPhone65 || formFactor == FormFactor.AppleIPhone67) {
@@ -73,19 +74,18 @@ private fun ColumnScope.IPhoneMockup(
     style: ScreenshotStyle,
     formFactor: FormFactor,
     device: AppleIPhoneModel,
-    aspectRatio: Float,
+    aspectRatio: Float?,
     content: @Composable () -> Unit,
 ) {
     // The slot's logical screen, and the body that display sits in at the device's proportions.
     val logical = formFactor.logicalSize
     val (bodyWidth, nativeBodyHeight) = iPhoneBodySize(device, logical.width, logical.height)
-    // An overridden ratio reshapes the body it is documented to describe; the default lands on the
-    // derived height exactly.
-    val bodyHeight = if (aspectRatio == device.aspectRatio) {
-        nativeBodyHeight
-    } else {
-        (bodyWidth.value / aspectRatio).dp
-    }
+    val bodyHeight = aspectRatio?.let { (bodyWidth.value / it).dp } ?: nativeBodyHeight
+    // IPhoneBezel derives its unit from the body's width, so the screen keeps the same bezel on
+    // every side whatever height the body is drawn at: an overridden ratio stretches the screen by
+    // exactly what it stretches the body by. Reporting that rather than the logical height keeps
+    // what content is told it has and what it is actually measured in the same number.
+    val screenHeight = logical.height + (bodyHeight - nativeBodyHeight)
     ScaledMockup(bodyWidth, bodyHeight, externalModifier) {
         IPhoneBezel(
             modifier = Modifier.fillMaxSize(),
@@ -96,7 +96,7 @@ private fun ColumnScope.IPhoneMockup(
             metrics = device.metrics,
             elevation = style.mockupElevation,
         ) {
-            ProvideDeviceEnvironment(logical.width, logical.height, content)
+            ProvideDeviceEnvironment(logical.width, screenHeight, content)
         }
     }
 }
