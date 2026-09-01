@@ -1,5 +1,8 @@
 package dev.lucianosantos.storescreenshots
 
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
+
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -142,6 +145,22 @@ enum class FormFactor(
      * copy could only ever drift out of step with them.
      */
     val widthPx: Int get() = qualifiers.toPixelSize().first
+
+    /**
+     * The logical size named by [qualifiers] — the dp rectangle a screen inside this form factor's
+     * device is measured at, and the size [androidx.compose.ui.platform.LocalConfiguration] and
+     * [androidx.compose.ui.platform.LocalWindowInfo] report to it.
+     */
+    internal val logicalSize: DpSize
+        get() {
+            val width = requireNotNull(Regex("""w(\d+)dp""").find(qualifiers)?.groupValues?.get(1)) {
+                "$qualifiers names no width"
+            }
+            val height = requireNotNull(Regex("""h(\d+)dp""").find(qualifiers)?.groupValues?.get(1)) {
+                "$qualifiers names no height"
+            }
+            return DpSize(width.toInt().dp, height.toInt().dp)
+        }
 
     /** Height in pixels of the PNG this form factor produces. See [widthPx]. */
     val heightPx: Int get() = qualifiers.toPixelSize().second

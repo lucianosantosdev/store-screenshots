@@ -76,6 +76,7 @@ fun ScreenshotPreview(
             FormFactor.AppleIPhone67,
             FormFactor.AppleIPhone65 -> AppleFrame(
                 title, description, backgroundColor, contentColor, style,
+                formFactor = formFactor,
                 device = AppleIPhoneModel.IPhone17ProMax,
                 content = content,
             )

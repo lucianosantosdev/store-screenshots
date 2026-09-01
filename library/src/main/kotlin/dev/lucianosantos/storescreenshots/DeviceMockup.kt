@@ -99,14 +99,14 @@ private fun orientSize(portraitWidth: Dp, portraitHeight: Dp, orientation: Mocku
  * bezel on all four sides, at [device]'s measured proportions. [IPhoneBezel] is sized by its body,
  * not its screen, so the footprint has to be grown before it is laid out.
  */
-private fun iPhoneBodySize(device: AppleIPhoneModel, screenWidth: Dp, screenHeight: Dp): Pair<Dp, Dp> {
+internal fun iPhoneBodySize(device: AppleIPhoneModel, screenWidth: Dp, screenHeight: Dp): Pair<Dp, Dp> {
     val m = device.metrics
     val bezel = m.Bezel * (screenWidth.value / m.ScreenWidth)
     return (screenWidth + (bezel * 2).dp) to (screenHeight + (bezel * 2).dp)
 }
 
 /** The same, for an iPad — see [IPadAir13Metrics]. */
-private fun iPadBodySize(screenWidth: Dp, screenHeight: Dp): Pair<Dp, Dp> {
+internal fun iPadBodySize(screenWidth: Dp, screenHeight: Dp): Pair<Dp, Dp> {
     val bezel = IPadAir13Metrics.Bezel * (screenWidth.value / IPadAir13Metrics.ScreenWidth)
     return (screenWidth + (bezel * 2).dp) to (screenHeight + (bezel * 2).dp)
 }
@@ -324,7 +324,7 @@ private fun watchSpec(shape: WatchShape): WatchSpec = when (shape) {
  * lays the device out at, so `MockupOrientation.Landscape` content also reads landscape.
  */
 @Composable
-private fun ProvideDeviceEnvironment(
+internal fun ProvideDeviceEnvironment(
     widthDp: Dp,
     heightDp: Dp,
     content: @Composable () -> Unit,
@@ -372,7 +372,7 @@ private fun ProvideDeviceEnvironment(
  * footprint directly, which would shrink the box but not the text inside it.
  */
 @Composable
-private fun ScaledMockup(
+internal fun ScaledMockup(
     nativeWidth: Dp,
     nativeHeight: Dp,
     modifier: Modifier,

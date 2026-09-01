@@ -1,14 +1,17 @@
 package dev.lucianosantos.storescreenshots.frames
 
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.lucianosantos.storescreenshots.FormFactor
+import dev.lucianosantos.storescreenshots.ProvideDeviceEnvironment
+import dev.lucianosantos.storescreenshots.ScaledMockup
 import dev.lucianosantos.storescreenshots.ScreenshotStyle
+import dev.lucianosantos.storescreenshots.iPadBodySize
 import dev.lucianosantos.storescreenshots.frames.IPadAir13Metrics as M
 
 /** Width-to-height ratio of a 13-inch iPad's enclosure, measured off the Simulator. */
@@ -56,15 +59,26 @@ private fun ColumnScope.IPadMockup(
     aspectRatio: Float,
     content: @Composable () -> Unit,
 ) {
-    IPadBezel(
-        modifier = externalModifier
-            .fillMaxHeight()
-            .aspectRatio(aspectRatio),
-        showStatusBar = style.showStatusBar,
-        clock = style.statusBarClock,
-        statusBarContentDark = style.statusBarContentDark,
-        edgeToEdge = style.edgeToEdge,
-        elevation = style.mockupElevation,
-        content = content,
-    )
+    // The slot's logical screen (1024x1366, a real 13" iPad's display) and the body around it.
+    // Content is measured there and the mockup scaled into the banner's room, the same contract
+    // as [AppleFrame] and [PhoneFrame] — not at whatever dp the footprint spans on the canvas.
+    val logical = FormFactor.AppleIPad13.logicalSize
+    val (bodyWidth, nativeBodyHeight) = iPadBodySize(logical.width, logical.height)
+    val bodyHeight = if (aspectRatio == AppleIPadAspectRatio) {
+        nativeBodyHeight
+    } else {
+        (bodyWidth.value / aspectRatio).dp
+    }
+    ScaledMockup(bodyWidth, bodyHeight, externalModifier) {
+        IPadBezel(
+            modifier = Modifier.fillMaxSize(),
+            showStatusBar = style.showStatusBar,
+            clock = style.statusBarClock,
+            statusBarContentDark = style.statusBarContentDark,
+            edgeToEdge = style.edgeToEdge,
+            elevation = style.mockupElevation,
+        ) {
+            ProvideDeviceEnvironment(logical.width, logical.height, content)
+        }
+    }
 }
