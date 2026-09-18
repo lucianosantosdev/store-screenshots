@@ -95,9 +95,14 @@ internal object AndroidTabletMetrics {
     val RimColor = Color(0xFF6E6E6E)
 
     /**
-     * Body thickness as a fraction of its width. Tablets are proportionally far thinner than phones:
-     * a 10-inch Android tablet is about 6.5 mm thick across 254 mm of width, so 0.024 — a 820dp body
-     * comes out about 20dp deep.
+     * Body thickness as a fraction of its width. A 10-inch Android tablet is about 8.1 mm thick and
+     * 169.5 mm wide — a Pixel Tablet is 8.1 x 169.5 — so 0.048, which puts an 820dp body a little
+     * under 40dp deep.
+     *
+     * Note *width*, the short side in portrait, and not the 258 mm long one. Dividing by the long
+     * side is the easy mistake here and it halves the figure, which leaves a tilted tablet with a
+     * rail too thin to see. A tablet is still proportionally much shallower than a phone — about
+     * 0.048 against 0.110 — just not as shallow as that slip makes it.
      */
-    const val ThicknessRatio = 0.024f
+    const val ThicknessRatio = 0.048f
 }

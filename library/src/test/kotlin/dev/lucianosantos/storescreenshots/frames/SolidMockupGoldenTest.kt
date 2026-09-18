@@ -133,10 +133,14 @@ class SolidIPhoneGoldenTest : StoreScreenshotsTest(FormFactor.AppleIPhone67) {
 /**
  * The iPad: a much thinner body than a phone's, at the proportions a real one has.
  *
- * Gently turned, because an iPad already fills most of its App Store canvas and a steep tilt pushes
- * the near edge off it — a property of the perspective, not of the solid renderer, and one the flat
- * path shared. The rail it does show is the point: a quarter the depth of the phone's, from the
- * same renderer and the same measurements.
+ * Turned as far as the Android tablet is, and for the same reason — at a gentle angle a tablet's
+ * rail is a few pixels on a canvas it already fills, which is not enough for a golden to be holding
+ * anything. A Y turn *narrows* a device, so unlike a steep X tip it costs nothing in headroom.
+ *
+ * Its rail is visibly shallower than the Android tablet's at the same angle, and that is the point
+ * rather than a shortfall: an iPad Air 13 is 6.1 mm deep across 214.9 mm, where a Pixel Tablet is
+ * 8.1 mm across 169.5 mm — barely half the proportional depth. The two frames disagree here because
+ * the hardware does.
  */
 class SolidIPadGoldenTest : StoreScreenshotsTest(FormFactor.AppleIPad13) {
 
@@ -145,14 +149,21 @@ class SolidIPadGoldenTest : StoreScreenshotsTest(FormFactor.AppleIPad13) {
         screenshot(
             fileName = "golden_solid_ipad_hero",
             title = "A thinner slab",
-            description = "A tablet's rail is a quarter of a phone's, from the same measurements",
-            style = tilted(rotationY = -18f, rotationX = 6f),
+            description = "An iPad is barely half a Pixel Tablet's depth, relative to its own width",
+            style = tilted(rotationY = -45f, rotationX = 6f),
         ) { GoldenContent() }
         assertTilted("golden_solid_ipad_hero", "solid_ipad_hero.png")
     }
 }
 
-/** The Android tablet: no buttons at all, which is its own case worth pinning. */
+/**
+ * The Android tablet: no buttons at all, which is its own case worth pinning.
+ *
+ * Turned further than the phone is. A tablet is proportionally about half as deep relative to its
+ * width, and it fills far more of its canvas, so the modest angle that gives a phone a broad rail
+ * leaves a tablet with one a handful of pixels wide — too little for a golden to be holding
+ * anything. This is steep enough that the rail is actually the subject.
+ */
 class SolidTabletGoldenTest : StoreScreenshotsTest(FormFactor.Tablet10) {
 
     @Test
@@ -161,7 +172,7 @@ class SolidTabletGoldenTest : StoreScreenshotsTest(FormFactor.Tablet10) {
             fileName = "golden_solid_tablet_hero",
             title = "No hardware to invent",
             description = "The tablet frame draws no buttons, so neither does its rail",
-            style = tilted(rotationY = -26f, rotationX = 8f),
+            style = tilted(rotationY = -45f, rotationX = 8f),
         ) { GoldenContent() }
         assertTilted("golden_solid_tablet_hero", "solid_tablet_hero.png")
     }

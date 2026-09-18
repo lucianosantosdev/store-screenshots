@@ -65,11 +65,14 @@ internal object IPadAir13Metrics {
     const val ScreenCorner = 12f
 
     /**
-     * How deep the enclosure is, front to back. An iPad Air 13 is 6.1 mm across 280.6 mm of width,
-     * so 0.0217 of [BodyWidth] — proportionally a quarter of a phone's depth, which is why a tilted
-     * tablet shows a much narrower rail than a tilted phone at the same angle.
+     * How deep the enclosure is, front to back. An iPad Air 13 is 6.1 mm deep and 214.9 mm wide, so
+     * 0.0284 of [BodyWidth] — proportionally about a quarter of a phone's depth, which is why a
+     * tilted tablet shows a much narrower rail than a tilted phone at the same angle.
+     *
+     * Against the 214.9 mm *width*, not the 280.6 mm length: [BodyWidth] is the short side, and
+     * dividing by the long one understates the depth by a quarter.
      */
-    const val BodyThickness = BodyWidth * 0.0217f
+    const val BodyThickness = BodyWidth * 0.0284f
 
     /** Width of the machined rail around the outside of the body. */
     const val Rail = 5.25f

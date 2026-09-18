@@ -332,17 +332,36 @@ class DeviceProjectionTest {
         )
     }
 
-    /** A tablet is proportionally far thinner than a phone, and the bodies have to say so. */
+    /**
+     * A tablet is proportionally thinner than a phone, but only about half as thick relative to its
+     * own width — not a quarter.
+     *
+     * Worth pinning because the figure has an easy way of going wrong: a device's thickness ratio is
+     * against its *width*, the short side in portrait, and a tablet's long side is half as long
+     * again. Dividing by that instead halves the ratio and leaves a tilted tablet with a rail too
+     * thin to see, which is what this originally shipped with. The bound below is loose enough to
+     * allow a re-measure and tight enough to catch that slip.
+     */
     @Test
     fun `thickness comes from each device's own proportions`() {
         val phone = androidPhoneBody(411.dp, 822.dp)
         val tablet = androidTabletBody(820.dp, 1300.dp)
+        val iPad = iPadBody(1138.4f.dp, 1484.dp)
         assertEquals(411f * 0.110f, phone.thickness.value, 0.1f)
-        assertEquals(820f * 0.024f, tablet.thickness.value, 0.1f)
-        assertTrue(
-            "a tablet's rail should be a fraction of a phone's, relative to its own width",
-            tablet.thickness.value / tablet.width.value < phone.thickness.value / phone.width.value / 3f,
-        )
+        assertEquals(820f * 0.048f, tablet.thickness.value, 0.1f)
+
+        fun ratio(body: DeviceBody) = body.thickness.value / minOf(body.width.value, body.height.value)
+        assertTrue("a phone should be about a ninth as deep as it is wide", ratio(phone) in 0.09f..0.13f)
+        listOf("Android tablet" to tablet, "iPad" to iPad).forEach { (name, slab) ->
+            assertTrue(
+                "$name is ${ratio(slab)} of its width deep, which is not a tablet's proportions",
+                ratio(slab) in 0.02f..0.07f,
+            )
+            assertTrue(
+                "$name should be thinner than a phone, relative to its own width",
+                ratio(slab) < ratio(phone),
+            )
+        }
     }
 
     // ---- helpers --------------------------------------------------------------------------------
