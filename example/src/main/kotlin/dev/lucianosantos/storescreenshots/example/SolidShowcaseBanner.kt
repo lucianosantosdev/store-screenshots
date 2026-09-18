@@ -92,26 +92,57 @@ private const val CompassTilt = 48f
  */
 private const val DiagonalShare = 0.71f
 
+/** An enclosure finish: the rail's face, its machined edge, and the shade it falls to at the back. */
+@Immutable
+private class Finish(val rail: Color, val edge: Color, val back: Color)
+
+/**
+ * What the eight turned devices are made of.
+ *
+ * Deliberately *unrelated* to the screens in front of them. These are enclosure colours — anodised
+ * darks, metals, and a couple no phone has ever shipped in — while the screens run a bright spectrum
+ * of their own. If both took the same hue the grid would suggest the body colour is somehow derived
+ * from the app running on it, and it is not: `mockupMaterial` is told three colours and knows
+ * nothing whatever about the content, so the two are set independently and look it.
+ */
+private val Finishes = listOf(
+    Finish(Color(0xFF4A4E54), Color(0xFF9BA1A9), Color(0xFF1B1E22)), // graphite
+    Finish(Color(0xFFD4AF6A), Color(0xFFF5E3B8), Color(0xFF6B5118)), // gold
+    Finish(Color(0xFF2E4668), Color(0xFF8FA9C9), Color(0xFF121C2B)), // midnight blue
+    Finish(Color(0xFFB87A63), Color(0xFFEFC6B4), Color(0xFF4A2A1E)), // copper
+    Finish(Color(0xFF8A8073), Color(0xFFD8D0C4), Color(0xFF33302A)), // warm titanium
+    Finish(Color(0xFFC0C4C9), Color(0xFFFFFFFF), Color(0xFF7C8084)), // silver
+    Finish(Color(0xFF6E5A9B), Color(0xFFC3B4E4), Color(0xFF2A2140)), // violet, which no phone is
+    Finish(Color(0xFF3E6B4F), Color(0xFF9ECBAE), Color(0xFF16281C)), // forest green
+)
+
+// Ordered so no device ends up wearing its own screen's colour. A green body behind a green screen
+// is a coincidence the eye reads as a rule, and the whole point of this list is that there isn't
+// one — so the two greens are kept apart.
+
+/** The reference device in the middle: white, untilted, showing the app's own colours. */
+private val CentreFinish = Finish(Color(0xFFF2F3F5), Color(0xFFFFFFFF), Color(0xFFBFC3C7))
+
 /**
  * The device at [row], [col] out from the centre — its tilt, its finish, and its screen.
  *
- * Hue follows the direction the device is turned, so the grid reads as a colour wheel. The screen
- * takes the *same* hue as the body, which is the part that only works because the screen is live
- * Compose rather than a picture: nine different compositions are being measured, laid out and
- * warped onto nine different quads, and every one of them can be told what colour to be.
+ * The screen hue follows the direction the device is turned, so the grid reads as a colour wheel;
+ * the body takes a [Finish] from a list that has nothing to do with it. Nine different compositions
+ * are being measured, laid out and warped onto nine different quads, and every one of them can be
+ * told what colour to be independently of the device holding it.
  *
- * The centre is white and has no direction to take a hue from — which is the point, since it is the
- * one device that is not turned at all. Its screen is left at [CounterScreen]'s own background for
- * the same reason: it is the reference, so it shows the app in the colours the app actually has.
+ * The centre is the exception twice over: it is not turned, so it has no direction to take a screen
+ * hue from, and its screen is left at [CounterScreen]'s own background — it is the reference, so it
+ * shows the app in the colours the app actually has.
  */
-private fun compassDevice(row: Int, col: Int, count: Int): ShowcaseDevice {
+private fun compassDevice(row: Int, col: Int, count: Int, finish: Finish): ShowcaseDevice {
     if (row == 0 && col == 0) {
         return ShowcaseDevice(
             rotationY = 0f,
             rotationX = 0f,
-            rail = Color(0xFFF2F3F5),
-            edge = Color(0xFFFFFFFF),
-            back = Color(0xFFBFC3C7),
+            rail = finish.rail,
+            edge = finish.edge,
+            back = finish.back,
             screen = null,
             count = count,
         )
@@ -123,9 +154,9 @@ private fun compassDevice(row: Int, col: Int, count: Int): ShowcaseDevice {
     return ShowcaseDevice(
         rotationY = -col * CompassTilt * share,
         rotationX = row * CompassTilt * share,
-        rail = Color.hsl(hue, 0.34f, 0.60f),
-        edge = Color.hsl(hue, 0.44f, 0.86f),
-        back = Color.hsl(hue, 0.42f, 0.22f),
+        rail = finish.rail,
+        edge = finish.edge,
+        back = finish.back,
         screen = Brush.verticalGradient(
             listOf(Color.hsl(hue, 0.58f, 0.56f), Color.hsl(hue, 0.62f, 0.32f))
         ),
@@ -156,7 +187,14 @@ private val ShowcaseGrid: List<List<ShowcaseDevice>> =
             // Counted in reading order, so no two devices show the same screen and the numbers run
             // left to right and top to bottom the way the eye already reads the grid.
             val index = (row + CompassReach) * (CompassReach * 2 + 1) + (col + CompassReach)
-            compassDevice(row, col, count = index + 1)
+            // Finishes are handed out in the same order, skipping the centre, which has its own.
+            val centre = CompassReach * (CompassReach * 2 + 1) + CompassReach
+            val finish = when {
+                index == centre -> CentreFinish
+                index < centre -> Finishes[index]
+                else -> Finishes[index - 1]
+            }
+            compassDevice(row, col, count = index + 1, finish = finish)
         }
     }
 
