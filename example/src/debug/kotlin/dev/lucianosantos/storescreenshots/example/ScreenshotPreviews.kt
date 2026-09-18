@@ -139,6 +139,16 @@ fun PerspectivePreview() = ScreenshotPreview(
     style = perspectiveScreenshotStyle,
 ) { CounterScreen(count = 42) }
 
+/** The same iPhone frame finished in silver, from mockupMaterial alone. */
+@AppleIPhone67ScreenshotPreview
+@Composable
+fun SilverPreview() = ScreenshotPreview(
+    formFactor = FormFactor.AppleIPhone67,
+    title = "Any finish you like",
+    description = "mockupMaterial recolours the rails and the buttons milled out of them",
+    style = silverScreenshotStyle,
+) { CounterScreen(count = 42) }
+
 /** The iPhone at the same tilt, where the side button rides the rail rather than the front face. */
 @AppleIPhone67ScreenshotPreview
 @Composable

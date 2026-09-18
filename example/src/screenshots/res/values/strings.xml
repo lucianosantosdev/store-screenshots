@@ -22,4 +22,6 @@
     <string name="screenshot_four_devices_desc">Desktop, laptop, phone and tablet — chroma-key your live UI into the whole family in a single pass</string>
     <string name="screenshot_apple_perspective_title">Solid, not flat</string>
     <string name="screenshot_apple_perspective_desc">Tilt it and the body has real depth — the rail, its buttons and the light all follow the angle</string>
+    <string name="screenshot_silver_title">Any finish you like</string>
+    <string name="screenshot_silver_desc">mockupMaterial recolours the rails and the buttons milled out of them — same device, same measurements</string>
 </resources>

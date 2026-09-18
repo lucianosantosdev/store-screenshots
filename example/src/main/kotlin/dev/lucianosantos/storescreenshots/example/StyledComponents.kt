@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.lucianosantos.storescreenshots.GlassEffect
+import dev.lucianosantos.storescreenshots.MockupMaterial
 import dev.lucianosantos.storescreenshots.GlassReflexStyle
 import dev.lucianosantos.storescreenshots.GlassShadow
 import dev.lucianosantos.storescreenshots.MockupPosition
@@ -66,6 +67,30 @@ val perspectiveScreenshotStyle = ScreenshotStyle(
         reflexAlpha = 0.20f,
         shadow = GlassShadow.BottomLeft,
         shadowAlpha = 0.22f,
+    ),
+    background = { MarketingBackground() },
+    title = { text -> StyledTitle(text) },
+    description = { text -> StyledDescription(text) },
+)
+
+/**
+ * A silver iPhone, from [MockupMaterial] alone.
+ *
+ * The rails, the buttons milled out of them and the machined edge along them all take the finish;
+ * the device's own measurements do not change, and neither does the black front bezel, which is
+ * black on every iPhone whatever the body is made of. Only a tilt makes any of it visible, which is
+ * why this style turns the device toward the rail its buttons are on.
+ */
+val silverScreenshotStyle = ScreenshotStyle(
+    mockupPosition = MockupPosition.Middle,
+    mockupRotationY = 46f,
+    mockupRotationX = 6f,
+    mockupRotation = -4f,
+    mockupElevation = 20.dp,
+    mockupMaterial = MockupMaterial(
+        railColor = Color(0xFFD6D8DB),
+        edgeHighlightColor = Color(0xFFFFFFFF),
+        backEdgeColor = Color(0xFF8E9195),
     ),
     background = { MarketingBackground() },
     title = { text -> StyledTitle(text) },

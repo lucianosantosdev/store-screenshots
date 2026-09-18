@@ -22,4 +22,6 @@
     <string name="screenshot_four_devices_desc">Desktop, laptop, telefone e tablet — insira sua UI Compose em todos dispositivos de uma vez com chroma key</string>
     <string name="screenshot_apple_perspective_title">Sólido, não plano</string>
     <string name="screenshot_apple_perspective_desc">Incline e o corpo ganha profundidade real — a lateral, os botões e a luz acompanham o ângulo</string>
+    <string name="screenshot_silver_title">O acabamento que você quiser</string>
+    <string name="screenshot_silver_desc">mockupMaterial recolore as laterais e os botões usinados nelas — mesmo aparelho, mesmas medidas</string>
 </resources>
