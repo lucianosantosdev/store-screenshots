@@ -6,10 +6,17 @@ import androidx.compose.ui.graphics.Color
 /**
  * What a tilted device mockup is made of, and where the light falls on it.
  *
- * Only [ScreenshotStyle.mockupRotationX] or [ScreenshotStyle.mockupRotationY] brings any of this
- * into play: with the device face-on there is no side to see and nothing here changes a pixel. Tilt
- * it and the body is drawn as a solid — see the `3D perspective` section of the README — at which
- * point its depth, the shade of its rails and the direction of the light become visible.
+ * Most of this needs a tilt to be visible at all: the body's depth, the shade of its rails and the
+ * direction the light falls from only mean something once [ScreenshotStyle.mockupRotationX] or
+ * [ScreenshotStyle.mockupRotationY] turns a side toward the viewer, and the device is drawn as a
+ * solid — see the `3D perspective` section of the README.
+ *
+ * The finish is the exception. [railColor], [edgeHighlightColor] and [backEdgeColor] recolour the
+ * enclosure whether or not the device is turned, because a device face-on has no sides in view but
+ * is still made of something, and asking for a silver one and getting the default back merely
+ * because it happened not to be tilted would be a strange thing to have to work around. What they
+ * do not touch is the black surround inside the enclosure: that is the screen's border rather than
+ * the body's metal, and it is black on a device of any finish.
  *
  * Every field is an *override*, and the defaults leave each form factor drawing itself: a null
  * colour means "the shade this device's own metrics give it", and a null [thicknessRatio] means

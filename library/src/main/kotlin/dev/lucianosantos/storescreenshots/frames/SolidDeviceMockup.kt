@@ -982,6 +982,19 @@ internal data class BezelChrome(
     val sideButtons: Boolean = true,
     /** Zero when the renderer is casting a projected shadow instead. */
     val elevation: Dp = 0.dp,
+    /**
+     * The enclosure's finish, when a [MockupMaterial] overrides it. Null keeps the device's own, so
+     * a mockup with no material set draws exactly the frame it always did.
+     *
+     * A bezel needs these even though the rails are the renderer's business: an untilted mockup has
+     * no rails at all, and asking for a silver device and getting the default black one back
+     * because it happened not to be turned would be a strange thing to have to work around. The
+     * black surround inside the enclosure is not included — that is the screen's border rather than
+     * the body's metal, and it is black on a device of any finish.
+     */
+    val railColor: Color? = null,
+    val edgeColor: Color? = null,
+    val backColor: Color? = null,
 )
 
 /**
@@ -1018,7 +1031,17 @@ internal fun MockupSurface(
                 rotationZ = clamped.rotationZ,
                 cameraDistance = clamped.cameraDistance,
             ),
-        ) { bezel(BezelChrome(sideButtons = true, elevation = elevation)) }
+        ) {
+        bezel(
+            BezelChrome(
+                sideButtons = true,
+                elevation = elevation,
+                railColor = material.railColor,
+                edgeColor = material.edgeHighlightColor,
+                backColor = material.backEdgeColor,
+            )
+        )
+    }
     } else {
         SolidDeviceMockup(
             nativeWidth = nativeWidth,
@@ -1028,7 +1051,17 @@ internal fun MockupSurface(
             tilt = clamped,
             lighting = material.lighting(),
             elevation = elevation,
-        ) { bezel(BezelChrome(sideButtons = false, elevation = 0.dp)) }
+        ) {
+            bezel(
+                BezelChrome(
+                    sideButtons = false,
+                    elevation = 0.dp,
+                    railColor = material.railColor,
+                    edgeColor = material.edgeHighlightColor,
+                    backColor = material.backEdgeColor,
+                )
+            )
+        }
     }
 }
 

@@ -455,6 +455,7 @@ internal fun PhoneBezel(
                     Modifier.align(Alignment.TopStart).offset(x = -m.ButtonProtrusion, y = top),
                     height,
                     isLeft = true,
+                    face = chrome.railColor ?: m.ButtonFace,
                 )
             }
             m.RightButtons.forEach { (top, height) ->
@@ -462,6 +463,7 @@ internal fun PhoneBezel(
                     Modifier.align(Alignment.TopEnd).offset(x = m.ButtonProtrusion, y = top),
                     height,
                     isLeft = false,
+                    face = chrome.railColor ?: m.ButtonFace,
                 )
             }
         }
@@ -471,7 +473,14 @@ internal fun PhoneBezel(
                 .fillMaxSize()
                 .mockupShadow(chrome.elevation, RoundedCornerShape(m.BodyCorner))
                 .clip(RoundedCornerShape(m.BodyCorner))
-                .background(Brush.linearGradient(listOf(m.RailColor, m.BackColor)))
+                // The enclosure takes whatever finish the material asks for, falling back to the
+                // frame's own. The black surround inside it does not: that is the screen's border,
+                // and it is black on a device of any colour.
+                .background(
+                    Brush.linearGradient(
+                        listOf(chrome.railColor ?: m.RailColor, chrome.backColor ?: m.BackColor)
+                    )
+                )
                 .padding(m.Rim)
                 .clip(RoundedCornerShape(m.RimCorner))
                 .background(Color.Black)
@@ -613,7 +622,11 @@ internal fun TabletBezel(
         modifier = modifier
             .mockupShadow(chrome.elevation, RoundedCornerShape(m.BodyCorner))
             .clip(RoundedCornerShape(m.BodyCorner))
-            .background(Brush.linearGradient(listOf(m.RailColor, m.BackColor)))
+            .background(
+                Brush.linearGradient(
+                    listOf(chrome.railColor ?: m.RailColor, chrome.backColor ?: m.BackColor)
+                )
+            )
             .padding(m.Rim)
             .clip(RoundedCornerShape(m.RimCorner))
             .background(Color.Black)
@@ -631,7 +644,7 @@ internal fun TabletBezel(
 }
 
 @Composable
-private fun SideButton(modifier: Modifier, height: Dp, isLeft: Boolean) {
+private fun SideButton(modifier: Modifier, height: Dp, isLeft: Boolean, face: Color) {
     val m = AndroidPhoneMetrics
     val shape = if (isLeft) RoundedCornerShape(topStart = m.ButtonCorner, bottomStart = m.ButtonCorner)
     else RoundedCornerShape(topEnd = m.ButtonCorner, bottomEnd = m.ButtonCorner)
@@ -640,8 +653,7 @@ private fun SideButton(modifier: Modifier, height: Dp, isLeft: Boolean) {
             .size(width = m.ButtonWidth, height = height)
             .background(
                 Brush.horizontalGradient(
-                    if (isLeft) listOf(m.ButtonShadow, m.ButtonFace)
-                    else listOf(m.ButtonFace, m.ButtonShadow)
+                    if (isLeft) listOf(m.ButtonShadow, face) else listOf(face, m.ButtonShadow)
                 ),
                 shape
             )

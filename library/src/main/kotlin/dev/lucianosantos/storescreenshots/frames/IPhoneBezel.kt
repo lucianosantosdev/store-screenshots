@@ -72,17 +72,17 @@ internal fun IPhoneBezel(
         val statusBarColor = if (statusBarContentDark) Color.Black else Color.White
         val bodyShape = RoundedCornerShape((metrics.BodyCorner * u).dp)
 
-        if (chrome.sideButtons) SideButtons(metrics, u, chrome.elevation)
+        if (chrome.sideButtons) SideButtons(metrics, u, chrome.elevation, chrome.railColor ?: metrics.RailColor)
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .mockupShadow(chrome.elevation, bodyShape)
                 .clip(bodyShape)
-                .background(metrics.RimColor)
+                .background(chrome.edgeColor ?: metrics.RimColor)
                 .padding((metrics.Rim * u).dp)
                 .clip(RoundedCornerShape(((metrics.BodyCorner - metrics.Rim) * u).dp))
-                .background(metrics.RailColor)
+                .background(chrome.railColor ?: metrics.RailColor)
                 .padding(((metrics.Rail - metrics.Rim) * u).dp)
                 .clip(RoundedCornerShape(((metrics.BodyCorner - metrics.Rail) * u).dp))
                 .background(metrics.BezelColor)
@@ -117,12 +117,12 @@ internal fun IPhoneBezel(
  * protrusion showing — the same sliver the Simulator leaves.
  */
 @Composable
-private fun BoxScope.SideButtons(m: IPhoneMetrics, u: Float, elevation: Dp) {
+private fun BoxScope.SideButtons(m: IPhoneMetrics, u: Float, elevation: Dp, face: Color) {
     m.LeftButtons.forEach { (top, height) ->
-        SideButton(m, u, top, height, m.LeftButtonProtrusion, isLeft = true, elevation = elevation, scope = this)
+        SideButton(m, u, top, height, m.LeftButtonProtrusion, isLeft = true, elevation = elevation, scope = this, face = face)
     }
     m.RightButtons.forEach { (top, height) ->
-        SideButton(m, u, top, height, m.RightButtonProtrusion, isLeft = false, elevation = elevation, scope = this)
+        SideButton(m, u, top, height, m.RightButtonProtrusion, isLeft = false, elevation = elevation, scope = this, face = face)
     }
 }
 
@@ -142,6 +142,7 @@ private fun SideButton(
     isLeft: Boolean,
     elevation: Dp,
     scope: BoxScope,
+    face: Color,
 ) = with(scope) {
     val corner = (m.ButtonCorner * u).dp
     // Extended past the enclosure edge by the corner radius so the rounding only ever shows on the
@@ -154,11 +155,11 @@ private fun SideButton(
     }
     // The face runs flat until the last stretch, where it drops into shadow against the enclosure.
     val faceStops = arrayOf(
-        0f to m.RailColor,
-        (1f - m.ButtonShadowFraction) to m.RailColor,
+        0f to face,
+        (1f - m.ButtonShadowFraction) to face,
         1f to m.ButtonShadowColor,
     )
-    val face = Brush.horizontalGradient(
+    val faceBrush = Brush.horizontalGradient(
         colorStops = if (isLeft) faceStops else faceStops.reversedStops(),
     )
     // Brightest along the top cap, falling away down the button, as though lit from above.
@@ -175,7 +176,7 @@ private fun SideButton(
             .size(width = width, height = (height * u).dp)
             .mockupShadow(elevation, shape)
             .clip(shape)
-            .background(face)
+            .background(faceBrush)
             .border(width = (m.ButtonRim * u).dp, brush = rim, shape = shape)
     )
 }
