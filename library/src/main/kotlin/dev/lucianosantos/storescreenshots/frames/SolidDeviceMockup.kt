@@ -563,19 +563,43 @@ private fun DrawScope.drawRailButtons(
         val corner = (button.corner.toPx() * scale).coerceAtMost(minOf(length, acrossSpan) / 2f)
         val outline = sampleRoundRectRing(length, acrossSpan, corner, cornerSamplesFor(corner))
 
+        // The edge between a button's wall and its cap is a radius, not a mitre. Rather than fake
+        // that in shading — which blends the two faces together and loses the edge entirely — it is
+        // built: the wall stops a fillet short of full height, a chamfer band carries the surface
+        // over, and the flat of the cap is inset by the same amount. The cap stays crisp because it
+        // is still a flat face; it is simply a slightly smaller one with a rounded lip around it.
+        val fillet = minOf(protrusion * FilletOfProtrusion, minOf(length, acrossSpan) * FilletOfSpan)
+        val shoulder = (protrusion - fillet).coerceAtLeast(0f)
+        val innerOutline = sampleRoundRectRing(
+            w = (length - fillet * 2f).coerceAtLeast(1f),
+            h = (acrossSpan - fillet * 2f).coerceAtLeast(1f),
+            r = (corner - fillet).coerceAtLeast(0f),
+            cornerSamples = cornerSamplesFor(corner),
+        )
+
         val base = outline.map {
             tilt.rotate(basis.point(alongCentre + it.x, acrossCentre + it.y, 0f))
         }
+        // Where the wall ends and the radius begins.
         val cap = outline.map {
+            tilt.rotate(basis.point(alongCentre + it.x, acrossCentre + it.y, shoulder))
+        }
+        // Where the radius ends and the flat of the cap begins.
+        val crest = innerOutline.map {
             tilt.rotate(basis.point(alongCentre + it.x, acrossCentre + it.y, protrusion))
         }
         val wallNormals = outline.map { tilt.rotate(basis.direction(it.nx, it.ny)).normalized() }
         val capNormal = tilt.rotate(basis.outward).normalized()
+        // A quarter-round rolled into a single band faces halfway between the two it joins.
+        val filletNormals = wallNormals.map {
+            Vec3(it.x + capNormal.x, it.y + capNormal.y, it.z + capNormal.z).normalized()
+        }
 
         val baseAt = base.map { project(it, cameraPx, pivot) ?: return@forEach }
         val capAt = cap.map { project(it, cameraPx, pivot) ?: return@forEach }
-        val capCentre = cap.fold(Vec3(0f, 0f, 0f)) { a, c -> Vec3(a.x + c.x, a.y + c.y, a.z + c.z) }
-            .let { Vec3(it.x / outline.size, it.y / outline.size, it.z / outline.size) }
+        val crestAt = crest.map { project(it, cameraPx, pivot) ?: return@forEach }
+        val capCentre = crest.fold(Vec3(0f, 0f, 0f)) { a, c -> Vec3(a.x + c.x, a.y + c.y, a.z + c.z) }
+            .let { Vec3(it.x / crest.size, it.y / crest.size, it.z / crest.size) }
 
         // Walls first, cap over them: the cap is the nearest surface of a convex boss.
         //
@@ -635,10 +659,40 @@ private fun DrawScope.drawRailButtons(
             }
             drawPath(wall, brush)
         }
+
+        // The radius itself, run by run, merged the same way the wall is so its own segments cannot
+        // seam. Lit by the direction the roll faces, which is halfway between the wall's and the
+        // cap's — so it catches light neither of them does and reads as a lip rather than a line.
+        contiguousRuns(
+            (0 until n).filter { i ->
+                val j = (i + 1) % n
+                val centre = Vec3(
+                    (cap[i].x + cap[j].x + crest[i].x + crest[j].x) / 4f,
+                    (cap[i].y + cap[j].y + crest[i].y + crest[j].y) / 4f,
+                    (cap[i].z + cap[j].z + crest[i].z + crest[j].z) / 4f,
+                )
+                facesCamera(filletNormals[i], centre, cameraPx)
+            },
+            n,
+        ).forEach { run ->
+            val last = (run.last() + 1) % n
+            val band = Path().apply {
+                moveTo(capAt[run.first()].x, capAt[run.first()].y)
+                run.drop(1).forEach { lineTo(capAt[it].x, capAt[it].y) }
+                lineTo(capAt[last].x, capAt[last].y)
+                lineTo(crestAt[last].x, crestAt[last].y)
+                for (index in run.indices.reversed()) {
+                    lineTo(crestAt[run[index]].x, crestAt[run[index]].y)
+                }
+                close()
+            }
+            val shade = run.map { lighting.shadeFactor(filletNormals[it]) }.average().toFloat()
+            drawPath(band, tint(button.face, shade))
+        }
         if (facesCamera(capNormal, capCentre, cameraPx)) {
             val face = Path().apply {
-                moveTo(capAt[0].x, capAt[0].y)
-                capAt.drop(1).forEach { lineTo(it.x, it.y) }
+                moveTo(crestAt[0].x, crestAt[0].y)
+                crestAt.drop(1).forEach { lineTo(it.x, it.y) }
                 close()
             }
             drawPath(face, tint(button.face, lighting.shadeFactor(capNormal)))
@@ -869,6 +923,13 @@ private const val RimLineWidth = 1f
 /** A button's milled edge: how strongly it shows, and how much of that survives with the light behind. */
 private const val ButtonRimStrength = 0.8f
 private const val ButtonRimFloor = 0.45f
+
+/**
+ * The radius rolling a button's wall over onto its cap, as a fraction of the button's protrusion
+ * and, so a long shallow button cannot swallow its own face, of its smaller span.
+ */
+private const val FilletOfProtrusion = 0.42f
+private const val FilletOfSpan = 0.18f
 
 
 /** The far lip of a port or a speaker hole, where the cut through the metal catches the light. */
