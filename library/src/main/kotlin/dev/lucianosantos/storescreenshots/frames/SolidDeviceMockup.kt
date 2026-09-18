@@ -378,6 +378,7 @@ private fun DrawScope.drawRails(
     // turned away from the light: a 45-degree bevel finds the light long after the flat beside it
     // has lost it — which is exactly what makes a machined edge legible on a dark device.
     val faceNormal = tilt.rotate(Vec3(0f, 0f, 1f)).normalized()
+    val backNormal = Vec3(-faceNormal.x, -faceNormal.y, -faceNormal.z)
     val visible = ring.visibleSegments()
     if (visible.isEmpty()) return
     val n = ring.front.size
@@ -413,7 +414,15 @@ private fun DrawScope.drawRails(
         val mean = run.map { lighting.shadeFactor(ring.normals[it]) }.average().toFloat()
         drawPath(path, tint(body.railColor, mean))
 
-        // Detail pass: each wall at its own shade, and darkening toward the back of the body.
+        // Detail pass: each wall as a single fill whose colour runs the depth of the rail.
+        //
+        // The stops are not a colour ramp picked by eye — each one is the rail *shaded at the
+        // direction that surface actually faces at that depth*, and the direction rolls smoothly
+        // from the front face, round through the rail's own, to the back (see [filletNormal]). That
+        // is what makes the join to the glass read as a rounded edge rather than a mitre: a real
+        // machined edge has no boundary between the chamfer and the flat beside it, because it is
+        // one continuously curving surface, and a flat band of highlight with a hard line at each
+        // side is exactly what it does not look like.
         run.forEach { segment ->
             val next = (segment + 1) % n
             val quad = Path().apply {
@@ -423,7 +432,6 @@ private fun DrawScope.drawRails(
                 lineTo(ring.back[segment].x, ring.back[segment].y)
                 close()
             }
-            val shade = lighting.shadeFactor(ring.normals[segment])
             val front = Offset(
                 (inner[segment].x + inner[next].x) / 2f,
                 (inner[segment].y + inner[next].y) / 2f,
@@ -432,39 +440,22 @@ private fun DrawScope.drawRails(
                 (ring.back[segment].x + ring.back[next].x) / 2f,
                 (ring.back[segment].y + ring.back[next].y) / 2f,
             )
-            val brush = if ((front - back).getDistance() < 0.5f) {
-                SolidColor(tint(body.railColor, shade))
-            } else {
+            val rail = ring.normals[segment]
+            // The gradient has to run *across* the rail and stay constant along it. Its axis is
+            // therefore the perpendicular to the rail's own direction, not the line between the two
+            // midpoints: those two are not the same once the projection shears a long edge, and
+            // using the midpoints slides the shading along the rail's length — the same rail then
+            // reads bright at one end and dark at the other.
+            val brush = depthAxis(inner[segment], inner[next], front, back)?.let { (start, end) ->
                 Brush.linearGradient(
-                    0f to tint(body.railColor, shade),
-                    1f to tint(body.backColor, shade),
-                    start = front,
-                    end = back,
+                    colorStops = FilletStops
+                        .map { it to filletColor(it, body, lighting, faceNormal, backNormal, rail) }
+                        .toTypedArray(),
+                    start = start,
+                    end = end,
                 )
-            }
+            } ?: SolidColor(tint(body.railColor, lighting.shadeFactor(rail)))
             drawPath(quad, brush, style = Fill)
-
-            // The polished chamfer, a narrow band of the rail nearest the glass. Lit more strongly
-            // than the flat of the rail because it turns toward the light rather than straight out.
-            val chamferI = lerp(inner[segment], ring.back[segment], ChamferFraction)
-            val chamferJ = lerp(inner[next], ring.back[next], ChamferFraction)
-            val chamfer = Path().apply {
-                moveTo(inner[segment].x, inner[segment].y)
-                lineTo(inner[next].x, inner[next].y)
-                lineTo(chamferJ.x, chamferJ.y)
-                lineTo(chamferI.x, chamferI.y)
-                close()
-            }
-            val bevel = Vec3(
-                ring.normals[segment].x + faceNormal.x,
-                ring.normals[segment].y + faceNormal.y,
-                ring.normals[segment].z + faceNormal.z,
-            ).normalized()
-            // Polished, so it behaves more like a mirror strip than a matte surface: it keeps a
-            // floor of brightness whichever way it is turned, and climbs from there with the light.
-            val polish = ChamferFloor + (1f - ChamferFloor) *
-                ((bevel dot lighting.unit) * 0.5f + 0.5f).coerceIn(0f, 1f)
-            drawPath(chamfer, tint(body.rimColor, polish))
         }
     }
 
@@ -753,6 +744,97 @@ private fun contiguousRuns(visible: List<Int>, n: Int): List<List<Int>> {
     return runs
 }
 
+/**
+ * An axis running square across a rail, from its front edge to its back one.
+ *
+ * [edgeStart] and [edgeEnd] are the ends of the front edge; [front] and [back] its midpoints. The
+ * result is perpendicular to the edge and exactly as long as the rail is deep, so a gradient drawn
+ * along it is constant everywhere on a line parallel to the edge — which is what a shaded band
+ * across a rail has to be. Null when the rail is edge-on and has no depth to shade.
+ */
+private fun depthAxis(
+    edgeStart: Offset,
+    edgeEnd: Offset,
+    front: Offset,
+    back: Offset,
+): Pair<Offset, Offset>? {
+    val ex = edgeEnd.x - edgeStart.x
+    val ey = edgeEnd.y - edgeStart.y
+    val edge = kotlin.math.hypot(ex, ey)
+    if (edge < 1e-3f) return null
+    // Perpendicular to the edge, turned to point across the rail rather than back over the face.
+    var nx = -ey / edge
+    var ny = ex / edge
+    val depth = (back.x - front.x) * nx + (back.y - front.y) * ny
+    if (kotlin.math.abs(depth) < 0.5f) return null
+    if (depth < 0f) { nx = -nx; ny = -ny }
+    val span = kotlin.math.abs(depth)
+    return front to Offset(front.x + nx * span, front.y + ny * span)
+}
+
+/**
+ * The direction the body's edge faces at [t] of the way through its depth.
+ *
+ * A device's edge is not three flat faces meeting at two mitres — it is the front, a rolled edge,
+ * the flat of the rail, another rolled edge, and the back. Turning the normal smoothly through
+ * those rolls, and shading each part of the band by the normal it actually has, is what draws a
+ * rounded edge without needing any more geometry than the two rings already give us.
+ */
+private fun filletNormal(t: Float, face: Vec3, back: Vec3, rail: Vec3): Vec3 = when {
+    t <= FrontFillet -> mix(face, rail, smoothStep(t / FrontFillet))
+    t >= 1f - BackFillet -> mix(rail, back, smoothStep((t - (1f - BackFillet)) / BackFillet))
+    else -> rail
+}.normalized()
+
+/** The rail's colour at [t] of the way through its depth, lit by the direction it faces there. */
+private fun filletColor(
+    t: Float,
+    body: DeviceBody,
+    lighting: MockupLighting,
+    face: Vec3,
+    back: Vec3,
+    rail: Vec3,
+): Color {
+    val normal = filletNormal(t, face, back, rail)
+    // Polished where it is rolling over, flat metal across the middle, falling away at the back.
+    val base = when {
+        t <= FrontFillet -> mixColor(body.rimColor, body.railColor, smoothStep(t / FrontFillet))
+        else -> mixColor(body.railColor, body.backColor, smoothStep((t - FrontFillet) / (1f - FrontFillet)))
+    }
+    // A rolled edge behaves more like a mirror strip than a matte surface, so it keeps a floor of
+    // brightness whichever way it is turned; the flat of the rail does not.
+    val roll = (1f - smoothStep(t / FrontFillet)).coerceIn(0f, 1f)
+    val lit = lighting.shadeFactor(normal)
+    val polished = lit + (1f - lit) * roll * PolishFloor
+    return tint(base, polished)
+}
+
+/** Hermite ease, so a roll has no corner where it begins or ends. */
+private fun smoothStep(t: Float): Float {
+    val x = t.coerceIn(0f, 1f)
+    return x * x * (3f - 2f * x)
+}
+
+private fun mix(from: Vec3, to: Vec3, t: Float) = Vec3(
+    from.x + (to.x - from.x) * t,
+    from.y + (to.y - from.y) * t,
+    from.z + (to.z - from.z) * t,
+)
+
+private fun mixColor(from: Color, to: Color, t: Float) = Color(
+    red = from.red + (to.red - from.red) * t,
+    green = from.green + (to.green - from.green) * t,
+    blue = from.blue + (to.blue - from.blue) * t,
+    alpha = from.alpha + (to.alpha - from.alpha) * t,
+)
+
+/**
+ * Where the rail's gradient is sampled through its depth. Clustered at the front, because that is
+ * where the edge is rolling over and the shading changes quickest; the flat behind it needs almost
+ * none.
+ */
+private val FilletStops = listOf(0f, 0.03f, 0.07f, 0.12f, 0.18f, 0.26f, 0.45f, 0.7f, 0.88f, 1f)
+
 /** A point [t] of the way from [from] to [to]. */
 private fun lerp(from: Offset, to: Offset, t: Float) =
     Offset(from.x + (to.x - from.x) * t, from.y + (to.y - from.y) * t)
@@ -781,14 +863,16 @@ private const val FeatureRimStrength = 0.45f
 private const val FeatureRimWidth = 1f
 
 /**
- * How much of a rail's depth, nearest the front face, is the polished chamfer rather than the flat
- * of the rail — and how much brighter it is than the rail's own face. It is this narrow bright line
- * running the length of the body, not the shade of the rail itself, that reads as machined metal.
+ * How much of a rail's depth is taken by the edge rolling over from the front face, and by the one
+ * rolling onto the back. It is these rolls, not the shade of the flat between them, that read as
+ * machined metal — and giving them a width rather than a hard line is what stops the body looking
+ * like three flat faces glued together.
  */
-private const val ChamferFraction = 0.2f
+private const val FrontFillet = 0.22f
+private const val BackFillet = 0.16f
 
-/** How bright a polished chamfer stays even with the light behind it. */
-private const val ChamferFloor = 0.55f
+/** How much brightness a rolled edge keeps even with the light behind it, being polished. */
+private const val PolishFloor = 0.5f
 
 /** The bevel where the front face turns over into the rail: a hairline, and how brightly it lights. */
 private const val BevelWidth = 1.5f
