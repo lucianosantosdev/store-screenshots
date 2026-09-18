@@ -554,8 +554,10 @@ Wear screenshots have no title/description banner, so `mockupPosition` doesn't a
 <img src="example/screenshots/en-US/images/featureGraphic/solid_showcase.jpg" width="420" />
 
 *One phone frame, nine times. Each device is turned toward the side of the grid it sits on, so the
-top row shows its top rail, the left column its left, and the corners the two that meet there. The
-one in the middle is not tilted at all — it never enters the solid renderer, and it is the only one
+top row shows its top rail, the left column its left, and the corners the two that meet there. Every
+screen is a different live composition, coloured to match the body it is on, because the front face
+is real Compose being measured and warped rather than a picture being stretched. The one in the
+middle is not tilted at all: it never enters the solid renderer, and it is the only one of the nine
 with no rail to show.*
 
 | Android phone | iPhone |

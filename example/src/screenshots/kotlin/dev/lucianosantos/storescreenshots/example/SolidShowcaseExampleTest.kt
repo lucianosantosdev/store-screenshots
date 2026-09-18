@@ -10,10 +10,11 @@ import org.junit.Test
  * Nine devices laid out as a compass, flat in the middle — the showcase for the solid renderer.
  * See [SolidShowcaseBanner] for why these particular angles.
  *
- * On a tall canvas rather than the feature graphic's own 1024x500. Three phones side by side are
- * half as tall as they are wide, so three rows of them want roughly 1:2 — the same shape a single
- * phone is, which is the one shape a 2:1 banner cannot hold. The form factor is still the feature
- * graphic, so the shot lands with the other banners; only its size is overridden.
+ * On a tall canvas rather than the feature graphic's own 1024x500. A square grid of phones has the
+ * shape of a single phone whatever its size — three across are half as tall as they are wide, and
+ * three rows of them are twice as tall as they are wide — so it wants roughly 1:2, which is the one
+ * shape a 2:1 banner cannot hold. The form factor is still the feature graphic, so the shot lands
+ * with the other banners; only its size is overridden.
  */
 class SolidShowcaseExampleTest : StoreScreenshotsTest(
     FormFactor.GooglePlayFeatureGraphic,
