@@ -39,7 +39,17 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
+import dev.lucianosantos.storescreenshots.frames.AndroidPhoneMetrics
+import dev.lucianosantos.storescreenshots.frames.AndroidTabletMetrics
 import dev.lucianosantos.storescreenshots.frames.AppleIPhoneModel
+import dev.lucianosantos.storescreenshots.frames.BezelChrome
+import dev.lucianosantos.storescreenshots.frames.DeviceBody
+import dev.lucianosantos.storescreenshots.frames.MockupSurface
+import dev.lucianosantos.storescreenshots.frames.MockupTilt
+import dev.lucianosantos.storescreenshots.frames.androidPhoneBody
+import dev.lucianosantos.storescreenshots.frames.androidTabletBody
+import dev.lucianosantos.storescreenshots.frames.iPadBody
+import dev.lucianosantos.storescreenshots.frames.iPhoneBody
 import dev.lucianosantos.storescreenshots.frames.IPadAir13Metrics
 import dev.lucianosantos.storescreenshots.frames.IPadBezel
 import dev.lucianosantos.storescreenshots.frames.IPhone17Metrics
@@ -153,7 +163,9 @@ internal fun iPadBodySize(screenWidth: Dp, screenHeight: Dp): Pair<Dp, Dp> {
  *
  * [rotationX], [rotationY], and [rotationZ] tilt the whole device in 3D for a perspective mockup
  * (degrees): X tips it toward/away from the viewer, Y turns it left/right, Z spins it in-plane.
- * [cameraDistance] controls the perspective strength — see [DefaultMockupCameraDistance].
+ * [cameraDistance] controls the perspective strength — see [DefaultMockupCameraDistance]. An X or Y
+ * tilt draws the device as a solid body with visible thickness; [material] is what that body is made
+ * of, and defaults to the device's own measurements.
  *
  * [FormFactor.GooglePlayFeatureGraphic] is a banner canvas rather than a device, so it has no
  * bezel — compose real devices onto it instead.
@@ -172,43 +184,50 @@ fun DeviceMockup(
     rotationY: Float = 0f,
     rotationZ: Float = 0f,
     cameraDistance: Float = DefaultMockupCameraDistance,
+    material: MockupMaterial = MockupMaterial(),
     content: @Composable () -> Unit,
 ) {
-    val rotated = modifier.mockup3dRotation(rotationX, rotationY, rotationZ, cameraDistance)
+    val tilt = MockupTilt(rotationX, rotationY, rotationZ, cameraDistance)
     when (formFactor) {
         FormFactor.Phone -> {
-            val (w, h) = orientSize(411.dp, 822.dp, orientation)
-            ScaledMockup(w, h, rotated) { PhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, elevation) { ProvideDeviceEnvironment(w, h, content) } }
+            val (w, h) = orientSize(AndroidPhoneMetrics.BodyWidth, AndroidPhoneMetrics.BodyHeight, orientation)
+            MockupSurface(w, h, modifier, androidPhoneBody(w, h), tilt, elevation, material) { chrome ->
+                PhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, chrome) {
+                    ProvideDeviceEnvironment(w, h, content)
+                }
+            }
         }
         FormFactor.Wear ->
-            WatchMockup(WatchShape.Round, rotated, content = content)
+            // A watch case is a disc with straps, not an extruded slab, so it keeps the flat tilt.
+            WatchMockup(WatchShape.Round, modifier.mockup3dRotation(rotationX, rotationY, rotationZ, cameraDistance), content = content)
         FormFactor.Tablet7 -> {
             // Native size matches the form factor's own 16:10 qualifier (w600dp-h960dp) so the frame
             // and the content it measures reflect a real Android tablet, not a 4:3 iPad.
             val (w, h) = orientSize(600.dp, 960.dp, orientation)
             val (bw, bh) = tabletBodySize(w, h)
-            ScaledMockup(bw, bh, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, elevation) { ProvideDeviceEnvironment(w, h, content) } }
+            MockupSurface(bw, bh, modifier, androidTabletBody(bw, bh), tilt, elevation, material) { chrome ->
+                TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, chrome) {
+                    ProvideDeviceEnvironment(w, h, content)
+                }
+            }
         }
         FormFactor.Tablet10 -> {
             // 16:10 to match the w800dp-h1280dp qualifier (Pixel Tablet, Galaxy Tab, …).
             val (w, h) = orientSize(800.dp, 1280.dp, orientation)
             val (bw, bh) = tabletBodySize(w, h)
-            ScaledMockup(bw, bh, rotated) { TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, elevation) { ProvideDeviceEnvironment(w, h, content) } }
-        }
-        FormFactor.AppleIPhone67 -> {
-            val (w, h) = orientSize(430.dp, 932.dp, orientation)
-            val (bw, bh) = iPhoneBodySize(AppleIPhoneModel.IPhone17ProMax, w, h)
-            ScaledMockup(bw, bh, rotated) {
-                IPhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, AppleIPhoneModel.IPhone17ProMax.metrics, elevation) {
+            MockupSurface(bw, bh, modifier, androidTabletBody(bw, bh), tilt, elevation, material) { chrome ->
+                TabletBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, chrome) {
                     ProvideDeviceEnvironment(w, h, content)
                 }
             }
         }
-        FormFactor.AppleIPhone65 -> {
-            val (w, h) = orientSize(428.dp, 926.dp, orientation)
-            val (bw, bh) = iPhoneBodySize(AppleIPhoneModel.IPhone17ProMax, w, h)
-            ScaledMockup(bw, bh, rotated) {
-                IPhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, AppleIPhoneModel.IPhone17ProMax.metrics, elevation) {
+        FormFactor.AppleIPhone67, FormFactor.AppleIPhone65 -> {
+            val logical = formFactor.logicalSize
+            val (w, h) = orientSize(logical.width, logical.height, orientation)
+            val device = AppleIPhoneModel.IPhone17ProMax
+            val (bw, bh) = iPhoneBodySize(device, w, h)
+            MockupSurface(bw, bh, modifier, iPhoneBody(device.metrics, bw, bh), tilt, elevation, material) { chrome ->
+                IPhoneBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, device.metrics, chrome) {
                     ProvideDeviceEnvironment(w, h, content)
                 }
             }
@@ -217,8 +236,8 @@ fun DeviceMockup(
             // 4:3 to match the w1024dp-h1366dp qualifier, which is a real 13" iPad's display.
             val (w, h) = orientSize(1024.dp, 1366.dp, orientation)
             val (bw, bh) = iPadBodySize(w, h)
-            ScaledMockup(bw, bh, rotated) {
-                IPadBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, elevation) {
+            MockupSurface(bw, bh, modifier, iPadBody(bw, bh), tilt, elevation, material) { chrome ->
+                IPadBezel(Modifier.fillMaxSize(), showStatusBar, statusBarClock, statusBarContentDark, edgeToEdge, chrome) {
                     ProvideDeviceEnvironment(w, h, content)
                 }
             }
@@ -413,33 +432,60 @@ internal fun ScaledMockup(
     }
 }
 
+/**
+ * The generic Android phone enclosure. [chrome] says what the caller is drawing instead — in a
+ * solid mockup the side buttons stand on a projected rail and the shadow is cast from the
+ * projected silhouette, so both are left out here. Every figure comes from [AndroidPhoneMetrics].
+ */
 @Composable
-private fun PhoneBezel(
+internal fun PhoneBezel(
     modifier: Modifier,
     showStatusBar: Boolean,
     clock: String,
     statusBarContentDark: Boolean,
     edgeToEdge: Boolean,
-    elevation: Dp,
+    chrome: BezelChrome,
     content: @Composable () -> Unit,
 ) {
+    val m = AndroidPhoneMetrics
     Box(modifier = modifier) {
-        // Side buttons
-        SideButton(Modifier.align(Alignment.TopStart).offset(x = (-3).dp, y = 110.dp), 38, true)
-        SideButton(Modifier.align(Alignment.TopStart).offset(x = (-3).dp, y = 156.dp), 58, true)
-        SideButton(Modifier.align(Alignment.TopEnd).offset(x = 3.dp, y = 92.dp), 70, false)
+        if (chrome.sideButtons) {
+            m.LeftButtons.forEach { (top, height) ->
+                SideButton(
+                    Modifier.align(Alignment.TopStart).offset(x = -m.ButtonProtrusion, y = top),
+                    height,
+                    isLeft = true,
+                    face = chrome.buttonColor ?: chrome.railColor ?: m.ButtonFace,
+                )
+            }
+            m.RightButtons.forEach { (top, height) ->
+                SideButton(
+                    Modifier.align(Alignment.TopEnd).offset(x = m.ButtonProtrusion, y = top),
+                    height,
+                    isLeft = false,
+                    face = chrome.buttonColor ?: chrome.railColor ?: m.ButtonFace,
+                )
+            }
+        }
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .mockupShadow(elevation, RoundedCornerShape(42.dp))
-                .clip(RoundedCornerShape(42.dp))
-                .background(Brush.linearGradient(listOf(Color(0xFF3A3A3A), Color(0xFF1A1A1A))))
-                .padding(1.5.dp)
-                .clip(RoundedCornerShape(40.dp))
+                .mockupShadow(chrome.elevation, RoundedCornerShape(m.BodyCorner))
+                .clip(RoundedCornerShape(m.BodyCorner))
+                // The enclosure takes whatever finish the material asks for, falling back to the
+                // frame's own. The black surround inside it does not: that is the screen's border,
+                // and it is black on a device of any colour.
+                .background(
+                    Brush.linearGradient(
+                        listOf(chrome.railColor ?: m.RailColor, chrome.backColor ?: m.BackColor)
+                    )
+                )
+                .padding(m.Rim)
+                .clip(RoundedCornerShape(m.RimCorner))
                 .background(Color.Black)
-                .padding(7.dp)
-                .clip(RoundedCornerShape(32.dp))
+                .padding(m.Bezel)
+                .clip(RoundedCornerShape(m.ScreenCorner))
         ) {
             Box(Modifier.fillMaxSize().padding(top = if (edgeToEdge) 0.dp else StatusBarHeight)) { content() }
             if (showStatusBar) StatusBar(
@@ -554,12 +600,8 @@ private fun bandShape(capAtTop: Boolean): Shape = GenericShape { size, _ ->
     }
 }
 
-/** Outer rim of a tablet enclosure, and the black bezel inside it. */
-private val TabletRimWidth = 2.dp
-private val TabletBezelWidth = 8.dp
-
 /** How far [TabletBezel] insets its screen from the body's edge, on every side. */
-internal val TabletBezelInset: Dp = TabletRimWidth + TabletBezelWidth
+internal val TabletBezelInset: Dp = AndroidTabletMetrics.Inset
 
 /**
  * A neutral tablet enclosure: rounded rim, black bezel, no camera notch. [modifier] sizes the
@@ -572,19 +614,24 @@ internal fun TabletBezel(
     clock: String,
     statusBarContentDark: Boolean,
     edgeToEdge: Boolean,
-    elevation: Dp,
+    chrome: BezelChrome,
     content: @Composable () -> Unit,
 ) {
+    val m = AndroidTabletMetrics
     Box(
         modifier = modifier
-            .mockupShadow(elevation, RoundedCornerShape(28.dp))
-            .clip(RoundedCornerShape(28.dp))
-            .background(Brush.linearGradient(listOf(Color(0xFF3A3A3A), Color(0xFF1A1A1A))))
-            .padding(TabletRimWidth)
-            .clip(RoundedCornerShape(26.dp))
+            .mockupShadow(chrome.elevation, RoundedCornerShape(m.BodyCorner))
+            .clip(RoundedCornerShape(m.BodyCorner))
+            .background(
+                Brush.linearGradient(
+                    listOf(chrome.railColor ?: m.RailColor, chrome.backColor ?: m.BackColor)
+                )
+            )
+            .padding(m.Rim)
+            .clip(RoundedCornerShape(m.RimCorner))
             .background(Color.Black)
-            .padding(TabletBezelWidth)
-            .clip(RoundedCornerShape(20.dp))
+            .padding(m.Bezel)
+            .clip(RoundedCornerShape(m.ScreenCorner))
     ) {
         // Non-edge-to-edge reserves the status bar height so top content isn't occluded.
         Box(Modifier.fillMaxSize().padding(top = if (edgeToEdge) 0.dp else StatusBarHeight)) { content() }
@@ -597,16 +644,16 @@ internal fun TabletBezel(
 }
 
 @Composable
-private fun SideButton(modifier: Modifier, heightDp: Int, isLeft: Boolean) {
-    val shape = if (isLeft) RoundedCornerShape(topStart = 2.dp, bottomStart = 2.dp)
-    else RoundedCornerShape(topEnd = 2.dp, bottomEnd = 2.dp)
+private fun SideButton(modifier: Modifier, height: Dp, isLeft: Boolean, face: Color) {
+    val m = AndroidPhoneMetrics
+    val shape = if (isLeft) RoundedCornerShape(topStart = m.ButtonCorner, bottomStart = m.ButtonCorner)
+    else RoundedCornerShape(topEnd = m.ButtonCorner, bottomEnd = m.ButtonCorner)
     Box(
         modifier = modifier
-            .size(width = 5.dp, height = heightDp.dp)
+            .size(width = m.ButtonWidth, height = height)
             .background(
                 Brush.horizontalGradient(
-                    if (isLeft) listOf(Color(0xFF0F0F0F), Color(0xFF2E2E2E))
-                    else listOf(Color(0xFF2E2E2E), Color(0xFF0F0F0F))
+                    if (isLeft) listOf(m.ButtonShadow, face) else listOf(face, m.ButtonShadow)
                 ),
                 shape
             )

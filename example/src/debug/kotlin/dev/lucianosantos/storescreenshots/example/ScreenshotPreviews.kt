@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.lucianosantos.storescreenshots.AppleIPhone67ScreenshotPreview
@@ -38,6 +39,7 @@ import dev.lucianosantos.storescreenshots.DeviceImageMockup
 import dev.lucianosantos.storescreenshots.DeviceKind
 import dev.lucianosantos.storescreenshots.Screen
 import dev.lucianosantos.storescreenshots.DeviceMockup
+import dev.lucianosantos.storescreenshots.MockupPosition
 import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.GlassReflexStyle
 import dev.lucianosantos.storescreenshots.GlassShadow
@@ -135,6 +137,54 @@ fun PerspectivePreview() = ScreenshotPreview(
     title = "Tilt it in 3D",
     description = "Perspective XYZ rotation — just mockupRotationX / Y / Z on ScreenshotStyle",
     style = perspectiveScreenshotStyle,
+) { CounterScreen(count = 42) }
+
+/** One device turned through every rail it has — the showcase for the solid renderer. */
+@GooglePlayFeatureGraphicScreenshotPreview
+@Composable
+fun SolidShowcasePreview() = SolidShowcaseBanner(
+    title = "One device, every angle",
+    description = "Rails, buttons, speaker grille and charge port, all from the same frame",
+)
+
+/** The Android frame in a green no phone ships in — mockupMaterial is not a finish picker. */
+@PhoneScreenshotPreview
+@Composable
+fun GreenPreview() = ScreenshotPreview(
+    formFactor = FormFactor.Phone,
+    title = "Any colour you want",
+    description = "The rails, their buttons and the machined edge are whatever you set",
+    style = greenScreenshotStyle,
+) { CounterScreen(count = 42) }
+
+/** The same iPhone frame finished in silver, from mockupMaterial alone. */
+@AppleIPhone67ScreenshotPreview
+@Composable
+fun SilverPreview() = ScreenshotPreview(
+    formFactor = FormFactor.AppleIPhone67,
+    title = "Any finish you like",
+    description = "mockupMaterial recolours the rails and the buttons milled out of them",
+    style = silverScreenshotStyle,
+) { CounterScreen(count = 42) }
+
+/** The iPhone at the same tilt, where the side button rides the rail rather than the front face. */
+@AppleIPhone67ScreenshotPreview
+@Composable
+fun ApplePerspectivePreview() = ScreenshotPreview(
+    formFactor = FormFactor.AppleIPhone67,
+    title = "Solid, not flat",
+    description = "Tilt it and the body has real depth — the rail, its buttons and the light all follow the angle",
+    style = ScreenshotStyle(
+        mockupPosition = MockupPosition.Middle,
+        mockupOffset = DpOffset(x = 16.dp, y = 0.dp),
+        mockupRotationY = -30f,
+        mockupRotationX = 6f,
+        mockupRotation = -4f,
+        mockupElevation = 20.dp,
+        background = { MarketingBackground() },
+        title = { text -> StyledTitle(text) },
+        description = { text -> StyledDescription(text) },
+    ),
 ) { CounterScreen(count = 42) }
 
 // --- Glass effect previews (mirror PhoneGlassExampleTest). These render the same framed output as

@@ -24,7 +24,9 @@ class ScreenshotScope internal constructor(
     /**
      * Renders the device bezel (phone/tablet/watch/iPhone frame) with [content] inside.
      * Place it wherever you want in your custom layout. [rotationX], [rotationY], [rotationZ],
-     * and [cameraDistance] tilt the device in 3D exactly like [DeviceMockup].
+     * and [cameraDistance] tilt the device in 3D exactly like [DeviceMockup] — an X or Y tilt draws
+     * it as a solid body — and [material] is what that body is made of, defaulting to whatever the
+     * screenshot's own [ScreenshotStyle.mockupMaterial] says.
      */
     @Composable
     fun Mockup(
@@ -33,6 +35,7 @@ class ScreenshotScope internal constructor(
         rotationY: Float = 0f,
         rotationZ: Float = 0f,
         cameraDistance: Float = DefaultMockupCameraDistance,
+        material: MockupMaterial = style.mockupMaterial,
         content: @Composable () -> Unit,
     ) {
         val content = glassWrap(style.screenGlass, content)
@@ -54,6 +57,7 @@ class ScreenshotScope internal constructor(
                 rotationY = rotationY,
                 rotationZ = rotationZ,
                 cameraDistance = cameraDistance,
+                material = material,
                 content = content,
             )
         }

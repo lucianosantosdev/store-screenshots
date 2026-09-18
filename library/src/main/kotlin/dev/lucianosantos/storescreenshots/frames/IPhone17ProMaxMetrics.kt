@@ -83,6 +83,12 @@ internal object IPhone17ProMaxMetrics : IPhoneMetrics {
     /** Corner radius of the display, as the device itself reports it. */
     override val ScreenCorner = 62f
 
+    /** An iPhone 17 Pro Max is 8.75 mm deep across 77.6 mm of width, so 0.1128 of [BodyWidth]. */
+    override val BodyThickness = BodyWidth * 0.1128f
+
+    /** 77.6 mm of body across [BodyWidth] points. */
+    override val BottomEdge = BottomEdgeMetrics(BodyWidth / 77.6f, BodyThickness)
+
     /** Width of the machined rail, from where the rail's grey gives way to black in the artwork. */
     override val Rail = 6.33f
 
@@ -120,6 +126,9 @@ internal object IPhone17ProMaxMetrics : IPhoneMetrics {
 
     /** Rounding on the outer end of a side button, fitted to the button artwork's corner. */
     override val ButtonCorner = 1f
+
+    /** 2.7 mm across 77.6 mm of body width. */
+    override val ButtonDepth = BodyWidth * (2.7f / 77.6f)
 
     /** The button's face darkens to this where it tucks under the enclosure. */
     override val ButtonShadowColor = Color(0xFF262626)

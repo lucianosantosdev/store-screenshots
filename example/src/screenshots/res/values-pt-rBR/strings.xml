@@ -20,4 +20,12 @@
     <string name="screenshot_chroma_desc">Pinte a tela de uma cor — o chroma key insere sua UI Compose no render</string>
     <string name="screenshot_four_devices_title">Um render, todos os dispositivos</string>
     <string name="screenshot_four_devices_desc">Desktop, laptop, telefone e tablet — insira sua UI Compose em todos dispositivos de uma vez com chroma key</string>
+    <string name="screenshot_apple_perspective_title">Sólido, não plano</string>
+    <string name="screenshot_apple_perspective_desc">Incline e o corpo ganha profundidade real — a lateral, os botões e a luz acompanham o ângulo</string>
+    <string name="screenshot_silver_title">O acabamento que você quiser</string>
+    <string name="screenshot_silver_desc">mockupMaterial recolore as laterais e os botões usinados nelas — mesmo aparelho, mesmas medidas</string>
+    <string name="screenshot_green_title">A cor que você quiser</string>
+    <string name="screenshot_green_desc">Um verde que nenhum aparelho tem — com laterais, botões, alto-falante e porta de carga</string>
+    <string name="screenshot_showcase_title">Mockups 3D de dispositivos</string>
+    <string name="screenshot_showcase_desc">Espessura real, laterais, botões e portas em qualquer ângulo — Jetpack Compose puro, sem motor 3D</string>
 </resources>

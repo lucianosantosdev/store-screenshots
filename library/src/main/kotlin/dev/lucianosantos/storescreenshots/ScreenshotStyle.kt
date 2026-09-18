@@ -17,9 +17,16 @@ import androidx.compose.ui.unit.dp
  *   This is a [Modifier.offset]-style visual shift; layout sizes don't change.
  * - [mockupRotationX] / [mockupRotationY] / [mockupRotation] — tilt the device in 3D (degrees):
  *   X tips it toward/away from the viewer, Y turns it left/right, and [mockupRotation] spins it
- *   in-plane (Z). Set [mockupRotationX] or [mockupRotationY] for a perspective mockup.
+ *   in-plane (Z). Setting [mockupRotationX] or [mockupRotationY] draws the device as a solid body
+ *   with real thickness — the side rail the turn exposes, the buttons standing on it, and lighting
+ *   that follows the angle — rather than as a flat card. [mockupRotation] on its own is an in-plane
+ *   spin and leaves the device face-on.
  * - [mockupCameraDistance] — perspective strength for the 3D tilt; see
  *   [DefaultMockupCameraDistance].
+ * - [mockupMaterial] — what the device is made of once a tilt makes its sides visible: how deep
+ *   the body is, where the light comes from, and the shade of its rails. Has no effect on an
+ *   untilted mockup, and every field defaults to the device's own measurements. See
+ *   [MockupMaterial].
  * - [mockupElevation] — casts a soft drop shadow in the shape of the device's enclosure, so it
  *   lifts off the banner rather than sitting flat on it. Reads like Material elevation: the value
  *   is the shadow's blur radius, and it is offset downward by a fraction of that. `0.dp` (the
@@ -67,4 +74,6 @@ data class ScreenshotStyle(
     val background: (@Composable () -> Unit)? = null,
     val title: (@Composable (text: String) -> Unit)? = null,
     val description: (@Composable (text: String) -> Unit)? = null,
+    // Appended last so a caller constructing this positionally keeps compiling.
+    val mockupMaterial: MockupMaterial = MockupMaterial(),
 )

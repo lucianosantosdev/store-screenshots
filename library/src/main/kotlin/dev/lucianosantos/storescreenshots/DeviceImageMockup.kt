@@ -462,7 +462,16 @@ fun DeviceImageMockup(
                         )
                         layout(0, 0) { placeable.place(0, 0) }
                     }
-                    .drawWithContent { layers[i].record { this@drawWithContent.drawContent() } }
+                    // The recorder reports no size of its own, so the layer has to be told how big
+                    // the content it is holding is: record() would otherwise default to this draw
+                    // scope's size, which is zero here. Harmless on the software canvas a
+                    // screenshot is rendered through, where the recorded block is simply replayed,
+                    // but an empty layer is a real hazard on a hardware one.
+                    .drawWithContent {
+                        layers[i].record(
+                            IntSize(nativeWidth(i).roundToPx(), nh.roundToPx())
+                        ) { this@drawWithContent.drawContent() }
+                    }
             ) { Box(Modifier.fillMaxSize()) { screens[i].content() } }
         }
 

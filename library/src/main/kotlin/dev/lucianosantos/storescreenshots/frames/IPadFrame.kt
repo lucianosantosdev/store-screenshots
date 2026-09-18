@@ -9,7 +9,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.ProvideDeviceEnvironment
-import dev.lucianosantos.storescreenshots.ScaledMockup
 import dev.lucianosantos.storescreenshots.ScreenshotStyle
 import dev.lucianosantos.storescreenshots.iPadBodySize
 import dev.lucianosantos.storescreenshots.frames.IPadAir13Metrics as M
@@ -49,6 +48,7 @@ fun AppleIPadFrame(
         verticalPadding = 56.dp,
         titleFontSize = 36.sp,
         descriptionFontSize = 18.sp,
+        tiltHandledByMockup = true,
         mockup = { externalModifier -> IPadMockup(externalModifier, style, aspectRatio, content) }
     )
 }
@@ -69,14 +69,22 @@ private fun ColumnScope.IPadMockup(
     // See [AppleFrame]: the bezel is uniform, so an overridden ratio stretches the screen by what
     // it stretches the body by, and that — not the logical height — is what content is measured in.
     val screenHeight = logical.height + (bodyHeight - nativeBodyHeight)
-    ScaledMockup(bodyWidth, bodyHeight, externalModifier) {
+    MockupSurface(
+        nativeWidth = bodyWidth,
+        nativeHeight = bodyHeight,
+        modifier = externalModifier,
+        body = iPadBody(bodyWidth, bodyHeight),
+        tilt = style.mockupTilt(),
+        elevation = style.mockupElevation,
+        material = style.mockupMaterial,
+    ) { chrome ->
         IPadBezel(
             modifier = Modifier.fillMaxSize(),
             showStatusBar = style.showStatusBar,
             clock = style.statusBarClock,
             statusBarContentDark = style.statusBarContentDark,
             edgeToEdge = style.edgeToEdge,
-            elevation = style.mockupElevation,
+            chrome = chrome,
         ) {
             ProvideDeviceEnvironment(logical.width, screenHeight, content)
         }

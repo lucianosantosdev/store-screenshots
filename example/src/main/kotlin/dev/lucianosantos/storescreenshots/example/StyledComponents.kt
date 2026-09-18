@@ -22,6 +22,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.lucianosantos.storescreenshots.GlassEffect
+import dev.lucianosantos.storescreenshots.MockupMaterial
+import dev.lucianosantos.storescreenshots.GlassReflexStyle
+import dev.lucianosantos.storescreenshots.GlassShadow
 import dev.lucianosantos.storescreenshots.MockupPosition
 import dev.lucianosantos.storescreenshots.ScreenshotStyle
 
@@ -37,9 +41,15 @@ val styledScreenshotStyle = ScreenshotStyle(
 )
 
 /**
- * A perspective 3D tilt: the device turns on its Y axis (left edge toward the viewer), tips a
- * little on X, and spins slightly on Z — the look of a marketing hero shot, all from
- * [ScreenshotStyle]'s `mockupRotationY` / `mockupRotationX` / `mockupRotation`.
+ * A perspective 3D tilt: the device turns on its Y axis, tips a little on X, and spins slightly on
+ * Z — the look of a marketing hero shot, all from [ScreenshotStyle]'s `mockupRotationY` /
+ * `mockupRotationX` / `mockupRotation`.
+ *
+ * Any X or Y tilt draws the device as a solid body rather than a flat card, so this also shows the
+ * parts that only exist once it has real thickness: the side rail the turn exposes, the buttons
+ * standing on it, and the shadow cast from the tilted silhouette. The glass is a plain
+ * [GlassEffect] — it is drawn on the screen and warped along with it, and the renderer adds its own
+ * sheen on top that follows where the light falls on a surface at this angle.
  */
 val perspectiveScreenshotStyle = ScreenshotStyle(
     mockupPosition = MockupPosition.Middle,
@@ -47,6 +57,71 @@ val perspectiveScreenshotStyle = ScreenshotStyle(
     mockupRotationY = -26f,
     mockupRotationX = 8f,
     mockupRotation = -6f,
+    mockupCameraDistance = 12f,
+    mockupElevation = 18.dp,
+    screenGlass = GlassEffect(
+        reflexStyle = GlassReflexStyle.Wedge,
+        reflexAngle = -32f,
+        reflexPosition = 0.55f,
+        reflexWidth = 0.5f,
+        reflexAlpha = 0.20f,
+        shadow = GlassShadow.BottomLeft,
+        shadowAlpha = 0.22f,
+    ),
+    background = { MarketingBackground() },
+    title = { text -> StyledTitle(text) },
+    description = { text -> StyledDescription(text) },
+)
+
+/**
+ * A silver iPhone, from [MockupMaterial] alone.
+ *
+ * The rails, the buttons milled out of them and the machined edge along them all take the finish;
+ * the device's own measurements do not change, and neither does the black front bezel, which is
+ * black on every iPhone whatever the body is made of. Only a tilt makes any of it visible, which is
+ * why this style turns the device toward the rail its buttons are on.
+ */
+val silverScreenshotStyle = ScreenshotStyle(
+    mockupPosition = MockupPosition.Middle,
+    mockupRotationY = 46f,
+    mockupRotationX = 6f,
+    mockupRotation = -4f,
+    mockupElevation = 20.dp,
+    mockupMaterial = MockupMaterial(
+        railColor = Color(0xFFD6D8DB),
+        edgeHighlightColor = Color(0xFFFFFFFF),
+        backEdgeColor = Color(0xFF8E9195),
+    ),
+    background = { MarketingBackground() },
+    title = { text -> StyledTitle(text) },
+    description = { text -> StyledDescription(text) },
+)
+
+/**
+ * A green Android phone, from [MockupMaterial] alone.
+ *
+ * The companion to [silverScreenshotStyle], on the other frame and in a colour no device ships in:
+ * the point of the material is that it is not a finish picker, it is whatever the rails, the
+ * buttons milled out of them and the machined edge along them should be.
+ *
+ * Turned on both axes so that two rails are in view at once — the left, where the Android frame
+ * keeps its volume buttons, and the bottom, where its speaker grille and charge port are cut. The X
+ * tip has to be the steeper of the two: a phone is twice as tall as it is wide, so the camera
+ * already looks at its bottom edge from about 25 degrees above and the body has to pass that before
+ * a horizontal rail comes into view at all. The corner where the two rails meet is continuous,
+ * which is what a body extruded from one outline gets for free and four separate faces would not.
+ */
+val greenScreenshotStyle = ScreenshotStyle(
+    mockupPosition = MockupPosition.Middle,
+    mockupRotationY = 36f,
+    mockupRotationX = 34f,
+    mockupRotation = -4f,
+    mockupElevation = 20.dp,
+    mockupMaterial = MockupMaterial(
+        railColor = Color(0xFF4F9A6A),
+        edgeHighlightColor = Color(0xFFB8E6C8),
+        backEdgeColor = Color(0xFF1F4430),
+    ),
     background = { MarketingBackground() },
     title = { text -> StyledTitle(text) },
     description = { text -> StyledDescription(text) },
