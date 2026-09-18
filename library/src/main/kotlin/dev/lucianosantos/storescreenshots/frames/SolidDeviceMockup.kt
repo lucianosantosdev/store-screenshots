@@ -574,46 +574,68 @@ private fun DrawScope.drawRailButtons(
 
         val baseAt = base.map { project(it, cameraPx, pivot) ?: return@forEach }
         val capAt = cap.map { project(it, cameraPx, pivot) ?: return@forEach }
+        val capCentre = cap.fold(Vec3(0f, 0f, 0f)) { a, c -> Vec3(a.x + c.x, a.y + c.y, a.z + c.z) }
+            .let { Vec3(it.x / outline.size, it.y / outline.size, it.z / outline.size) }
 
         // Walls first, cap over them: the cap is the nearest surface of a convex boss.
+        //
+        // Drawn as one path per run of neighbouring walls rather than one per wall. A boss is small
+        // and its rounded ends are sampled finely, so quad-per-wall puts dozens of antialiased
+        // edges against each other across a few dozen pixels, and every one of them leaves a
+        // fringe: the wall comes out visibly hatched rather than smooth. Merging the run removes
+        // the internal edges altogether — there is nothing left to seam.
         val n = outline.size
-        var anyVisible = false
-        (0 until n).forEach { i ->
+        val visibleWalls = (0 until n).filter { i ->
             val j = (i + 1) % n
             val centre = Vec3(
                 (base[i].x + base[j].x + cap[i].x + cap[j].x) / 4f,
                 (base[i].y + base[j].y + cap[i].y + cap[j].y) / 4f,
                 (base[i].z + base[j].z + cap[i].z + cap[j].z) / 4f,
             )
-            if (!facesCamera(wallNormals[i], centre, cameraPx)) return@forEach
-            anyVisible = true
-            val wall = Path().apply {
-                moveTo(baseAt[i].x, baseAt[i].y)
-                lineTo(baseAt[j].x, baseAt[j].y)
-                lineTo(capAt[j].x, capAt[j].y)
-                lineTo(capAt[i].x, capAt[i].y)
+            facesCamera(wallNormals[i], centre, cameraPx)
+        }
+        // The seat first, and only then the boss standing in it. This line lies on the rail's own
+        // surface, so the part of it behind the button has to be covered by the button — stroking
+        // the whole ring after the cap draws the far half straight over the near face, and the
+        // button comes out looking like a wireframe of itself.
+        if (visibleWalls.isNotEmpty() || facesCamera(capNormal, capCentre, cameraPx)) {
+            val seat = Path().apply {
+                moveTo(baseAt[0].x, baseAt[0].y)
+                baseAt.drop(1).forEach { lineTo(it.x, it.y) }
                 close()
             }
-            // Darkest where it tucks under the enclosure, which is the shade the flat bezel paints
-            // across its buttons and the one the Simulator capture shows.
-            drawPath(
-                wall,
-                Brush.linearGradient(
-                    0f to tint(button.shadow, lighting.shadeFactor(wallNormals[i])),
-                    1f to tint(button.face, lighting.shadeFactor(wallNormals[i])),
-                    start = baseAt[i],
-                    end = capAt[i],
-                ),
-            )
+            drawPath(seat, button.shadow.copy(alpha = lighting.contactShadowAlpha), style = Stroke(ContactLineWidth))
         }
 
-        val capVisible = facesCamera(
-            capNormal,
-            cap.fold(Vec3(0f, 0f, 0f)) { a, c -> Vec3(a.x + c.x, a.y + c.y, a.z + c.z) }
-                .let { Vec3(it.x / n, it.y / n, it.z / n) },
-            cameraPx,
-        )
-        if (capVisible) {
+        contiguousRuns(visibleWalls, n).forEach { run ->
+            val last = (run.last() + 1) % n
+            val wall = Path().apply {
+                moveTo(baseAt[run.first()].x, baseAt[run.first()].y)
+                run.drop(1).forEach { lineTo(baseAt[it].x, baseAt[it].y) }
+                lineTo(baseAt[last].x, baseAt[last].y)
+                lineTo(capAt[last].x, capAt[last].y)
+                for (index in run.indices.reversed()) {
+                    lineTo(capAt[run[index]].x, capAt[run[index]].y)
+                }
+                close()
+            }
+            // Shaded by the run as a whole, and darkest where it tucks under the enclosure — the
+            // shade the flat bezel paints across its buttons, and the one the capture shows.
+            val shade = run.map { lighting.shadeFactor(wallNormals[it]) }.average().toFloat()
+            val middle = run[run.size / 2]
+            val brush = if ((baseAt[middle] - capAt[middle]).getDistance() < 0.5f) {
+                SolidColor(tint(button.face, shade))
+            } else {
+                Brush.linearGradient(
+                    0f to tint(button.shadow, shade),
+                    1f to tint(button.face, shade),
+                    start = baseAt[middle],
+                    end = capAt[middle],
+                )
+            }
+            drawPath(wall, brush)
+        }
+        if (facesCamera(capNormal, capCentre, cameraPx)) {
             val face = Path().apply {
                 moveTo(capAt[0].x, capAt[0].y)
                 capAt.drop(1).forEach { lineTo(it.x, it.y) }
@@ -631,16 +653,6 @@ private fun DrawScope.drawRailButtons(
                 body.rimColor.copy(alpha = (polish * ButtonRimStrength).coerceIn(0f, 1f)),
                 style = Stroke(RimLineWidth),
             )
-        }
-
-        // A contact shadow where the boss meets the rail.
-        if (anyVisible || capVisible) {
-            val seat = Path().apply {
-                moveTo(baseAt[0].x, baseAt[0].y)
-                baseAt.drop(1).forEach { lineTo(it.x, it.y) }
-                close()
-            }
-            drawPath(seat, button.shadow.copy(alpha = lighting.contactShadowAlpha), style = Stroke(ContactLineWidth))
         }
     }
 }
@@ -857,6 +869,7 @@ private const val RimLineWidth = 1f
 /** A button's milled edge: how strongly it shows, and how much of that survives with the light behind. */
 private const val ButtonRimStrength = 0.8f
 private const val ButtonRimFloor = 0.45f
+
 
 /** The far lip of a port or a speaker hole, where the cut through the metal catches the light. */
 private const val FeatureRimStrength = 0.45f

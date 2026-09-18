@@ -498,6 +498,13 @@ internal fun DeviceBody.withMaterial(material: MockupMaterial): DeviceBody = cop
     railColor = material.railColor ?: railColor,
     rimColor = material.edgeHighlightColor ?: rimColor,
     backColor = material.backEdgeColor ?: backColor,
+    // A button is milled out of the same metal as the rail it sits in, so recolouring the rail
+    // recolours it too — asking for a silver device and getting silver rails with the black buttons
+    // of the default one would be a strange thing to have to work around. Only buttons that share
+    // the rail's colour follow it, so a device that deliberately contrasts them keeps its contrast.
+    buttons = material.railColor?.let { recoloured ->
+        buttons.map { if (it.face == railColor) it.copy(face = recoloured) else it }
+    } ?: buttons,
 )
 
 /**
