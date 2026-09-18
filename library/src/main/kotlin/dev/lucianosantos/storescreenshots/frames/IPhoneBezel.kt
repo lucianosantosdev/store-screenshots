@@ -50,6 +50,9 @@ enum class AppleIPhoneModel(internal val metrics: IPhoneMetrics) {
  * The side buttons stand proud of [modifier]'s bounds by [IPhoneMetrics.LeftButtonProtrusion] /
  * [IPhoneMetrics.RightButtonProtrusion] scaled points, the way they do on the device; leave a
  * little horizontal room around the frame for them.
+ *
+ * [chrome] says what the caller is drawing instead. A solid mockup stands the buttons on a
+ * projected rail and casts the shadow from the projected silhouette, so it asks for neither here.
  */
 @Composable
 internal fun IPhoneBezel(
@@ -59,7 +62,7 @@ internal fun IPhoneBezel(
     statusBarContentDark: Boolean,
     edgeToEdge: Boolean,
     metrics: IPhoneMetrics,
-    elevation: Dp = 0.dp,
+    chrome: BezelChrome = BezelChrome(),
     content: @Composable () -> Unit,
 ) {
     BoxWithConstraints(modifier) {
@@ -69,12 +72,12 @@ internal fun IPhoneBezel(
         val statusBarColor = if (statusBarContentDark) Color.Black else Color.White
         val bodyShape = RoundedCornerShape((metrics.BodyCorner * u).dp)
 
-        SideButtons(metrics, u, elevation)
+        if (chrome.sideButtons) SideButtons(metrics, u, chrome.elevation)
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .mockupShadow(elevation, bodyShape)
+                .mockupShadow(chrome.elevation, bodyShape)
                 .clip(bodyShape)
                 .background(metrics.RimColor)
                 .padding((metrics.Rim * u).dp)

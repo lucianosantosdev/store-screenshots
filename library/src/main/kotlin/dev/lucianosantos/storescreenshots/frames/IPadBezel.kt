@@ -39,7 +39,7 @@ internal fun IPadBezel(
     clock: String,
     statusBarContentDark: Boolean,
     edgeToEdge: Boolean,
-    elevation: Dp = 0.dp,
+    chrome: BezelChrome = BezelChrome(),
     content: @Composable () -> Unit,
 ) {
     BoxWithConstraints(modifier) {
@@ -48,12 +48,12 @@ internal fun IPadBezel(
         val screenWidth = (M.ScreenWidth * u).dp
         val bodyShape = RoundedCornerShape((M.BodyCorner * u).dp)
 
-        Buttons(u, elevation)
+        if (chrome.sideButtons) Buttons(u, chrome.elevation)
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .mockupShadow(elevation, bodyShape)
+                .mockupShadow(chrome.elevation, bodyShape)
                 .clip(bodyShape)
                 .background(M.RimColor)
                 .padding((M.Rim * u).dp)

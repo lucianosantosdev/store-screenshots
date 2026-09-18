@@ -22,6 +22,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.lucianosantos.storescreenshots.GlassEffect
+import dev.lucianosantos.storescreenshots.GlassReflexStyle
+import dev.lucianosantos.storescreenshots.GlassShadow
 import dev.lucianosantos.storescreenshots.MockupPosition
 import dev.lucianosantos.storescreenshots.ScreenshotStyle
 
@@ -37,9 +40,15 @@ val styledScreenshotStyle = ScreenshotStyle(
 )
 
 /**
- * A perspective 3D tilt: the device turns on its Y axis (left edge toward the viewer), tips a
- * little on X, and spins slightly on Z — the look of a marketing hero shot, all from
- * [ScreenshotStyle]'s `mockupRotationY` / `mockupRotationX` / `mockupRotation`.
+ * A perspective 3D tilt: the device turns on its Y axis, tips a little on X, and spins slightly on
+ * Z — the look of a marketing hero shot, all from [ScreenshotStyle]'s `mockupRotationY` /
+ * `mockupRotationX` / `mockupRotation`.
+ *
+ * Any X or Y tilt draws the device as a solid body rather than a flat card, so this also shows the
+ * parts that only exist once it has real thickness: the side rail the turn exposes, the buttons
+ * standing on it, and the shadow cast from the tilted silhouette. The glass is a plain
+ * [GlassEffect] — it is drawn on the screen and warped along with it, and the renderer adds its own
+ * sheen on top that follows where the light falls on a surface at this angle.
  */
 val perspectiveScreenshotStyle = ScreenshotStyle(
     mockupPosition = MockupPosition.Middle,
@@ -47,6 +56,17 @@ val perspectiveScreenshotStyle = ScreenshotStyle(
     mockupRotationY = -26f,
     mockupRotationX = 8f,
     mockupRotation = -6f,
+    mockupCameraDistance = 12f,
+    mockupElevation = 18.dp,
+    screenGlass = GlassEffect(
+        reflexStyle = GlassReflexStyle.Wedge,
+        reflexAngle = -32f,
+        reflexPosition = 0.55f,
+        reflexWidth = 0.5f,
+        reflexAlpha = 0.20f,
+        shadow = GlassShadow.BottomLeft,
+        shadowAlpha = 0.22f,
+    ),
     background = { MarketingBackground() },
     title = { text -> StyledTitle(text) },
     description = { text -> StyledDescription(text) },

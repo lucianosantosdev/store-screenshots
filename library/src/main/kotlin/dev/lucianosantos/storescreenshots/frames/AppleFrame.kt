@@ -9,7 +9,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.ProvideDeviceEnvironment
-import dev.lucianosantos.storescreenshots.ScaledMockup
 import dev.lucianosantos.storescreenshots.ScreenshotStyle
 import dev.lucianosantos.storescreenshots.iPhoneBodySize
 
@@ -62,6 +61,7 @@ fun AppleFrame(
         verticalPadding = 28.dp,
         titleFontSize = 26.sp,
         descriptionFontSize = 14.sp,
+        tiltHandledByMockup = true,
         mockup = { externalModifier ->
             IPhoneMockup(externalModifier, style, formFactor, device, aspectRatio, content)
         }
@@ -86,7 +86,15 @@ private fun ColumnScope.IPhoneMockup(
     // exactly what it stretches the body by. Reporting that rather than the logical height keeps
     // what content is told it has and what it is actually measured in the same number.
     val screenHeight = logical.height + (bodyHeight - nativeBodyHeight)
-    ScaledMockup(bodyWidth, bodyHeight, externalModifier) {
+    MockupSurface(
+        nativeWidth = bodyWidth,
+        nativeHeight = bodyHeight,
+        modifier = externalModifier,
+        body = iPhoneBody(device.metrics, bodyWidth, bodyHeight),
+        tilt = style.mockupTilt(),
+        elevation = style.mockupElevation,
+        material = style.mockupMaterial,
+    ) { chrome ->
         IPhoneBezel(
             modifier = Modifier.fillMaxSize(),
             showStatusBar = style.showStatusBar,
@@ -94,7 +102,7 @@ private fun ColumnScope.IPhoneMockup(
             statusBarContentDark = style.statusBarContentDark,
             edgeToEdge = style.edgeToEdge,
             metrics = device.metrics,
-            elevation = style.mockupElevation,
+            chrome = chrome,
         ) {
             ProvideDeviceEnvironment(logical.width, screenHeight, content)
         }

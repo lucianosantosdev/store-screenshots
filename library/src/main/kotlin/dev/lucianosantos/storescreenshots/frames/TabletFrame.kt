@@ -9,7 +9,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.ProvideDeviceEnvironment
-import dev.lucianosantos.storescreenshots.ScaledMockup
 import dev.lucianosantos.storescreenshots.ScreenshotStyle
 import dev.lucianosantos.storescreenshots.TabletBezel
 import dev.lucianosantos.storescreenshots.tabletBodySize
@@ -52,6 +51,7 @@ fun TabletFrame(
         verticalPadding = 56.dp,
         titleFontSize = 36.sp,
         descriptionFontSize = 18.sp,
+        tiltHandledByMockup = true,
         mockup = { externalModifier ->
             TabletMockup(externalModifier, style, formFactor, aspectRatio, content)
         }
@@ -75,14 +75,22 @@ private fun ColumnScope.TabletMockup(
     // that rather than the logical height keeps what content is told it has and what it is
     // actually measured in the same number.
     val screenHeight = logical.height + (bodyHeight - nativeBodyHeight)
-    ScaledMockup(bodyWidth, bodyHeight, externalModifier) {
+    MockupSurface(
+        nativeWidth = bodyWidth,
+        nativeHeight = bodyHeight,
+        modifier = externalModifier,
+        body = androidTabletBody(bodyWidth, bodyHeight),
+        tilt = style.mockupTilt(),
+        elevation = style.mockupElevation,
+        material = style.mockupMaterial,
+    ) { chrome ->
         TabletBezel(
             modifier = Modifier.fillMaxSize(),
             showStatusBar = style.showStatusBar,
             clock = style.statusBarClock,
             statusBarContentDark = style.statusBarContentDark,
             edgeToEdge = style.edgeToEdge,
-            elevation = style.mockupElevation,
+            chrome = chrome,
         ) {
             ProvideDeviceEnvironment(logical.width, screenHeight, content)
         }

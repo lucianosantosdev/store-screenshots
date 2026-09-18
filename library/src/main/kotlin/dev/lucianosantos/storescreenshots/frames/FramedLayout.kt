@@ -42,6 +42,13 @@ internal fun FramedLayout(
     verticalPadding: Dp,
     titleFontSize: TextUnit = 30.sp,
     descriptionFontSize: TextUnit = 16.sp,
+    /**
+     * True when [mockup] tilts the device itself. The built-in frames do, because a solid device has
+     * to be *built* tilted rather than have a flat one turned afterwards. A caller's own
+     * `style.mockupFrame` cannot — the library knows nothing about its geometry — so for that one
+     * the tilt stays here, as the flat `graphicsLayer` it has always been.
+     */
+    tiltHandledByMockup: Boolean = false,
     mockup: @Composable ColumnScope.(externalModifier: Modifier) -> Unit,
 ) {
     // X offset: visual-only (Modifier.offset) so the device keeps its full size and crops
@@ -49,14 +56,18 @@ internal fun FramedLayout(
     // overlap the shifted device.
     val ox = style.mockupOffset.x
     val oy = style.mockupOffset.y
-    val offsetModifier = Modifier
-        .offset(x = ox)
-        .mockup3dRotation(
-            rotationX = style.mockupRotationX,
-            rotationY = style.mockupRotationY,
-            rotationZ = style.mockupRotation,
-            cameraDistance = style.mockupCameraDistance,
-        )
+    val offsetModifier = if (tiltHandledByMockup) {
+        Modifier.offset(x = ox)
+    } else {
+        Modifier
+            .offset(x = ox)
+            .mockup3dRotation(
+                rotationX = style.mockupRotationX,
+                rotationY = style.mockupRotationY,
+                rotationZ = style.mockupRotation,
+                cameraDistance = style.mockupCameraDistance,
+            )
+    }
     Box(modifier = Modifier.fillMaxSize().background(backgroundColor)) {
         style.background?.invoke()
 

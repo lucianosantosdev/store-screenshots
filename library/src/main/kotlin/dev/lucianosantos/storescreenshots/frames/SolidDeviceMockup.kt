@@ -1,0 +1,883 @@
+package dev.lucianosantos.storescreenshots.frames
+
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.asAndroidPath
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
+import dev.lucianosantos.storescreenshots.ScaledMockup
+import dev.lucianosantos.storescreenshots.MockupMaterial
+import dev.lucianosantos.storescreenshots.ScreenshotStyle
+import dev.lucianosantos.storescreenshots.mockup3dRotation
+import android.graphics.Matrix as AndroidMatrix
+
+/**
+ * Draws a device as a solid object rather than a flat card: the live [bezel] is warped onto the
+ * projected front face, and the side walls the tilt turns toward the viewer are drawn as projected
+ * polygons behind it, so the device reads as something with real thickness.
+ *
+ * ## How the live screen survives being tilted
+ *
+ * [bezel] is composed at its native size into a [rememberGraphicsLayer], then replayed through the
+ * homography that carries the native rectangle onto the projected front face. A plane's perspective
+ * image *is* a homography, so four corner correspondences reproduce every interior point exactly —
+ * the screen is not approximated, and it stays a live composable rather than becoming a bitmap. On
+ * the software canvas that Roborazzi and the IDE preview both render through, replaying the layer
+ * re-executes its recorded drawing under the canvas transform, so text and rounded clips are drawn
+ * *through* the projection as vectors instead of being rasterised and resampled.
+ *
+ * The same [DeviceProjection] model produces both the front quad and the side walls, so the two
+ * agree by construction — nothing here has to reverse-engineer what `Modifier.graphicsLayer` does
+ * internally, and nothing drifts when they disagree, because they cannot.
+ *
+ * ## What [bezel] must not draw
+ *
+ * Anything a bezel would normally put *outside* its own bounds has to be suppressed here and drawn
+ * in 3D instead — a [rememberGraphicsLayer] does not clip, so it would otherwise be warped along
+ * with the front face and land in the wrong place:
+ *
+ * - **Side buttons** belong on the rail they are milled into, not on the front plane.
+ * - **The cast shadow** is a `BlurMaskFilter`, which works in device space and does not compose
+ *   with a projective transform at all; the router passes `elevation = 0.dp` down and this draws
+ *   the shadow itself from the projected silhouette.
+ *
+ * See [BezelChrome], which is how the router tells a bezel what to leave out.
+ */
+@Composable
+internal fun SolidDeviceMockup(
+    nativeWidth: Dp,
+    nativeHeight: Dp,
+    modifier: Modifier,
+    body: DeviceBody,
+    tilt: MockupTilt,
+    lighting: MockupLighting,
+    elevation: Dp,
+    bezel: @Composable () -> Unit,
+) {
+    val layer = rememberGraphicsLayer()
+    val clamped = tilt.clamped()
+
+    Layout(
+        content = {
+            // The bezel, composed at its native size, recorded, and drawn nowhere: this
+            // drawWithContent deliberately never calls drawContent() on its own canvas, so the only
+            // place the content lands is the layer.
+            Box(
+                Modifier.drawWithContent {
+                    layer.record(IntSize(size.width.toInt(), size.height.toInt())) {
+                        this@drawWithContent.drawContent()
+                    }
+                }
+            ) { bezel() }
+
+            Canvas(Modifier) { drawSolidDevice(layer, body, clamped, lighting, elevation, nativeWidth, nativeHeight) }
+        },
+        // Same footprint contract as ScaledMockup: the caller bounds one dimension and the device's
+        // own aspect ratio supplies the other.
+        modifier = modifier.aspectRatio(nativeWidth / nativeHeight, matchHeightConstraintsFirst = true),
+    ) { measurables, constraints ->
+        val nativeW = nativeWidth.roundToPx()
+        val nativeH = nativeHeight.roundToPx()
+        val recorder = measurables[0].measure(Constraints.fixed(nativeW, nativeH))
+        val targetW = if (constraints.hasBoundedWidth) constraints.maxWidth else nativeW
+        val targetH = if (constraints.hasBoundedHeight) constraints.maxHeight else nativeH
+        val canvas = measurables[1].measure(Constraints.fixed(targetW, targetH))
+        layout(targetW, targetH) {
+            // The recorder is placed first so its layer is filled before the canvas replays it.
+            recorder.place(0, 0)
+            canvas.place(0, 0)
+        }
+    }
+}
+
+/**
+ * Painter order for one solid device. Everything physical is drawn before the front face, which is
+ * safe without depth-sorting the two against each other: a visible side wall of a convex body whose
+ * front face still points at the camera can never project inside that face. `DeviceProjectionTest`
+ * checks that numerically across the supported range.
+ */
+private fun DrawScope.drawSolidDevice(
+    layer: androidx.compose.ui.graphics.layer.GraphicsLayer,
+    body: DeviceBody,
+    tilt: MockupTilt,
+    lighting: MockupLighting,
+    elevation: Dp,
+    nativeWidth: Dp,
+    nativeHeight: Dp,
+) {
+    val nativeW = nativeWidth.toPx()
+    val nativeH = nativeHeight.toPx()
+    if (nativeW <= 0f || nativeH <= 0f) return
+
+    val pivot = Offset(size.width / 2f, size.height / 2f)
+    // Never let the camera sit closer than the mockup's longest side: hwui's own advice, and what
+    // keeps a small mockupCameraDistance from folding the geometry through the near plane.
+    val cameraPx = maxOf(tilt.cameraPx(density), size.width, size.height)
+
+    val quad = projectFrontQuad(size.width, size.height, tilt, cameraPx, pivot)
+    val homography = quad?.let {
+        homography(floatArrayOf(0f, 0f, nativeW, 0f, nativeW, nativeH, 0f, nativeH), it)
+    }
+    if (homography == null) {
+        // Degenerate geometry — an angle at the edge of the supported range, or a footprint of
+        // nothing. Fall back to the flat, unrotated mockup rather than drawing nonsense.
+        drawRecordedFace(layer, scaleOnly(nativeW, nativeH))
+        return
+    }
+
+    // The body's outline, in the footprint's own pixels so it shares the front face's projection.
+    val scale = size.width / nativeW
+    val cornerPx = body.cornerRadius.toPx() * scale
+    val ring = projectRing(
+        samples = sampleRoundRectRing(size.width, size.height, cornerPx, cornerSamplesFor(cornerPx)),
+        thickness = body.thickness.toPx() * scale,
+        tilt = tilt,
+        cameraPx = cameraPx,
+        pivot = pivot,
+    )
+
+    val matrix = AndroidMatrix().apply { setValues(homography) }
+    if (ring != null && elevation > 0.dp) drawProjectedShadow(ring, elevation, lighting)
+    if (ring != null) drawRails(ring, body, tilt, lighting)
+    drawRailFeatures(body, tilt, lighting, cameraPx, pivot, scale)
+    drawRailButtons(body, tilt, lighting, cameraPx, pivot, scale)
+    drawRecordedFace(layer, matrix)
+    if (ring != null) drawFrontBevel(ring, body, lighting)
+    drawScreenOcclusion(body, matrix, nativeW, nativeH)
+    drawGlassSheen(body, tilt, lighting, matrix, nativeW, nativeH)
+}
+
+/**
+ * A hairline along the front face's outline, brightest where the light grazes it.
+ *
+ * The rails have their own highlight along the *outer* edge of the body; this is the near edge,
+ * where the bezel's front surface turns over into the rail. Without it a tilted device reads as a
+ * picture of a phone pasted onto a block — this is the line that says the two are the same object.
+ * It follows the body's own outline, so it fades around the silhouette as the light does instead of
+ * being a uniform stroke.
+ */
+private fun DrawScope.drawFrontBevel(ring: ProjectedRing, body: DeviceBody, lighting: MockupLighting) {
+    val n = ring.front.size
+    (0 until n).forEach { i ->
+        val lit = (ring.normals[i] dot lighting.unit).coerceAtLeast(0f)
+        if (lit <= 0.05f) return@forEach
+        val j = (i + 1) % n
+        drawLine(
+            color = body.rimColor.copy(alpha = (lit * BevelStrength).coerceIn(0f, 1f)),
+            start = ring.front[i],
+            end = ring.front[j],
+            strokeWidth = BevelWidth,
+        )
+    }
+}
+
+/**
+ * The thin shadow the bezel casts onto the display it surrounds. A real screen sits a fraction below
+ * the glass, so its edge is never quite as bright as its middle; drawn through the same homography
+ * as the face, so it follows the screen's rounded corners at any angle.
+ */
+private fun DrawScope.drawScreenOcclusion(
+    body: DeviceBody,
+    matrix: AndroidMatrix,
+    nativeW: Float,
+    nativeH: Float,
+) {
+    val inset = body.screen.inset.toPx()
+    if (inset <= 0f) return
+    val left = inset
+    val top = inset
+    val right = nativeW - inset
+    val bottom = nativeH - inset
+    if (right - left <= 1f || bottom - top <= 1f) return
+    val corner = body.screen.corner.toPx()
+    val screen = Path().apply {
+        addRoundRect(
+            androidx.compose.ui.geometry.RoundRect(
+                left = left, top = top, right = right, bottom = bottom,
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(corner, corner),
+            )
+        )
+    }
+    drawIntoCanvas { canvas ->
+        val native = canvas.nativeCanvas
+        val checkpoint = native.save()
+        native.concat(matrix)
+        native.clipPath(screen.asAndroidPath())
+        drawPath(
+            screen,
+            Color.Black.copy(alpha = ScreenOcclusionAlpha),
+            style = Stroke(ScreenOcclusionWidth),
+        )
+        native.restoreToCount(checkpoint)
+    }
+}
+
+/**
+ * The shadow a solid device casts, in the shape of the silhouette it actually presents once tilted
+ * rather than of the rectangle it started as.
+ *
+ * Painted by hand for the same reason [mockupShadow] is — the platform's elevation shadows need a
+ * hardware canvas and come out missing on the software one a screenshot is rendered through — and
+ * it has to be drawn out here rather than inside the bezel, because a `BlurMaskFilter` works in
+ * device space and does not compose with a projective transform at all. Offset away from the light
+ * instead of straight down, so the shadow and the shading on the rails agree about where the light
+ * is.
+ */
+private fun DrawScope.drawProjectedShadow(ring: ProjectedRing, elevation: Dp, lighting: MockupLighting) {
+    val blur = elevation.toPx()
+    if (blur <= 0f) return
+    val hull = convexHull(ring.front.toList() + ring.back.toList())
+    if (hull.size < 3) return
+
+    val path = android.graphics.Path().apply {
+        moveTo(hull[0].x, hull[0].y)
+        hull.drop(1).forEach { lineTo(it.x, it.y) }
+        close()
+    }
+    val paint = android.graphics.Paint().apply {
+        isAntiAlias = true
+        color = Color.Black.copy(alpha = ShadowAlpha).toArgb()
+        maskFilter = android.graphics.BlurMaskFilter(blur, android.graphics.BlurMaskFilter.Blur.NORMAL)
+    }
+    val light = lighting.unit
+    drawIntoCanvas { canvas ->
+        val native = canvas.nativeCanvas
+        val checkpoint = native.save()
+        native.translate(-light.x * blur * ShadowDrop, -light.y * blur * ShadowDrop)
+        native.drawPath(path, paint)
+        native.restoreToCount(checkpoint)
+    }
+}
+
+/**
+ * A soft sheen on the cover glass that moves as the device turns.
+ *
+ * This is the renderer's own layer, drawn on top of the warped face and clipped to the display. It
+ * does not touch [dev.lucianosantos.storescreenshots.GlassEffect]: a caller's reflex angle,
+ * position, width and alpha are drawn inside the screen content and warped along with it, so they
+ * already follow the tilt and are never overridden. What this adds is the part a flat effect cannot
+ * know about — where the light is relative to a surface that has turned.
+ *
+ * The screen's shape comes for free: it is built as a rounded rectangle in the bezel's own native
+ * coordinates and then run through the very same homography the face was, corner curvature and all.
+ */
+private fun DrawScope.drawGlassSheen(
+    body: DeviceBody,
+    tilt: MockupTilt,
+    lighting: MockupLighting,
+    matrix: AndroidMatrix,
+    nativeW: Float,
+    nativeH: Float,
+) {
+    if (lighting.specular <= 0f) return
+    val inset = body.screen.inset.toPx()
+    val left = inset
+    val top = inset
+    val right = nativeW - inset
+    val bottom = nativeH - inset
+    if (right - left <= 1f || bottom - top <= 1f) return
+
+    // How strongly this surface, at this angle, throws the light back at the viewer.
+    val normal = tilt.rotate(Vec3(0f, 0f, 1f)).normalized()
+    val half = Vec3(lighting.unit.x, lighting.unit.y, lighting.unit.z + 1f).normalized()
+    val strength = lighting.specular *
+        Math.pow((normal dot half).coerceAtLeast(0f).toDouble(), lighting.shininess.toDouble()).toFloat()
+    if (strength < 0.004f) return
+
+    // The light's direction within the face's own plane, which is what decides where on the glass
+    // the sheen sits and which way it runs.
+    val alongX = lighting.unit dot tilt.rotate(Vec3(1f, 0f, 0f)).normalized()
+    val alongY = lighting.unit dot tilt.rotate(Vec3(0f, 1f, 0f)).normalized()
+    val length = kotlin.math.hypot(alongX, alongY)
+    if (length < 1e-3f) return
+    val dx = alongX / length
+    val dy = alongY / length
+
+    val corner = body.screen.corner.toPx()
+    val screen = Path().apply {
+        addRoundRect(
+            androidx.compose.ui.geometry.RoundRect(
+                left = left, top = top, right = right, bottom = bottom,
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(corner, corner),
+            )
+        )
+    }
+    val centreX = (left + right) / 2f
+    val centreY = (top + bottom) / 2f
+    val reach = kotlin.math.hypot(right - left, bottom - top) / 2f
+    val start = Offset(centreX + dx * reach, centreY + dy * reach)
+    val end = Offset(centreX - dx * reach, centreY - dy * reach)
+
+    drawIntoCanvas { canvas ->
+        val native = canvas.nativeCanvas
+        val checkpoint = native.save()
+        native.concat(matrix)
+        native.clipPath(screen.asAndroidPath())
+        drawRect(
+            brush = Brush.linearGradient(
+                0f to Color.White.copy(alpha = strength),
+                0.55f to Color.White.copy(alpha = strength * 0.25f),
+                1f to Color.Transparent,
+                start = start,
+                end = end,
+            ),
+            topLeft = Offset(left, top),
+            size = androidx.compose.ui.geometry.Size(right - left, bottom - top),
+        )
+        native.restoreToCount(checkpoint)
+    }
+}
+
+/** Opacity of the cast shadow at its darkest, and how far it slides away from the light. */
+private const val ShadowAlpha = 0.45f
+private const val ShadowDrop = 0.45f
+
+/**
+ * The side walls the tilt has turned toward the viewer.
+ *
+ * Each is the quad between one segment of the body's outline at the front face and the same segment
+ * at the back of the body, so left, right, top and bottom rails — and the rounded corners that join
+ * them — all fall out of one loop over the outline rather than out of a chain of `if (rotationY <
+ * 0)`. Which ones are drawn comes from their projected winding, so it is the geometry that decides,
+ * and a combined tilt needs no special case.
+ *
+ * Drawn in two passes per run of adjacent visible segments. The first fills the whole run as a
+ * single antialiased path, which is what keeps the outer silhouette smooth and leaves no hairline
+ * gaps between neighbours. The second lays the individual segments over it *without* antialiasing,
+ * carrying the shading that varies along the run; because the base is already solid underneath,
+ * their untouched edges cannot show through.
+ */
+private fun DrawScope.drawRails(
+    ring: ProjectedRing,
+    body: DeviceBody,
+    tilt: MockupTilt,
+    lighting: MockupLighting,
+) {
+    // The chamfer is a bevel rolling from the front face over onto the rail, so the direction it
+    // faces is halfway between the two. That is why it stays bright on a rail that is otherwise
+    // turned away from the light: a 45-degree bevel finds the light long after the flat beside it
+    // has lost it — which is exactly what makes a machined edge legible on a dark device.
+    val faceNormal = tilt.rotate(Vec3(0f, 0f, 1f)).normalized()
+    val visible = ring.visibleSegments()
+    if (visible.isEmpty()) return
+    val n = ring.front.size
+
+    // The band's inner edge is our sampled polygon while the front face's edge is the bezel's own
+    // antialiased rounded rect, and the two disagree by a fraction of a pixel. Pushing the inner
+    // edge a pixel further under the face closes that seam; the face is drawn last and covers it.
+    val inner = Array(n) { i ->
+        val f = ring.front[i]
+        val b = ring.back[i]
+        val dx = f.x - b.x
+        val dy = f.y - b.y
+        val length = kotlin.math.hypot(dx, dy)
+        if (length < 1e-3f) f else Offset(f.x + dx / length * SeamOverlap, f.y + dy / length * SeamOverlap)
+    }
+
+    contiguousRuns(visible, n).forEach { run ->
+        val path = Path()
+        run.forEachIndexed { index, segment ->
+            val p = inner[segment]
+            if (index == 0) path.moveTo(p.x, p.y) else path.lineTo(p.x, p.y)
+        }
+        val last = (run.last() + 1) % n
+        path.lineTo(inner[last].x, inner[last].y)
+        path.lineTo(ring.back[last].x, ring.back[last].y)
+        for (index in run.indices.reversed()) {
+            val p = ring.back[run[index]]
+            path.lineTo(p.x, p.y)
+        }
+        path.close()
+
+        // Base pass: one antialiased fill for the whole run, at its mean shade.
+        val mean = run.map { lighting.shadeFactor(ring.normals[it]) }.average().toFloat()
+        drawPath(path, tint(body.railColor, mean))
+
+        // Detail pass: each wall at its own shade, and darkening toward the back of the body.
+        run.forEach { segment ->
+            val next = (segment + 1) % n
+            val quad = Path().apply {
+                moveTo(inner[segment].x, inner[segment].y)
+                lineTo(inner[next].x, inner[next].y)
+                lineTo(ring.back[next].x, ring.back[next].y)
+                lineTo(ring.back[segment].x, ring.back[segment].y)
+                close()
+            }
+            val shade = lighting.shadeFactor(ring.normals[segment])
+            val front = Offset(
+                (inner[segment].x + inner[next].x) / 2f,
+                (inner[segment].y + inner[next].y) / 2f,
+            )
+            val back = Offset(
+                (ring.back[segment].x + ring.back[next].x) / 2f,
+                (ring.back[segment].y + ring.back[next].y) / 2f,
+            )
+            val brush = if ((front - back).getDistance() < 0.5f) {
+                SolidColor(tint(body.railColor, shade))
+            } else {
+                Brush.linearGradient(
+                    0f to tint(body.railColor, shade),
+                    1f to tint(body.backColor, shade),
+                    start = front,
+                    end = back,
+                )
+            }
+            drawPath(quad, brush, style = Fill)
+
+            // The polished chamfer, a narrow band of the rail nearest the glass. Lit more strongly
+            // than the flat of the rail because it turns toward the light rather than straight out.
+            val chamferI = lerp(inner[segment], ring.back[segment], ChamferFraction)
+            val chamferJ = lerp(inner[next], ring.back[next], ChamferFraction)
+            val chamfer = Path().apply {
+                moveTo(inner[segment].x, inner[segment].y)
+                lineTo(inner[next].x, inner[next].y)
+                lineTo(chamferJ.x, chamferJ.y)
+                lineTo(chamferI.x, chamferI.y)
+                close()
+            }
+            val bevel = Vec3(
+                ring.normals[segment].x + faceNormal.x,
+                ring.normals[segment].y + faceNormal.y,
+                ring.normals[segment].z + faceNormal.z,
+            ).normalized()
+            // Polished, so it behaves more like a mirror strip than a matte surface: it keeps a
+            // floor of brightness whichever way it is turned, and climbs from there with the light.
+            val polish = ChamferFloor + (1f - ChamferFloor) *
+                ((bevel dot lighting.unit) * 0.5f + 0.5f).coerceIn(0f, 1f)
+            drawPath(chamfer, tint(body.rimColor, polish))
+        }
+    }
+
+    // A dark contact line where the rail meets the bezel, and a bright one along the machined outer
+    // edge — the two cues that read as a milled edge rather than a painted band.
+    contiguousRuns(visible, n).forEach { run ->
+        val contact = Path()
+        val rim = Path()
+        (run + ((run.last() + 1) % n)).forEachIndexed { index, segment ->
+            val f = ring.front[segment]
+            val b = ring.back[segment]
+            if (index == 0) { contact.moveTo(f.x, f.y); rim.moveTo(b.x, b.y) }
+            else { contact.lineTo(f.x, f.y); rim.lineTo(b.x, b.y) }
+        }
+        drawPath(contact, Color.Black.copy(alpha = lighting.contactShadowAlpha), style = Stroke(ContactLineWidth))
+        val lit = run.map { lighting.shadeFactor(ring.normals[it]) }.max()
+        drawPath(
+            rim,
+            body.rimColor.copy(alpha = (lit - lighting.ambient).coerceIn(0f, 1f)),
+            style = Stroke(RimLineWidth),
+        )
+    }
+}
+
+/**
+ * The local frame of one rail: where it begins, and its three axes in the body's own space.
+ *
+ * A rail is a flat band, so anything living on one — a button standing proud of it, a port milled
+ * into it — is much easier to describe in the rail's own two dimensions (along the edge, and across
+ * the body's depth) than in the device's. This maps that back out.
+ */
+private class RailBasis(val origin: Vec3, val along: Vec3, val across: Vec3, val outward: Vec3) {
+
+    /** [along] the rail, [across] its depth, and [out] of it. */
+    fun point(along: Float, across: Float, out: Float) = Vec3(
+        origin.x + this.along.x * along + this.across.x * across + outward.x * out,
+        origin.y + this.along.y * along + this.across.y * across + outward.y * out,
+        origin.z + this.along.z * along + this.across.z * across + outward.z * out,
+    )
+
+    /** A direction given in the rail's plane, as a direction in the body's space. */
+    fun direction(along: Float, across: Float) = Vec3(
+        this.along.x * along + this.across.x * across,
+        this.along.y * along + this.across.y * across,
+        this.along.z * along + this.across.z * across,
+    )
+}
+
+private fun railBasis(edge: RailEdge, halfWidth: Float, halfHeight: Float): RailBasis = when (edge) {
+    RailEdge.Left -> RailBasis(
+        Vec3(-halfWidth, -halfHeight, 0f), Vec3(0f, 1f, 0f), Vec3(0f, 0f, -1f), Vec3(-1f, 0f, 0f),
+    )
+    RailEdge.Right -> RailBasis(
+        Vec3(halfWidth, -halfHeight, 0f), Vec3(0f, 1f, 0f), Vec3(0f, 0f, -1f), Vec3(1f, 0f, 0f),
+    )
+    RailEdge.Top -> RailBasis(
+        Vec3(-halfWidth, -halfHeight, 0f), Vec3(1f, 0f, 0f), Vec3(0f, 0f, -1f), Vec3(0f, -1f, 0f),
+    )
+    RailEdge.Bottom -> RailBasis(
+        Vec3(-halfWidth, halfHeight, 0f), Vec3(1f, 0f, 0f), Vec3(0f, 0f, -1f), Vec3(0f, 1f, 0f),
+    )
+}
+
+/** True when a face at [centre] pointing along [normal] is turned toward the camera. */
+private fun facesCamera(normal: Vec3, centre: Vec3, cameraPx: Float): Boolean =
+    (normal dot Vec3(-centre.x, -centre.y, cameraPx - centre.z)) > 0f
+
+/**
+ * The buttons milled into the rails: rounded-ended bosses standing proud of the body.
+ *
+ * Extruded exactly the way the body itself is — a rounded-rectangle outline sampled in the rail's
+ * own plane, pushed outward by the button's protrusion, with the walls between the two rings drawn
+ * where they face the viewer and the cap drawn over them. That is what gives a button the rounded
+ * ends and the chamfered edge a milled one has, instead of the flat slab a six-sided box produces.
+ *
+ * It also keeps the mockup continuous where the two rendering paths meet. A hair either side of
+ * zero tilt the only face left unculled is the cap, a rounded rectangle exactly as wide as the
+ * protrusion — which is what the flat bezel was already drawing. A button whose rail has turned
+ * away loses every face and disappears, with no special case for it.
+ */
+private fun DrawScope.drawRailButtons(
+    body: DeviceBody,
+    tilt: MockupTilt,
+    lighting: MockupLighting,
+    cameraPx: Float,
+    pivot: Offset,
+    scale: Float,
+) {
+    if (body.buttons.isEmpty()) return
+    val halfWidth = size.width / 2f
+    val halfHeight = size.height / 2f
+    val thickness = body.thickness.toPx() * scale
+
+    body.buttons.forEach { button ->
+        val length = button.length.toPx() * scale
+        val protrusion = button.protrusion.toPx() * scale
+        if (length <= 0f || protrusion <= 0f) return@forEach
+        val basis = railBasis(button.edge, halfWidth, halfHeight)
+
+        // The boss's footprint on the rail: as long as the button, as deep as the span it occupies
+        // through the body, and rounded at the ends.
+        val acrossSpan = thickness * (button.across.endInclusive - button.across.start)
+        val acrossCentre = thickness * (button.across.start + button.across.endInclusive) / 2f
+        val alongCentre = button.start.toPx() * scale + length / 2f
+        val corner = (button.corner.toPx() * scale).coerceAtMost(minOf(length, acrossSpan) / 2f)
+        val outline = sampleRoundRectRing(length, acrossSpan, corner, cornerSamplesFor(corner))
+
+        val base = outline.map {
+            tilt.rotate(basis.point(alongCentre + it.x, acrossCentre + it.y, 0f))
+        }
+        val cap = outline.map {
+            tilt.rotate(basis.point(alongCentre + it.x, acrossCentre + it.y, protrusion))
+        }
+        val wallNormals = outline.map { tilt.rotate(basis.direction(it.nx, it.ny)).normalized() }
+        val capNormal = tilt.rotate(basis.outward).normalized()
+
+        val baseAt = base.map { project(it, cameraPx, pivot) ?: return@forEach }
+        val capAt = cap.map { project(it, cameraPx, pivot) ?: return@forEach }
+
+        // Walls first, cap over them: the cap is the nearest surface of a convex boss.
+        val n = outline.size
+        var anyVisible = false
+        (0 until n).forEach { i ->
+            val j = (i + 1) % n
+            val centre = Vec3(
+                (base[i].x + base[j].x + cap[i].x + cap[j].x) / 4f,
+                (base[i].y + base[j].y + cap[i].y + cap[j].y) / 4f,
+                (base[i].z + base[j].z + cap[i].z + cap[j].z) / 4f,
+            )
+            if (!facesCamera(wallNormals[i], centre, cameraPx)) return@forEach
+            anyVisible = true
+            val wall = Path().apply {
+                moveTo(baseAt[i].x, baseAt[i].y)
+                lineTo(baseAt[j].x, baseAt[j].y)
+                lineTo(capAt[j].x, capAt[j].y)
+                lineTo(capAt[i].x, capAt[i].y)
+                close()
+            }
+            // Darkest where it tucks under the enclosure, which is the shade the flat bezel paints
+            // across its buttons and the one the Simulator capture shows.
+            drawPath(
+                wall,
+                Brush.linearGradient(
+                    0f to tint(button.shadow, lighting.shadeFactor(wallNormals[i])),
+                    1f to tint(button.face, lighting.shadeFactor(wallNormals[i])),
+                    start = baseAt[i],
+                    end = capAt[i],
+                ),
+            )
+        }
+
+        val capVisible = facesCamera(
+            capNormal,
+            cap.fold(Vec3(0f, 0f, 0f)) { a, c -> Vec3(a.x + c.x, a.y + c.y, a.z + c.z) }
+                .let { Vec3(it.x / n, it.y / n, it.z / n) },
+            cameraPx,
+        )
+        if (capVisible) {
+            val face = Path().apply {
+                moveTo(capAt[0].x, capAt[0].y)
+                capAt.drop(1).forEach { lineTo(it.x, it.y) }
+                close()
+            }
+            drawPath(face, tint(button.face, lighting.shadeFactor(capNormal)))
+            // The hairline around a button's outline is its milled edge catching light, and like the
+            // body's own chamfer it keeps a floor of brightness whichever way the button is turned.
+            // It is that outline, not the face, that reads as a machined button — the face itself
+            // stays as flat as the Simulator capture shows it.
+            val polish = ButtonRimFloor + (1f - ButtonRimFloor) *
+                ((capNormal dot lighting.unit) * 0.5f + 0.5f).coerceIn(0f, 1f)
+            drawPath(
+                face,
+                body.rimColor.copy(alpha = (polish * ButtonRimStrength).coerceIn(0f, 1f)),
+                style = Stroke(RimLineWidth),
+            )
+        }
+
+        // A contact shadow where the boss meets the rail.
+        if (anyVisible || capVisible) {
+            val seat = Path().apply {
+                moveTo(baseAt[0].x, baseAt[0].y)
+                baseAt.drop(1).forEach { lineTo(it.x, it.y) }
+                close()
+            }
+            drawPath(seat, button.shadow.copy(alpha = lighting.contactShadowAlpha), style = Stroke(ContactLineWidth))
+        }
+    }
+}
+
+/**
+ * The charge connector and the speaker grille, milled into the rail they sit on.
+ *
+ * Flat on the rail's surface rather than standing proud of it, so each is simply its outline
+ * projected and filled — and each appears only while its rail is turned toward the viewer. A port on
+ * the bottom edge therefore shows up exactly when a real one would: on a device tipped far enough
+ * forward that you are looking under it.
+ */
+private fun DrawScope.drawRailFeatures(
+    body: DeviceBody,
+    tilt: MockupTilt,
+    lighting: MockupLighting,
+    cameraPx: Float,
+    pivot: Offset,
+    scale: Float,
+) {
+    if (body.features.isEmpty()) return
+    val halfWidth = size.width / 2f
+    val halfHeight = size.height / 2f
+    val thickness = body.thickness.toPx() * scale
+
+    body.features.forEach { feature ->
+        val width = feature.width.toPx() * scale
+        val depth = thickness * (feature.depth.endInclusive - feature.depth.start)
+        if (width <= 0.5f || depth <= 0.5f) return@forEach
+        val basis = railBasis(feature.edge, halfWidth, halfHeight)
+        val outward = tilt.rotate(basis.outward).normalized()
+
+        val alongCentre = feature.centre.toPx() * scale
+        val acrossCentre = thickness * (feature.depth.start + feature.depth.endInclusive) / 2f
+        val centre = tilt.rotate(basis.point(alongCentre, acrossCentre, 0f))
+        if (!facesCamera(outward, centre, cameraPx)) return@forEach
+
+        val corner = (feature.corner.toPx() * scale).coerceAtMost(minOf(width, depth) / 2f)
+        val outline = sampleRoundRectRing(width, depth, corner, cornerSamplesFor(corner))
+        val points = outline.map {
+            project(tilt.rotate(basis.point(alongCentre + it.x, acrossCentre + it.y, 0f)), cameraPx, pivot)
+                ?: return@forEach
+        }
+        val path = Path().apply {
+            moveTo(points[0].x, points[0].y)
+            points.drop(1).forEach { lineTo(it.x, it.y) }
+            close()
+        }
+        drawPath(path, feature.color)
+        // A cut in metal catches a little light on its far lip, which is what stops a port reading
+        // as a sticker on the rail.
+        drawPath(
+            path,
+            body.rimColor.copy(alpha = ((lighting.shadeFactor(outward) - lighting.ambient) * FeatureRimStrength).coerceIn(0f, 1f)),
+            style = Stroke(FeatureRimWidth),
+        )
+    }
+}
+
+/** Monotone-chain convex hull, so a button's silhouette can be stroked as one outline. */
+private fun convexHull(points: List<Offset>): List<Offset> {
+    if (points.size < 3) return points
+    val sorted = points.sortedWith(compareBy({ it.x }, { it.y }))
+    fun half(source: List<Offset>): MutableList<Offset> {
+        val out = mutableListOf<Offset>()
+        source.forEach { p ->
+            while (out.size >= 2) {
+                val a = out[out.size - 2]
+                val b = out[out.size - 1]
+                if ((b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x) > 0f) break
+                out.removeAt(out.size - 1)
+            }
+            out += p
+        }
+        return out
+    }
+    val lower = half(sorted)
+    val upper = half(sorted.reversed())
+    lower.removeAt(lower.size - 1)
+    upper.removeAt(upper.size - 1)
+    return lower + upper
+}
+
+/**
+ * Groups [visible] segment indices into runs of neighbours around a ring of [n], joining a run that
+ * wraps past the end back onto the one that starts at zero.
+ */
+private fun contiguousRuns(visible: List<Int>, n: Int): List<List<Int>> {
+    if (visible.isEmpty()) return emptyList()
+    val sorted = visible.sorted()
+    val runs = mutableListOf<MutableList<Int>>()
+    sorted.forEach { index ->
+        val last = runs.lastOrNull()
+        if (last != null && index == last.last() + 1) last += index else runs += mutableListOf(index)
+    }
+    // A run ending on the last segment continues into one starting at the first.
+    if (runs.size > 1 && runs.first().first() == 0 && runs.last().last() == n - 1) {
+        val head = runs.removeAt(0)
+        runs.last().addAll(head)
+    }
+    return runs
+}
+
+/** A point [t] of the way from [from] to [to]. */
+private fun lerp(from: Offset, to: Offset, t: Float) =
+    Offset(from.x + (to.x - from.x) * t, from.y + (to.y - from.y) * t)
+
+/** [base] at [factor] of its brightness, keeping its alpha. */
+private fun tint(base: Color, factor: Float): Color = Color(
+    red = (base.red * factor).coerceIn(0f, 1f),
+    green = (base.green * factor).coerceIn(0f, 1f),
+    blue = (base.blue * factor).coerceIn(0f, 1f),
+    alpha = base.alpha,
+)
+
+/** How far the rail's inner edge tucks under the front face, in pixels. */
+private const val SeamOverlap = 1f
+
+/** The dark line where a rail meets the bezel, and the bright one along its outer edge. */
+private const val ContactLineWidth = 1.5f
+private const val RimLineWidth = 1f
+
+/** A button's milled edge: how strongly it shows, and how much of that survives with the light behind. */
+private const val ButtonRimStrength = 0.8f
+private const val ButtonRimFloor = 0.45f
+
+/** The far lip of a port or a speaker hole, where the cut through the metal catches the light. */
+private const val FeatureRimStrength = 0.45f
+private const val FeatureRimWidth = 1f
+
+/**
+ * How much of a rail's depth, nearest the front face, is the polished chamfer rather than the flat
+ * of the rail — and how much brighter it is than the rail's own face. It is this narrow bright line
+ * running the length of the body, not the shade of the rail itself, that reads as machined metal.
+ */
+private const val ChamferFraction = 0.2f
+
+/** How bright a polished chamfer stays even with the light behind it. */
+private const val ChamferFloor = 0.55f
+
+/** The bevel where the front face turns over into the rail: a hairline, and how brightly it lights. */
+private const val BevelWidth = 1.5f
+private const val BevelStrength = 0.55f
+
+/** The bezel's own shadow on the display it surrounds — drawn in the bezel's native pixels. */
+private const val ScreenOcclusionAlpha = 0.16f
+private const val ScreenOcclusionWidth = 3f
+
+/** The native-size layer scaled into the footprint, with no tilt: the fall back. */
+private fun DrawScope.scaleOnly(nativeW: Float, nativeH: Float): AndroidMatrix =
+    AndroidMatrix().apply { setScale(size.width / nativeW, size.height / nativeH) }
+
+private fun DrawScope.drawRecordedFace(
+    layer: androidx.compose.ui.graphics.layer.GraphicsLayer,
+    matrix: AndroidMatrix,
+) {
+    drawIntoCanvas { canvas ->
+        val native = canvas.nativeCanvas
+        val checkpoint = native.save()
+        native.concat(matrix)
+        drawLayer(layer)
+        native.restoreToCount(checkpoint)
+    }
+}
+
+/**
+ * What chrome a bezel should draw for itself. The solid renderer draws some of a device's features
+ * in 3D, and a bezel handed one of these must leave those to it — see [SolidDeviceMockup].
+ */
+internal data class BezelChrome(
+    /** False when the renderer is drawing the side buttons on their rails instead. */
+    val sideButtons: Boolean = true,
+    /** Zero when the renderer is casting a projected shadow instead. */
+    val elevation: Dp = 0.dp,
+)
+
+/**
+ * Lays a device mockup out at its native size, scales it into the footprint [modifier] gives it,
+ * and tilts it — flat or solid, whichever the angles call for.
+ *
+ * Every built-in frame goes through here rather than calling `ScaledMockup` directly, so the choice
+ * between the two paths is made once and every form factor gets the same one.
+ *
+ * With no X or Y tilt there is no thickness to see, so this is the original path, unchanged: the
+ * bezel draws its own buttons and its own shadow, and an in-plane [MockupTilt.rotationZ] spin still
+ * goes through the same single `graphicsLayer` it always did. That is what keeps an untilted — or
+ * merely spun — mockup rendering exactly as it did before the solid renderer existed.
+ */
+@Composable
+internal fun MockupSurface(
+    nativeWidth: Dp,
+    nativeHeight: Dp,
+    modifier: Modifier,
+    body: DeviceBody,
+    tilt: MockupTilt,
+    elevation: Dp,
+    material: MockupMaterial = MockupMaterial(),
+    bezel: @Composable (chrome: BezelChrome) -> Unit,
+) {
+    val clamped = tilt.clamped()
+    if (clamped.isFlat || !clamped.frontFaceVisible()) {
+        ScaledMockup(
+            nativeWidth = nativeWidth,
+            nativeHeight = nativeHeight,
+            modifier = modifier.mockup3dRotation(
+                rotationX = clamped.rotationX,
+                rotationY = clamped.rotationY,
+                rotationZ = clamped.rotationZ,
+                cameraDistance = clamped.cameraDistance,
+            ),
+        ) { bezel(BezelChrome(sideButtons = true, elevation = elevation)) }
+    } else {
+        SolidDeviceMockup(
+            nativeWidth = nativeWidth,
+            nativeHeight = nativeHeight,
+            modifier = modifier,
+            body = body.withMaterial(material),
+            tilt = clamped,
+            lighting = material.lighting(),
+            elevation = elevation,
+        ) { bezel(BezelChrome(sideButtons = false, elevation = 0.dp)) }
+    }
+}
+
+/** The tilt a [ScreenshotStyle] asks for, as the renderer's own type. */
+internal fun ScreenshotStyle.mockupTilt(): MockupTilt = MockupTilt(
+    rotationX = mockupRotationX,
+    rotationY = mockupRotationY,
+    rotationZ = mockupRotation,
+    cameraDistance = mockupCameraDistance,
+)

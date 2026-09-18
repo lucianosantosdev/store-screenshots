@@ -29,15 +29,21 @@ fun PhoneFrame(
         style = style,
         horizontalPadding = 28.dp,
         verticalPadding = 48.dp,
+        tiltHandledByMockup = true,
         mockup = { externalModifier ->
             DeviceMockup(
                 formFactor = FormFactor.Phone,
                 modifier = externalModifier,
+                rotationX = style.mockupRotationX,
+                rotationY = style.mockupRotationY,
+                rotationZ = style.mockupRotation,
+                cameraDistance = style.mockupCameraDistance,
                 showStatusBar = style.showStatusBar,
                 statusBarClock = style.statusBarClock,
                 statusBarContentDark = style.statusBarContentDark,
                 edgeToEdge = style.edgeToEdge,
                 elevation = style.mockupElevation,
+                material = style.mockupMaterial,
                 content = content,
             )
         },

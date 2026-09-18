@@ -43,6 +43,17 @@ internal interface IPhoneMetrics {
     /** Corner radius of the display itself. */
     val ScreenCorner: Float
 
+    /**
+     * How deep the enclosure is, front to back. Nothing a flat frame drew ever needed this; the
+     * solid renderer extrudes the body by it to give a tilted device real thickness. Taken from the
+     * device's published dimensions rather than from a capture, since a screenshot of a phone's face
+     * cannot show how thick it is.
+     */
+    val BodyThickness: Float
+
+    /** The port and speaker grille cut into the bottom rail. See [BottomEdgeMetrics]. */
+    val BottomEdge: BottomEdgeMetrics
+
     /** Width of the machined rail that runs around the outside of the body. */
     val Rail: Float
 
@@ -74,6 +85,14 @@ internal interface IPhoneMetrics {
 
     /** Rounding on the outer end of a side button. */
     val ButtonCorner: Float
+
+    /**
+     * How tall a side button is across the body's *depth* — the dimension a flat frame never had to
+     * name, because face-on you only ever see a button's length. A volume button is a slim strip
+     * milled into the rail, about 2.7 mm on a body a little under 9 mm deep, so it takes up roughly
+     * a third of the rail rather than filling it.
+     */
+    val ButtonDepth: Float
 
     /** The button's face darkens to this where it tucks under the enclosure. */
     val ButtonShadowColor: Color
@@ -144,6 +163,41 @@ internal interface IPhoneMetrics {
     val BatteryX: Float
     val BatteryTop: Float
     val BatteryWidth: Float
+}
+
+/**
+ * What is cut into a phone's bottom rail: the charge connector, and the speaker grille either side
+ * of it.
+ *
+ * None of this exists in any of the Simulator captures the rest of these metrics come from — a
+ * capture of a device's face cannot show its bottom edge — so unlike the bezel figures these are
+ * taken from the hardware's published dimensions, in millimetres, and converted through the
+ * device's own [pointsPerMm]. A modern iPhone's USB-C port is about 9 x 3.5 mm, its grille holes
+ * about 1.2 mm across on a 2.2 mm pitch, and the first hole sits some 8.5 mm out from the centre
+ * line, clear of the port.
+ *
+ * The depths are fractions of the body's thickness rather than absolute figures, so a port stays
+ * centred in the rail on a device of any depth.
+ */
+internal class BottomEdgeMetrics(pointsPerMm: Float, thickness: Float) {
+
+    /** The charge connector, and how much of the rail's depth it takes up. */
+    val ConnectorWidth = 9f * pointsPerMm
+    val ConnectorDepth = (3.5f * pointsPerMm) / thickness
+
+    /** One hole of the speaker grille. */
+    val SpeakerHoleWidth = 1.2f * pointsPerMm
+    val SpeakerHoleDepth = (1.2f * pointsPerMm) / thickness
+
+    /** Centre-to-centre spacing of the holes, and how many sit either side of the connector. */
+    val SpeakerHolePitch = 2.2f * pointsPerMm
+    val SpeakerHolesPerSide = 6
+
+    /** Centre of the innermost hole, measured out from the body's centre line. */
+    val SpeakerFirstOffset = 8.5f * pointsPerMm
+
+    /** A cut through the enclosure shows the dark inside of the device, not the rail's own face. */
+    val CutColor = Color(0xFF0B0B0B)
 }
 
 /**
@@ -246,6 +300,12 @@ internal object IPhone17Metrics : IPhoneMetrics {
     /** Corner radius of the display itself, fitted the same way to the framebuffer mask. */
     override val ScreenCorner = 63.6f
 
+    /** An iPhone 17 is 7.95 mm deep across 71.5 mm of width, so 0.1112 of [BodyWidth]. */
+    override val BodyThickness = BodyWidth * 0.1112f
+
+    /** 71.5 mm of body across [BodyWidth] points. */
+    override val BottomEdge = BottomEdgeMetrics(BodyWidth / 71.5f, BodyThickness)
+
     /**
      * Width of the machined rail that runs around the outside of the body, taken from where the
      * rail's grey gives way to the black bezel in the capture (10.39 px into a 776 px-wide body).
@@ -280,6 +340,9 @@ internal object IPhone17Metrics : IPhoneMetrics {
 
     /** Rounding on the outer end of a side button. */
     override val ButtonCorner = 1.8f
+
+    /** 2.7 mm across 71.5 mm of body width. */
+    override val ButtonDepth = BodyWidth * (2.7f / 71.5f)
 
     /**
      * The button's face darkens to this over the last quarter of its protrusion, where it tucks

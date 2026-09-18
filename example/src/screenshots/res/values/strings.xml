@@ -20,4 +20,6 @@
     <string name="screenshot_chroma_desc">Paint the screen one colour — chroma keying drops your live Compose UI into the render</string>
     <string name="screenshot_four_devices_title">One render, every device</string>
     <string name="screenshot_four_devices_desc">Desktop, laptop, phone and tablet — chroma-key your live UI into the whole family in a single pass</string>
+    <string name="screenshot_apple_perspective_title">Solid, not flat</string>
+    <string name="screenshot_apple_perspective_desc">Tilt it and the body has real depth — the rail, its buttons and the light all follow the angle</string>
 </resources>
