@@ -97,6 +97,36 @@ val silverScreenshotStyle = ScreenshotStyle(
     description = { text -> StyledDescription(text) },
 )
 
+/**
+ * A green Android phone, from [MockupMaterial] alone.
+ *
+ * The companion to [silverScreenshotStyle], on the other frame and in a colour no device ships in:
+ * the point of the material is that it is not a finish picker, it is whatever the rails, the
+ * buttons milled out of them and the machined edge along them should be.
+ *
+ * Turned on both axes so that two rails are in view at once — the left, where the Android frame
+ * keeps its volume buttons, and the bottom, where its speaker grille and charge port are cut. The X
+ * tip has to be the steeper of the two: a phone is twice as tall as it is wide, so the camera
+ * already looks at its bottom edge from about 25 degrees above and the body has to pass that before
+ * a horizontal rail comes into view at all. The corner where the two rails meet is continuous,
+ * which is what a body extruded from one outline gets for free and four separate faces would not.
+ */
+val greenScreenshotStyle = ScreenshotStyle(
+    mockupPosition = MockupPosition.Middle,
+    mockupRotationY = 36f,
+    mockupRotationX = 34f,
+    mockupRotation = -4f,
+    mockupElevation = 20.dp,
+    mockupMaterial = MockupMaterial(
+        railColor = Color(0xFF4F9A6A),
+        edgeHighlightColor = Color(0xFFB8E6C8),
+        backEdgeColor = Color(0xFF1F4430),
+    ),
+    background = { MarketingBackground() },
+    title = { text -> StyledTitle(text) },
+    description = { text -> StyledDescription(text) },
+)
+
 @Composable
 fun MarketingBackground() {
     Box(

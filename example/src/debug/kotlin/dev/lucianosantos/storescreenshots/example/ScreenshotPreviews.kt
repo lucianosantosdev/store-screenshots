@@ -139,6 +139,24 @@ fun PerspectivePreview() = ScreenshotPreview(
     style = perspectiveScreenshotStyle,
 ) { CounterScreen(count = 42) }
 
+/** One device turned through every rail it has — the showcase for the solid renderer. */
+@GooglePlayFeatureGraphicScreenshotPreview
+@Composable
+fun SolidShowcasePreview() = SolidShowcaseBanner(
+    title = "One device, every angle",
+    description = "Rails, buttons, speaker grille and charge port, all from the same frame",
+)
+
+/** The Android frame in a green no phone ships in — mockupMaterial is not a finish picker. */
+@PhoneScreenshotPreview
+@Composable
+fun GreenPreview() = ScreenshotPreview(
+    formFactor = FormFactor.Phone,
+    title = "Any colour you want",
+    description = "The rails, their buttons and the machined edge are whatever you set",
+    style = greenScreenshotStyle,
+) { CounterScreen(count = 42) }
+
 /** The same iPhone frame finished in silver, from mockupMaterial alone. */
 @AppleIPhone67ScreenshotPreview
 @Composable
