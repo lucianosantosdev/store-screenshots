@@ -995,6 +995,11 @@ internal data class BezelChrome(
     val railColor: Color? = null,
     val edgeColor: Color? = null,
     val backColor: Color? = null,
+    /**
+     * The button face, when it is deliberately not the rail's. Null falls back to [railColor], and
+     * then to the device's own — a button is the rail's metal unless told otherwise.
+     */
+    val buttonColor: Color? = null,
 )
 
 /**
@@ -1039,6 +1044,7 @@ internal fun MockupSurface(
                 railColor = material.railColor,
                 edgeColor = material.edgeHighlightColor,
                 backColor = material.backEdgeColor,
+                buttonColor = material.buttonColor,
             )
         )
     }
@@ -1059,6 +1065,7 @@ internal fun MockupSurface(
                     railColor = material.railColor,
                     edgeColor = material.edgeHighlightColor,
                     backColor = material.backEdgeColor,
+                    buttonColor = material.buttonColor,
                 )
             )
         }

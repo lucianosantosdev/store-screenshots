@@ -648,12 +648,19 @@ not, because it is black on every iPhone whatever the body is finished in. And i
 finishes the library knows about — the green Android beside it is a colour no phone ships in, and
 its rail, volume buttons and machined edge all take it from the same three fields.
 
+Set `buttonColor` to part the buttons from the rail — a white body with black buttons, say, which is
+the one finish `railColor` cannot express on its own, since saying it there would take the rail
+along too. The dark seat around a button is not included: that is the crevice it sits in rather than
+the button, and it stays dark whatever colour the button is, which is what keeps a pale button
+legible against a pale rail.
+
 | Field | Purpose |
 | --- | --- |
 | `thicknessRatio` | Body depth as a fraction of its width. Null uses the device's own — about `0.11` for a phone, half that for a tablet. Raise it to exaggerate the rail a tilt exposes. |
 | `lightAngle` / `lightElevation` | Where the light comes from, in degrees around the canvas and above it. |
 | `ambient` | How much of a surface's colour survives where no light reaches it. |
 | `railColor` / `edgeHighlightColor` / `backEdgeColor` | The rail's face, its machined edge, and the shade the body falls to at the back. Null keeps the enclosure's own. |
+| `buttonColor` | The volume and power buttons. Null follows `railColor`, since a button is the rail's metal; set it to deliberately contrast them. |
 | `glassSheen` | Strength of the tilt-driven sheen on the cover glass. Independent of `screenGlass`; `0f` leaves the glass to that alone. |
 
 The same `rotationX` / `rotationY` / `rotationZ` / `cameraDistance` parameters exist on

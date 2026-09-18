@@ -15,6 +15,7 @@ import dev.lucianosantos.storescreenshots.FormFactor
 import dev.lucianosantos.storescreenshots.GlassEffect
 import dev.lucianosantos.storescreenshots.GlassReflexStyle
 import dev.lucianosantos.storescreenshots.GlassShadow
+import dev.lucianosantos.storescreenshots.MockupMaterial
 import dev.lucianosantos.storescreenshots.MockupPosition
 import dev.lucianosantos.storescreenshots.ScreenshotStyle
 import dev.lucianosantos.storescreenshots.StoreScreenshotsTest
@@ -98,6 +99,49 @@ class SolidPhoneGoldenTest : StoreScreenshotsTest(FormFactor.Phone) {
     }
 
     /**
+     * A button deliberately not made of the rail's metal: a white enclosure with black buttons.
+     *
+     * This is the one finish [dev.lucianosantos.storescreenshots.MockupMaterial.railColor] cannot
+     * express on its own, because a button follows the rail by default and saying "black" there
+     * would take the rail with it.
+     *
+     * Turned to bring the *left* rail forward, which is the one carrying two buttons rather than
+     * one, so the golden holds both the boss and the seat it stands in.
+     */
+    @Test
+    fun contrastingButtons() {
+        screenshot(
+            fileName = "golden_solid_phone_contrast_buttons",
+            title = "Parted from the rail",
+            description = "A white enclosure with black buttons standing on it",
+            style = tilted(rotationY = 34f, rotationX = 8f).copy(mockupMaterial = Contrasting),
+        ) { GoldenContent() }
+        assertTilted("golden_solid_phone_contrast_buttons", "solid_phone_contrast_buttons.png")
+    }
+
+    /**
+     * The same finish with no tilt at all, so it goes down the flat path instead.
+     *
+     * Worth its own golden because the two paths draw the buttons in completely different ways —
+     * the solid renderer extrudes them onto a projected rail, the bezel lays them out as offset
+     * boxes — and an override wired into one and not the other would look perfectly correct in
+     * whichever of them anyone happened to look at.
+     */
+    @Test
+    fun contrastingButtonsUntilted() {
+        screenshot(
+            fileName = "golden_flat_contrast_buttons",
+            title = "Parted, face on",
+            description = "The same button override on a device that is not turned",
+            style = ScreenshotStyle(
+                mockupPosition = MockupPosition.Middle,
+                mockupMaterial = Contrasting,
+            ),
+        ) { GoldenContent() }
+        GoldenImage.assertMatches("golden_flat_contrast_buttons", "flat_contrast_buttons.png")
+    }
+
+    /**
      * An in-plane spin on its own leaves the device face-on, so it must stay on the original flat
      * path and render exactly as it always did. This is the byte-identity claim the whole routing
      * change rests on; if the solid renderer ever started catching this case, the device would grow
@@ -177,6 +221,14 @@ class SolidTabletGoldenTest : StoreScreenshotsTest(FormFactor.Tablet10) {
         assertTilted("golden_solid_tablet_hero", "solid_tablet_hero.png")
     }
 }
+
+/** A white enclosure with black buttons: the finish the rail colour cannot reach on its own. */
+private val Contrasting = MockupMaterial(
+    railColor = Color(0xFFE7E9EC),
+    edgeHighlightColor = Color(0xFFFFFFFF),
+    backEdgeColor = Color(0xFFA9AEB4),
+    buttonColor = Color(0xFF14161A),
+)
 
 private fun tilted(
     rotationY: Float = 0f,

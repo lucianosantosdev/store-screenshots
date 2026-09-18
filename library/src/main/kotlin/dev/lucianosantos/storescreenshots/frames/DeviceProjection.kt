@@ -522,9 +522,16 @@ internal fun DeviceBody.withMaterial(material: MockupMaterial): DeviceBody = cop
     // recolours it too — asking for a silver device and getting silver rails with the black buttons
     // of the default one would be a strange thing to have to work around. Only buttons that share
     // the rail's colour follow it, so a device that deliberately contrasts them keeps its contrast.
-    buttons = material.railColor?.let { recoloured ->
-        buttons.map { if (it.face == railColor) it.copy(face = recoloured) else it }
-    } ?: buttons,
+    //
+    // An explicit buttonColor is that contrast asked for directly, so it wins over the rail: it is
+    // the only way to say "white body, black buttons", which the rail colour cannot express because
+    // saying it there would take the rail along too.
+    buttons = buttons.map { button ->
+        val face = material.buttonColor
+            ?: material.railColor?.takeIf { button.face == railColor }
+            ?: button.face
+        if (face == button.face) button else button.copy(face = face)
+    },
 )
 
 /**

@@ -72,7 +72,7 @@ internal fun IPhoneBezel(
         val statusBarColor = if (statusBarContentDark) Color.Black else Color.White
         val bodyShape = RoundedCornerShape((metrics.BodyCorner * u).dp)
 
-        if (chrome.sideButtons) SideButtons(metrics, u, chrome.elevation, chrome.railColor ?: metrics.RailColor)
+        if (chrome.sideButtons) SideButtons(metrics, u, chrome.elevation, chrome.buttonColor ?: chrome.railColor ?: metrics.RailColor)
 
         Box(
             modifier = Modifier

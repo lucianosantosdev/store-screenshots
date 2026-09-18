@@ -67,6 +67,20 @@ data class MockupMaterial(
     val backEdgeColor: Color? = null,
 
     /**
+     * The face of the volume and power buttons.
+     *
+     * A button is milled out of the same metal as the rail it sits in, so by default it follows
+     * [railColor] and a silver device gets silver buttons. Set this to part them — a black button
+     * on a white body, say, which is a real finish and not one the rail colour can express on its
+     * own. Null keeps that default.
+     *
+     * The dark seat around a button is not included: that is the crevice it sits in rather than the
+     * button itself, and it stays dark whatever colour the button is, which is what keeps a pale
+     * button legible against a pale rail.
+     */
+    val buttonColor: Color? = null,
+
+    /**
      * Strength of the sheen the renderer lays on the cover glass as the device turns. This is its
      * own layer, on top of and independent of [ScreenshotStyle.screenGlass] — a [GlassEffect]'s
      * reflex is drawn on the screen and warped along with it, and nothing here overrides it. `0f`

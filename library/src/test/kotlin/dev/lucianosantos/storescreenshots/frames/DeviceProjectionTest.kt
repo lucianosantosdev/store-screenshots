@@ -1,7 +1,9 @@
 package dev.lucianosantos.storescreenshots.frames
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import dev.lucianosantos.storescreenshots.MockupMaterial
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -443,6 +445,86 @@ class DeviceProjectionTest {
         }
         assertEquals("expected to find all four straight edges", 4, found.size)
         return found
+    }
+
+    // ---- what a material does to a body's finish ----
+
+    private val rail = Color(0xFF3A3A3A)
+    private val contrast = Color(0xFFCC2244)
+
+    /** A body with one button in the rail's own metal and one deliberately not. */
+    private fun bodyWithButtons() = DeviceBody(
+        width = 411.dp,
+        height = 822.dp,
+        cornerRadius = 42.dp,
+        thickness = 45.dp,
+        screen = ScreenSpec(inset = 7.dp, corner = 32.dp),
+        railColor = rail,
+        rimColor = Color(0xFF6E6E6E),
+        backColor = Color(0xFF1A1A1A),
+        buttons = listOf(
+            railButton(face = rail),
+            railButton(face = contrast),
+        ),
+    )
+
+    private fun railButton(face: Color) = RailButton(
+        edge = RailEdge.Left,
+        start = 110.dp,
+        length = 38.dp,
+        protrusion = 3.dp,
+        corner = 2.dp,
+        face = face,
+        shadow = Color(0xFF0F0F0F),
+    )
+
+    @Test
+    fun `a material that overrides nothing leaves the body alone`() {
+        val body = bodyWithButtons()
+        assertEquals(body, body.withMaterial(MockupMaterial()))
+    }
+
+    @Test
+    fun `a rail colour takes the buttons made of the same metal with it`() {
+        val silver = Color(0xFFD6D8DB)
+        val finished = bodyWithButtons().withMaterial(MockupMaterial(railColor = silver))
+
+        assertEquals(silver, finished.railColor)
+        assertEquals("a button in the rail's metal follows it", silver, finished.buttons[0].face)
+        assertEquals("a button that already contrasted keeps its contrast", contrast, finished.buttons[1].face)
+    }
+
+    @Test
+    fun `a button colour parts the buttons from the rail`() {
+        val white = Color(0xFFF2F3F5)
+        val black = Color(0xFF14161A)
+        val finished = bodyWithButtons()
+            .withMaterial(MockupMaterial(railColor = white, buttonColor = black))
+
+        assertEquals("the rail is not dragged along by the buttons", white, finished.railColor)
+        finished.buttons.forEach { assertEquals(black, it.face) }
+    }
+
+    @Test
+    fun `a button colour needs no rail colour to go with it`() {
+        val gold = Color(0xFFC9913F)
+        val finished = bodyWithButtons().withMaterial(MockupMaterial(buttonColor = gold))
+
+        assertEquals("the device keeps its own metal", rail, finished.railColor)
+        finished.buttons.forEach { assertEquals(gold, it.face) }
+    }
+
+    @Test
+    fun `a button colour leaves the seat it sits in dark`() {
+        val pale = Color(0xFFEDEFF2)
+        val before = bodyWithButtons()
+        val finished = before.withMaterial(MockupMaterial(buttonColor = pale))
+
+        // The seat is the crevice around the button, not the button: a pale button in a pale seat
+        // would have nothing to read against.
+        finished.buttons.forEachIndexed { i, button ->
+            assertEquals(before.buttons[i].shadow, button.shadow)
+        }
     }
 
     /**

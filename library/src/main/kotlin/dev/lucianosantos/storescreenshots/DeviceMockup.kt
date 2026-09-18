@@ -455,7 +455,7 @@ internal fun PhoneBezel(
                     Modifier.align(Alignment.TopStart).offset(x = -m.ButtonProtrusion, y = top),
                     height,
                     isLeft = true,
-                    face = chrome.railColor ?: m.ButtonFace,
+                    face = chrome.buttonColor ?: chrome.railColor ?: m.ButtonFace,
                 )
             }
             m.RightButtons.forEach { (top, height) ->
@@ -463,7 +463,7 @@ internal fun PhoneBezel(
                     Modifier.align(Alignment.TopEnd).offset(x = m.ButtonProtrusion, y = top),
                     height,
                     isLeft = false,
-                    face = chrome.railColor ?: m.ButtonFace,
+                    face = chrome.buttonColor ?: chrome.railColor ?: m.ButtonFace,
                 )
             }
         }
