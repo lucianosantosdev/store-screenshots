@@ -26,6 +26,6 @@
     <string name="screenshot_silver_desc">mockupMaterial recolore as laterais e os botões usinados nelas — mesmo aparelho, mesmas medidas</string>
     <string name="screenshot_green_title">A cor que você quiser</string>
     <string name="screenshot_green_desc">Um verde que nenhum aparelho tem — com laterais, botões, alto-falante e porta de carga</string>
-    <string name="screenshot_showcase_title">Um aparelho, todos os ângulos</string>
-    <string name="screenshot_showcase_desc">Incline e o corpo ganha profundidade real — laterais, botões, alto-falante e porta de carga, tudo do mesmo frame</string>
+    <string name="screenshot_showcase_title">Mockups 3D de dispositivos</string>
+    <string name="screenshot_showcase_desc">Espessura real, laterais, botões e portas em qualquer ângulo — Jetpack Compose puro, sem motor 3D</string>
 </resources>

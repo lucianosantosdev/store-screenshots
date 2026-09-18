@@ -27,7 +27,12 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.atan2
 import dev.lucianosantos.storescreenshots.DeviceMockup
 import dev.lucianosantos.storescreenshots.FormFactor
+import dev.lucianosantos.storescreenshots.GlassEffect
+import dev.lucianosantos.storescreenshots.GlassReflexStyle
+import dev.lucianosantos.storescreenshots.GlassShadow
+import dev.lucianosantos.storescreenshots.screenGlass
 import dev.lucianosantos.storescreenshots.MockupMaterial
+import dev.lucianosantos.storescreenshots.ScreenshotStyle
 
 /** One device in the grid: how far it is turned, what it is made of, and what is on it. */
 @Immutable
@@ -40,6 +45,28 @@ private class ShowcaseDevice(
     /** `null` keeps [CounterScreen]'s own page background — the app as it really looks. */
     val screen: Brush?,
     val count: Int,
+)
+
+/**
+ * The light every screen in the grid catches.
+ *
+ * One effect shared by all nine, at a fixed angle, because they are meant to read as nine devices
+ * in the same room rather than nine devices each lit by their own sun. It is drawn *inside* the
+ * content, so it is warped onto the front face along with the screen and leans with each device
+ * instead of lying flat across the banner — which is the whole reason a reflection is worth having
+ * here rather than being painted over the top afterwards.
+ *
+ * This is [ScreenshotStyle.screenGlass]'s reflex, not the renderer's own
+ * [MockupMaterial.glassSheen]; the two are separate layers and both are in play.
+ */
+private val ShowcaseGlass = GlassEffect(
+    reflexStyle = GlassReflexStyle.Wedge,
+    reflexAngle = -32f,
+    reflexPosition = 0.58f,
+    reflexWidth = 0.46f,
+    reflexAlpha = 0.16f,
+    shadow = GlassShadow.BottomLeft,
+    shadowAlpha = 0.20f,
 )
 
 /** How far the grid reaches either side of its centre: three rows and three columns. */
@@ -204,10 +231,15 @@ fun SolidShowcaseBanner(title: String, description: String? = null) {
                                     backEdgeColor = device.back,
                                 ),
                             ) {
+                                val glass = Modifier.screenGlass(ShowcaseGlass)
                                 if (device.screen == null) {
-                                    CounterScreen(count = device.count)
+                                    CounterScreen(count = device.count, modifier = glass)
                                 } else {
-                                    CounterScreen(count = device.count, background = device.screen)
+                                    CounterScreen(
+                                        count = device.count,
+                                        modifier = glass,
+                                        background = device.screen,
+                                    )
                                 }
                             }
                         }

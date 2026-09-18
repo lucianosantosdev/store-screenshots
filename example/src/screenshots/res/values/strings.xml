@@ -26,6 +26,6 @@
     <string name="screenshot_silver_desc">mockupMaterial recolours the rails and the buttons milled out of them — same device, same measurements</string>
     <string name="screenshot_green_title">Any colour you want</string>
     <string name="screenshot_green_desc">A green no phone ships in — with the rails, buttons, speaker grille and charge port to match</string>
-    <string name="screenshot_showcase_title">One device, every angle</string>
-    <string name="screenshot_showcase_desc">Turn it and the body has real depth — rails, buttons, speaker grille and charge port, all from the same frame</string>
+    <string name="screenshot_showcase_title">3D Device Mockups</string>
+    <string name="screenshot_showcase_desc">Real thickness, rails, buttons and ports at any angle — pure Jetpack Compose, no 3D engine</string>
 </resources>

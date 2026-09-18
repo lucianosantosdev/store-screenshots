@@ -556,7 +556,8 @@ Wear screenshots have no title/description banner, so `mockupPosition` doesn't a
 *One phone frame, nine times. Each device is turned toward the side of the grid it sits on, so the
 top row shows its top rail, the left column its left, and the corners the two that meet there. Every
 screen is a different live composition, coloured to match the body it is on, because the front face
-is real Compose being measured and warped rather than a picture being stretched. The one in the
+is real Compose being measured and warped rather than a picture being stretched — which is also why
+the glass reflection leans with each device instead of lying flat across the banner. The one in the
 middle is not tilted at all: it never enters the solid renderer, and it is the only one of the nine
 with no rail to show.*
 
