@@ -156,8 +156,54 @@ class DeviceProjectionTest {
                 samples.any { abs(it.nx - nx) < 1e-3f && abs(it.ny - ny) < 1e-3f },
             )
         }
-        // Four arcs of 8 steps (9 samples each, endpoints included) plus one edge end per corner.
-        assertEquals(4 * 9 + 4, samples.size)
+        // Four arcs of 8 steps, 9 samples each with endpoints included. The edge end each corner
+        // adds lands exactly where the next arc begins, so it is dropped as a duplicate rather than
+        // left in as a segment of no length — which is what the next case is really about.
+        assertEquals(4 * 9, samples.size)
+    }
+
+    /**
+     * No two neighbours on the outline are the same point.
+     *
+     * Walking a rounded rectangle corner-arc-then-edge lands on every join twice, and a repeat is a
+     * segment with no length, which gets culled for having no area. One culled segment in the
+     * middle of a visible stretch of rail splits it in two, and each half then has to be closed off
+     * with a straight cut across the band — on a corner a tilt only half exposes, that cut reads as
+     * a spike on a body that is otherwise smoothly radiused. It is a geometry bug that only ever
+     * shows up as a shading artefact, so it is pinned here where it can be seen for what it is.
+     */
+    @Test
+    fun `the outline never repeats a point`() {
+        listOf(0f, 12f, 42f, 200f).forEach { radius ->
+            val samples = sampleRoundRectRing(width, height, radius, 8)
+            samples.indices.forEach { i ->
+                val a = samples[i]
+                val b = samples[(i + 1) % samples.size]
+                assertTrue(
+                    "radius $radius repeats (${a.x}, ${a.y}) at index $i, which is a segment of no length",
+                    abs(a.x - b.x) > 1e-3f || abs(a.y - b.y) > 1e-3f,
+                )
+            }
+        }
+    }
+
+    /** And the whole visible stretch of rail therefore stays in one piece. */
+    @Test
+    fun `a visible rail is one continuous run`() {
+        // Both rails in view at once: the left, and the bottom, joined round the corner between them.
+        val t = tilt(x = 34f, y = 36f, z = -4f)
+        val r = ring(t)!!
+        val visible = r.visibleSegments()
+        assertTrue("expected a broad stretch of rail", visible.size > 40)
+
+        val n = r.front.size
+        val breaks = visible.sorted().zipWithNext().count { (a, b) -> b != a + 1 }
+        // A run that wraps past the end of the ring reads as one break, and no more than that.
+        assertTrue(
+            "the visible rail is in ${breaks + 1} pieces, so it will be closed off mid-body",
+            breaks <= 1,
+        )
+        assertEquals(setOf("left", "bottom"), visibleRails(t))
     }
 
     // ---- the property the painter order rests on ------------------------------------------------

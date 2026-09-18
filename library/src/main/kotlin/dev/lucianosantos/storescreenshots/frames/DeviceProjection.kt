@@ -231,8 +231,28 @@ internal fun sampleRoundRectRing(w: Float, h: Float, r: Float, cornerSamples: In
         }
         samples += RingSample(ex, ey, nx, ny)
     }
-    return samples
+
+    // Each straight edge ends exactly where the next corner's arc begins, so walking the outline
+    // this way lands on every join twice. A duplicate is a segment of no length, which is culled
+    // for having no area — and a culled segment in the middle of a visible stretch splits it in
+    // two. The band is then drawn as several runs that each have to be closed off, and every one of
+    // those closures is a straight cut across the rail where the body is in fact continuous. The
+    // duplicates carry the same outward normal as the point they repeat, so dropping them changes
+    // the outline not at all and leaves the visible stretch in one piece.
+    val deduped = ArrayList<RingSample>(samples.size)
+    samples.forEach { sample ->
+        val previous = deduped.lastOrNull()
+        if (previous == null || !sample.coincidesWith(previous)) deduped += sample
+    }
+    while (deduped.size > 1 && deduped.last().coincidesWith(deduped.first())) {
+        deduped.removeAt(deduped.size - 1)
+    }
+    return deduped
 }
+
+/** Two outline samples are the same point when they are within a fraction of a pixel of each other. */
+private fun RingSample.coincidesWith(other: RingSample): Boolean =
+    abs(x - other.x) < 1e-3f && abs(y - other.y) < 1e-3f
 
 /**
  * Whether the side face spanning these four projected points turns toward the viewer. The ring is
