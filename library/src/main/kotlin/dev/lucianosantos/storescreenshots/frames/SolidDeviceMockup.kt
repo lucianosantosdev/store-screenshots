@@ -1092,6 +1092,8 @@ internal data class BezelChrome(
     val railColor: Color? = null,
     val edgeColor: Color? = null,
     val backColor: Color? = null,
+    /** How wide the enclosure shows around the screen, when a [MockupMaterial] widens it. */
+    val rimWidth: Dp? = null,
     /**
      * The button face, when it is deliberately not the rail's. Null falls back to [railColor], and
      * then to the device's own — a button is the rail's metal unless told otherwise.
@@ -1139,6 +1141,7 @@ internal fun MockupSurface(
                 sideButtons = true,
                 elevation = elevation,
                 railColor = material.railColor,
+                rimWidth = material.rimWidth,
                 edgeColor = material.edgeHighlightColor,
                 backColor = material.backEdgeColor,
                 buttonColor = material.buttonColor,
@@ -1160,6 +1163,7 @@ internal fun MockupSurface(
                     sideButtons = false,
                     elevation = 0.dp,
                     railColor = material.railColor,
+                    rimWidth = material.rimWidth,
                     edgeColor = material.edgeHighlightColor,
                     backColor = material.backEdgeColor,
                     buttonColor = material.buttonColor,
