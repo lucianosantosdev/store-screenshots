@@ -47,6 +47,54 @@ class SolidPhoneGoldenTest : StoreScreenshotsTest(FormFactor.Phone) {
     }
 
     /**
+     * A turn too shallow to open a rail, which is the band the solid renderer used to lose its
+     * buttons in: the boss is milled into the middle of the depth, perspective shrank it inside the
+     * silhouette, and nothing was left to draw — while the flat bezel at exactly zero drew the
+     * button anyway. Both side buttons must be here, the same bump the flat path shows.
+     */
+    @Test
+    fun shallowTiltKeepsBothButtons() {
+        screenshot(
+            fileName = "golden_solid_phone_shallow",
+            title = "Barely turned",
+            description = "Too shallow for a rail, so both buttons still show",
+            style = tilted(rotationY = -5f),
+        ) { GoldenContent() }
+        assertTilted("golden_solid_phone_shallow", "solid_phone_shallow.png")
+    }
+
+    /**
+     * One degree — the first step off the flat path, and the handover that used to break. What this
+     * pins is that a hair of tilt looks like no tilt at all rather than dropping the hardware.
+     */
+    @Test
+    fun aHairOfTiltKeepsBothButtons() {
+        screenshot(
+            fileName = "golden_solid_phone_hair",
+            title = "A hair of tilt",
+            description = "One degree still reads as the flat frame",
+            style = tilted(rotationY = -1f),
+        ) { GoldenContent() }
+        assertTilted("golden_solid_phone_hair", "solid_phone_hair.png")
+    }
+
+    /**
+     * Just under the threshold a phone's side rail appears at (about 13 degrees). The near button
+     * has grown into its boss and the far one is still there, because nothing on screen yet says
+     * the device is turned — the frame after this one is where the far button is allowed to go.
+     */
+    @Test
+    fun underTheRailThresholdKeepsBothButtons() {
+        screenshot(
+            fileName = "golden_solid_phone_under_threshold",
+            title = "Just under",
+            description = "The last angle before a rail opens",
+            style = tilted(rotationY = -10f),
+        ) { GoldenContent() }
+        assertTilted("golden_solid_phone_under_threshold", "solid_phone_under_threshold.png")
+    }
+
+    /**
      * X only, and steep enough to matter: a phone is twice as tall as it is wide, so the camera
      * already looks at its bottom edge from about 25 degrees above and the tilt has to pass that
      * before a horizontal rail appears at all. This is the case that would silently render flat if

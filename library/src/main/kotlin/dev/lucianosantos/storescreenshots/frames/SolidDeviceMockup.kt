@@ -524,6 +524,65 @@ private fun facesCamera(normal: Vec3, centre: Vec3, cameraPx: Float): Boolean =
     (normal dot Vec3(-centre.x, -centre.y, cameraPx - centre.z)) > 0f
 
 /**
+ * True when either rail on [edge]'s own axis has turned far enough to be seen.
+ *
+ * Both rails of an axis are asked, not just [edge]'s, because the question is whether the device
+ * reads as *turned about that axis at all* — and a body centred on the optical axis shows neither
+ * of its side rails until the tilt passes the angle the camera already views that edge from (about
+ * 13 degrees for a phone's sides, 30 for its top and bottom). Below that there is no rail anywhere
+ * on the axis, and with it no visible depth: see [buttonAcrossCentre].
+ */
+private fun axisRailVisible(
+    edge: RailEdge,
+    halfWidth: Float,
+    halfHeight: Float,
+    thickness: Float,
+    tilt: MockupTilt,
+    cameraPx: Float,
+): Boolean {
+    val axis = when (edge) {
+        RailEdge.Left, RailEdge.Right -> listOf(RailEdge.Left, RailEdge.Right)
+        RailEdge.Top, RailEdge.Bottom -> listOf(RailEdge.Top, RailEdge.Bottom)
+    }
+    return axis.any { rail ->
+        val basis = railBasis(rail, halfWidth, halfHeight)
+        val midway = when (rail) {
+            RailEdge.Left, RailEdge.Right -> halfHeight
+            RailEdge.Top, RailEdge.Bottom -> halfWidth
+        }
+        facesCamera(
+            normal = tilt.rotate(basis.outward).normalized(),
+            centre = tilt.rotate(basis.point(midway, thickness / 2f, 0f)),
+            cameraPx = cameraPx,
+        )
+    }
+}
+
+/**
+ * Where a button's boss sits through the body's depth.
+ *
+ * Normally the middle of the rail, which is where a button is milled. But that puts the boss half a
+ * body back from the front face, and perspective shrinks anything that far back toward the axis: on
+ * a phone the shrink at the body's edge is about 5dp against a 3dp protrusion, so head-on the whole
+ * boss falls *inside* the silhouette and there is nothing left to draw. The flat bezel has no depth
+ * to shrink and draws the button as a bump on the outline regardless, so the two paths disagreed —
+ * a mockup at exactly zero tilt showed its buttons, and the same mockup one degree over lost them
+ * until about five, when the turn finally carried the boss back out past the edge.
+ *
+ * So while [railVisible] is false the boss is seated at the front plane, which is where the flat
+ * bezel effectively draws it: the button reads as the same bump either side of zero. Once a rail
+ * shows, the real seating takes over — by then the turn has moved the boss further out than the
+ * seating ever did (about 0.1dp between the two at a phone's 13-degree threshold), so the handover
+ * is not something the eye can find.
+ *
+ * It also settles what a button on the *far* rail does. Below the threshold both buttons show,
+ * because nothing on screen yet says the device is turned. Above it the far boss is occluded by the
+ * body, which is correct and now legible: the rail that hid it is right there.
+ */
+private fun buttonAcrossCentre(button: RailButton, thickness: Float, railVisible: Boolean): Float =
+    if (railVisible) thickness * (button.across.start + button.across.endInclusive) / 2f else 0f
+
+/**
  * The buttons milled into the rails: rounded-ended bosses standing proud of the body.
  *
  * Extruded exactly the way the body itself is — a rounded-rectangle outline sampled in the rail's
@@ -531,10 +590,10 @@ private fun facesCamera(normal: Vec3, centre: Vec3, cameraPx: Float): Boolean =
  * where they face the viewer and the cap drawn over them. That is what gives a button the rounded
  * ends and the chamfered edge a milled one has, instead of the flat slab a six-sided box produces.
  *
- * It also keeps the mockup continuous where the two rendering paths meet. A hair either side of
- * zero tilt the only face left unculled is the cap, a rounded rectangle exactly as wide as the
- * protrusion — which is what the flat bezel was already drawing. A button whose rail has turned
- * away loses every face and disappears, with no special case for it.
+ * Continuity where the two rendering paths meet is [buttonAcrossCentre]'s job, not the culling's:
+ * seating the boss at the front plane while no rail shows is what makes a hair of tilt look like no
+ * tilt at all. Once a rail does show, a button whose own rail has turned away loses every face and
+ * disappears through the ordinary culling below, with no special case for it.
  */
 private fun DrawScope.drawRailButtons(
     body: DeviceBody,
@@ -558,7 +617,11 @@ private fun DrawScope.drawRailButtons(
         // The boss's footprint on the rail: as long as the button, as deep as the span it occupies
         // through the body, and rounded at the ends.
         val acrossSpan = thickness * (button.across.endInclusive - button.across.start)
-        val acrossCentre = thickness * (button.across.start + button.across.endInclusive) / 2f
+        val acrossCentre = buttonAcrossCentre(
+            button = button,
+            thickness = thickness,
+            railVisible = axisRailVisible(button.edge, halfWidth, halfHeight, thickness, tilt, cameraPx),
+        )
         val alongCentre = button.start.toPx() * scale + length / 2f
         val corner = (button.corner.toPx() * scale).coerceAtMost(minOf(length, acrossSpan) / 2f)
         val outline = sampleRoundRectRing(length, acrossSpan, corner, cornerSamplesFor(corner))
