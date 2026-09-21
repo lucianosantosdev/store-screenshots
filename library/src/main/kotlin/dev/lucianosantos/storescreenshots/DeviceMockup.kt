@@ -481,8 +481,10 @@ internal fun PhoneBezel(
                         listOf(chrome.railColor ?: m.RailColor, chrome.backColor ?: m.BackColor)
                     )
                 )
-                .padding(m.Rim)
-                .clip(RoundedCornerShape(m.RimCorner))
+                // A widened rim keeps its corner concentric with the body's; left alone it uses
+                // the metric's own figure, so an unstyled frame renders exactly as it always did.
+                .padding(chrome.rimWidth ?: m.Rim)
+                .clip(RoundedCornerShape(chrome.rimWidth?.let { m.BodyCorner - it } ?: m.RimCorner))
                 .background(Color.Black)
                 .padding(m.Bezel)
                 .clip(RoundedCornerShape(m.ScreenCorner))
@@ -627,8 +629,8 @@ internal fun TabletBezel(
                     listOf(chrome.railColor ?: m.RailColor, chrome.backColor ?: m.BackColor)
                 )
             )
-            .padding(m.Rim)
-            .clip(RoundedCornerShape(m.RimCorner))
+            .padding(chrome.rimWidth ?: m.Rim)
+            .clip(RoundedCornerShape(chrome.rimWidth?.let { m.BodyCorner - it } ?: m.RimCorner))
             .background(Color.Black)
             .padding(m.Bezel)
             .clip(RoundedCornerShape(m.ScreenCorner))

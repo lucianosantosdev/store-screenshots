@@ -644,6 +644,13 @@ style = ScreenshotStyle(
 )
 ```
 
+A rail only appears once the turn is steep enough for the camera to see that edge — about 13 degrees
+for a phone's sides, 30 for its top and bottom, since a phone is twice as tall as it is wide. Below
+that the device is drawn solid but reads face-on, and its side buttons stay where the flat frame
+puts them: standing proud of the outline on both edges, because nothing on screen yet says which way
+it is turned. Past the threshold the rail opens, the near button climbs onto it, and the far one goes
+behind the body — which is correct, and legible, because the rail that hides it is now visible.
+
 The buttons follow the rail, because a button is milled out of the same metal. The front bezel does
 not, because it is black on every iPhone whatever the body is finished in. And it is not a list of
 finishes the library knows about — the green Android beside it is a colour no phone ships in, and

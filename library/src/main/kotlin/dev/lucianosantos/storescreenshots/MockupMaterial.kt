@@ -2,6 +2,7 @@ package dev.lucianosantos.storescreenshots
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 
 /**
  * What a tilted device mockup is made of, and where the light falls on it.
@@ -62,6 +63,17 @@ data class MockupMaterial(
 
     /** The bright machined line along a rail's outer edge. Null keeps the enclosure's own. */
     val edgeHighlightColor: Color? = null,
+
+    /**
+     * How wide the enclosure shows around the screen's black surround, seen face-on.
+     *
+     * This is the metal of the body, not the screen's border: the band a real phone shows between
+     * its glass and the outside, and the ledge a side button stands on. The devices ship the hair
+     * their own hardware has — a phone's is 1.5dp — which is honest at native size but easy to lose
+     * on a dark device against a dark background. Widen it when the frame is meant to read as part
+     * of the shot rather than as a detail. Null keeps the device's own.
+     */
+    val rimWidth: Dp? = null,
 
     /** The shade the body falls away to at its back. Null keeps the enclosure's own. */
     val backEdgeColor: Color? = null,

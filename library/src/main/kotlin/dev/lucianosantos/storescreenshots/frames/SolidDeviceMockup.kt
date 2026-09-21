@@ -524,6 +524,87 @@ private fun facesCamera(normal: Vec3, centre: Vec3, cameraPx: Float): Boolean =
     (normal dot Vec3(-centre.x, -centre.y, cameraPx - centre.z)) > 0f
 
 /**
+ * True when a rail on [edge]'s own axis is not merely visible but *wide enough to read*, taking
+ * [minWidthPx] as the width that counts — the protrusion of the button asking the question.
+ *
+ * Both rails of the axis are asked, not just [edge]'s, because the question is whether the device
+ * reads as turned about that axis at all. And width, not visibility, is the test: a body centred on
+ * the optical axis shows neither side rail until the tilt passes the angle the camera already views
+ * that edge from, and for the first few degrees past it the band is a fraction of a pixel. Treating
+ * that hairline as a depth cue is what put a real screenshot in the worst place on the curve — a
+ * rail nobody could see, and far-side buttons culled as though the turn were obvious. A rail has to
+ * be at least as wide as the bump it is explaining away before it can justify removing it.
+ */
+private fun axisRailReads(
+    edge: RailEdge,
+    halfWidth: Float,
+    halfHeight: Float,
+    thickness: Float,
+    tilt: MockupTilt,
+    cameraPx: Float,
+    pivot: Offset,
+    minWidthPx: Float,
+): Boolean {
+    val axis = when (edge) {
+        RailEdge.Left, RailEdge.Right -> listOf(RailEdge.Left, RailEdge.Right)
+        RailEdge.Top, RailEdge.Bottom -> listOf(RailEdge.Top, RailEdge.Bottom)
+    }
+    return axis.any { rail ->
+        val basis = railBasis(rail, halfWidth, halfHeight)
+        val midway = when (rail) {
+            RailEdge.Left, RailEdge.Right -> halfHeight
+            RailEdge.Top, RailEdge.Bottom -> halfWidth
+        }
+        val facing = facesCamera(
+            normal = tilt.rotate(basis.outward).normalized(),
+            centre = tilt.rotate(basis.point(midway, thickness / 2f, 0f)),
+            cameraPx = cameraPx,
+        )
+        if (!facing) return@any false
+        // The band is what lies between the front face's edge and the back's, at the rail's middle.
+        val front = project(tilt.rotate(basis.point(midway, 0f, 0f)), cameraPx, pivot)
+        val back = project(tilt.rotate(basis.point(midway, thickness, 0f)), cameraPx, pivot)
+        front != null && back != null && (front - back).getDistance() >= minWidthPx
+    }
+}
+
+/**
+ * Where a button's boss sits through the body's depth.
+ *
+ * Normally the middle of the rail, which is where a button is milled. But that puts the boss half a
+ * body back from the front face, and perspective shrinks anything that far back toward the axis: on
+ * a phone the shrink at the body's edge is about 5dp against a 3dp protrusion, so head-on the whole
+ * boss falls *inside* the silhouette and there is nothing left to draw. The flat bezel has no depth
+ * to shrink and draws the button as a bump on the outline regardless, so the two paths disagreed —
+ * a mockup at exactly zero tilt showed its buttons, and the same mockup one degree over lost them
+ * until about five, when the turn finally carried the boss back out past the edge.
+ *
+ * So while [railReads] is false the boss is seated flush against the front face, which is where
+ * the flat bezel effectively draws it: the button reads as the same bump either side of zero. Once a rail is
+ * wide enough to read, the real seating takes over — by then the turn has moved the boss further
+ * out than the seating ever did, so the handover is not something the eye can find.
+ *
+ * It also settles what a button on the *far* rail does. While no rail reads, both buttons show,
+ * because nothing on screen yet says the device is turned. Once one does, the far boss is occluded
+ * by the body, which is correct and now legible: the rail that hid it is right there, and wide
+ * enough to see.
+ */
+private fun buttonAcrossCentre(
+    button: RailButton,
+    thickness: Float,
+    acrossSpan: Float,
+    railReads: Boolean,
+): Float = if (railReads) {
+    thickness * (button.across.start + button.across.endInclusive) / 2f
+} else {
+    // Half a span, not zero: the boss has to sit *behind* the front face and flush with it, so its
+    // base lands exactly on the body's own edge. Centring it on the front plane instead leaves half
+    // the boss in front of the body, where perspective pushes its base outboard of that edge and
+    // opens a gap of background between button and phone.
+    acrossSpan / 2f
+}
+
+/**
  * The buttons milled into the rails: rounded-ended bosses standing proud of the body.
  *
  * Extruded exactly the way the body itself is — a rounded-rectangle outline sampled in the rail's
@@ -531,10 +612,10 @@ private fun facesCamera(normal: Vec3, centre: Vec3, cameraPx: Float): Boolean =
  * where they face the viewer and the cap drawn over them. That is what gives a button the rounded
  * ends and the chamfered edge a milled one has, instead of the flat slab a six-sided box produces.
  *
- * It also keeps the mockup continuous where the two rendering paths meet. A hair either side of
- * zero tilt the only face left unculled is the cap, a rounded rectangle exactly as wide as the
- * protrusion — which is what the flat bezel was already drawing. A button whose rail has turned
- * away loses every face and disappears, with no special case for it.
+ * Continuity where the two rendering paths meet is [buttonAcrossCentre]'s job, not the culling's:
+ * seating the boss at the front plane while no rail shows is what makes a hair of tilt look like no
+ * tilt at all. Once a rail does show, a button whose own rail has turned away loses every face and
+ * disappears through the ordinary culling below, with no special case for it.
  */
 private fun DrawScope.drawRailButtons(
     body: DeviceBody,
@@ -558,7 +639,23 @@ private fun DrawScope.drawRailButtons(
         // The boss's footprint on the rail: as long as the button, as deep as the span it occupies
         // through the body, and rounded at the ends.
         val acrossSpan = thickness * (button.across.endInclusive - button.across.start)
-        val acrossCentre = thickness * (button.across.start + button.across.endInclusive) / 2f
+        val acrossCentre = buttonAcrossCentre(
+            button = button,
+            thickness = thickness,
+            acrossSpan = acrossSpan,
+            // The button's own protrusion is the yardstick: a rail narrower than the bump it hides
+            // is not yet a depth cue. See [axisRailReads].
+            railReads = axisRailReads(
+                edge = button.edge,
+                halfWidth = halfWidth,
+                halfHeight = halfHeight,
+                thickness = thickness,
+                tilt = tilt,
+                cameraPx = cameraPx,
+                pivot = pivot,
+                minWidthPx = protrusion,
+            ),
+        )
         val alongCentre = button.start.toPx() * scale + length / 2f
         val corner = (button.corner.toPx() * scale).coerceAtMost(minOf(length, acrossSpan) / 2f)
         val outline = sampleRoundRectRing(length, acrossSpan, corner, cornerSamplesFor(corner))
@@ -995,6 +1092,8 @@ internal data class BezelChrome(
     val railColor: Color? = null,
     val edgeColor: Color? = null,
     val backColor: Color? = null,
+    /** How wide the enclosure shows around the screen, when a [MockupMaterial] widens it. */
+    val rimWidth: Dp? = null,
     /**
      * The button face, when it is deliberately not the rail's. Null falls back to [railColor], and
      * then to the device's own — a button is the rail's metal unless told otherwise.
@@ -1042,6 +1141,7 @@ internal fun MockupSurface(
                 sideButtons = true,
                 elevation = elevation,
                 railColor = material.railColor,
+                rimWidth = material.rimWidth,
                 edgeColor = material.edgeHighlightColor,
                 backColor = material.backEdgeColor,
                 buttonColor = material.buttonColor,
@@ -1063,6 +1163,7 @@ internal fun MockupSurface(
                     sideButtons = false,
                     elevation = 0.dp,
                     railColor = material.railColor,
+                    rimWidth = material.rimWidth,
                     edgeColor = material.edgeHighlightColor,
                     backColor = material.backEdgeColor,
                     buttonColor = material.buttonColor,
