@@ -524,21 +524,26 @@ private fun facesCamera(normal: Vec3, centre: Vec3, cameraPx: Float): Boolean =
     (normal dot Vec3(-centre.x, -centre.y, cameraPx - centre.z)) > 0f
 
 /**
- * True when either rail on [edge]'s own axis has turned far enough to be seen.
+ * True when a rail on [edge]'s own axis is not merely visible but *wide enough to read*, taking
+ * [minWidthPx] as the width that counts — the protrusion of the button asking the question.
  *
- * Both rails of an axis are asked, not just [edge]'s, because the question is whether the device
- * reads as *turned about that axis at all* — and a body centred on the optical axis shows neither
- * of its side rails until the tilt passes the angle the camera already views that edge from (about
- * 13 degrees for a phone's sides, 30 for its top and bottom). Below that there is no rail anywhere
- * on the axis, and with it no visible depth: see [buttonAcrossCentre].
+ * Both rails of the axis are asked, not just [edge]'s, because the question is whether the device
+ * reads as turned about that axis at all. And width, not visibility, is the test: a body centred on
+ * the optical axis shows neither side rail until the tilt passes the angle the camera already views
+ * that edge from, and for the first few degrees past it the band is a fraction of a pixel. Treating
+ * that hairline as a depth cue is what put a real screenshot in the worst place on the curve — a
+ * rail nobody could see, and far-side buttons culled as though the turn were obvious. A rail has to
+ * be at least as wide as the bump it is explaining away before it can justify removing it.
  */
-private fun axisRailVisible(
+private fun axisRailReads(
     edge: RailEdge,
     halfWidth: Float,
     halfHeight: Float,
     thickness: Float,
     tilt: MockupTilt,
     cameraPx: Float,
+    pivot: Offset,
+    minWidthPx: Float,
 ): Boolean {
     val axis = when (edge) {
         RailEdge.Left, RailEdge.Right -> listOf(RailEdge.Left, RailEdge.Right)
@@ -550,11 +555,16 @@ private fun axisRailVisible(
             RailEdge.Left, RailEdge.Right -> halfHeight
             RailEdge.Top, RailEdge.Bottom -> halfWidth
         }
-        facesCamera(
+        val facing = facesCamera(
             normal = tilt.rotate(basis.outward).normalized(),
             centre = tilt.rotate(basis.point(midway, thickness / 2f, 0f)),
             cameraPx = cameraPx,
         )
+        if (!facing) return@any false
+        // The band is what lies between the front face's edge and the back's, at the rail's middle.
+        val front = project(tilt.rotate(basis.point(midway, 0f, 0f)), cameraPx, pivot)
+        val back = project(tilt.rotate(basis.point(midway, thickness, 0f)), cameraPx, pivot)
+        front != null && back != null && (front - back).getDistance() >= minWidthPx
     }
 }
 
@@ -569,18 +579,30 @@ private fun axisRailVisible(
  * a mockup at exactly zero tilt showed its buttons, and the same mockup one degree over lost them
  * until about five, when the turn finally carried the boss back out past the edge.
  *
- * So while [railVisible] is false the boss is seated at the front plane, which is where the flat
- * bezel effectively draws it: the button reads as the same bump either side of zero. Once a rail
- * shows, the real seating takes over — by then the turn has moved the boss further out than the
- * seating ever did (about 0.1dp between the two at a phone's 13-degree threshold), so the handover
- * is not something the eye can find.
+ * So while [railReads] is false the boss is seated flush against the front face, which is where
+ * the flat bezel effectively draws it: the button reads as the same bump either side of zero. Once a rail is
+ * wide enough to read, the real seating takes over — by then the turn has moved the boss further
+ * out than the seating ever did, so the handover is not something the eye can find.
  *
- * It also settles what a button on the *far* rail does. Below the threshold both buttons show,
- * because nothing on screen yet says the device is turned. Above it the far boss is occluded by the
- * body, which is correct and now legible: the rail that hid it is right there.
+ * It also settles what a button on the *far* rail does. While no rail reads, both buttons show,
+ * because nothing on screen yet says the device is turned. Once one does, the far boss is occluded
+ * by the body, which is correct and now legible: the rail that hid it is right there, and wide
+ * enough to see.
  */
-private fun buttonAcrossCentre(button: RailButton, thickness: Float, railVisible: Boolean): Float =
-    if (railVisible) thickness * (button.across.start + button.across.endInclusive) / 2f else 0f
+private fun buttonAcrossCentre(
+    button: RailButton,
+    thickness: Float,
+    acrossSpan: Float,
+    railReads: Boolean,
+): Float = if (railReads) {
+    thickness * (button.across.start + button.across.endInclusive) / 2f
+} else {
+    // Half a span, not zero: the boss has to sit *behind* the front face and flush with it, so its
+    // base lands exactly on the body's own edge. Centring it on the front plane instead leaves half
+    // the boss in front of the body, where perspective pushes its base outboard of that edge and
+    // opens a gap of background between button and phone.
+    acrossSpan / 2f
+}
 
 /**
  * The buttons milled into the rails: rounded-ended bosses standing proud of the body.
@@ -620,7 +642,19 @@ private fun DrawScope.drawRailButtons(
         val acrossCentre = buttonAcrossCentre(
             button = button,
             thickness = thickness,
-            railVisible = axisRailVisible(button.edge, halfWidth, halfHeight, thickness, tilt, cameraPx),
+            acrossSpan = acrossSpan,
+            // The button's own protrusion is the yardstick: a rail narrower than the bump it hides
+            // is not yet a depth cue. See [axisRailReads].
+            railReads = axisRailReads(
+                edge = button.edge,
+                halfWidth = halfWidth,
+                halfHeight = halfHeight,
+                thickness = thickness,
+                tilt = tilt,
+                cameraPx = cameraPx,
+                pivot = pivot,
+                minWidthPx = protrusion,
+            ),
         )
         val alongCentre = button.start.toPx() * scale + length / 2f
         val corner = (button.corner.toPx() * scale).coerceAtMost(minOf(length, acrossSpan) / 2f)
